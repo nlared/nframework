@@ -1,0 +1,65 @@
+<style>
+    body {
+        background: url("/img/bg-1.jpg") bottom right no-repeat;
+        background-size: cover;
+    }
+    
+    .dark-side {
+        body {
+            background: url("/img/bg-2.jpg") bottom right no-repeat;
+        }
+    }
+</style>
+<div class="container-xl h-100">
+    <div class="h-100 d-flex flex-center">
+        <div class="row w-100 flex-justify-content-center">
+            <div class="cell-md-6 d-flex flex-center">
+                <div class="box shadow-large-extra bg-glassmorphism fg-white bd-white">
+                    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['login']}}</div>
+                    <div>
+                        {{lng['welcomne']}}
+                    </div>
+                    <form  method="post" class="mt-4 mb-2">
+                        <div class="form-group">
+                            <input type="text" name="login[username]" data-role="input" data-label="{{lng['username']}}" placeholder="{{lng['usernameplaceholder']}}" data-prepend="<span class='mif-person'>"/>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" name=login[password] data-role="input" data-label="{{lng['password']}}" placeholder="{{lng['passwordplaceholder']}}" data-prepend="<span class='mif-lock'>"/>
+                            
+                        </div>
+                        <div class="form-group" style="--checkbox-color: #fff">
+                            <label class=" d-flex flex-row gap-2">
+                                <input type="checkbox" data-role="checkbox" />
+                                {{lng['agree']}} <a href='#' class='fg-white'>{{lng['terms']}}</a>
+                            </label>
+                        </div>
+                        <div class="form-actions border-top border-bottom bd-white pt-6 pb-6 d-flex flex-center z-1">
+                            <button type="submit" class="button success">{{lng['login']}} <span class="mif-sign-pen ml-2"></span></button>
+                            <div class="ml-auto">
+                                {{lng['haveaccount']}}? <a class="ml-1 fg-white" href="/account/login">{{lng['login']}}</a>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column flex-align-items-center">
+                            <div>or use:</div>
+                            <div>
+                                <a href="/login-google/oauth" class="button cycle bg-facebook">
+                                    <span class="mif-facebook"></span>
+                                </a>
+                                <a href="/login-facebook/oauth" class="button cycle bg-facebook">
+                                    <span class="mif-facebook"></span>
+                                </a>
+                                <button class="button cycle bg-twitter">
+                                    <span class="mif-x"></span>
+                                </button>
+                                <button class="button cycle bg-github">
+                                    <span class="mif-github"></span>
+                                </button>
+                                
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

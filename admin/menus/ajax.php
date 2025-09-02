@@ -1,0 +1,7 @@
+<?
+header('Content-Type: application/json');
+?>
+[
+  { "id" : "demo_root_1", "text" : "Root 1", "children" : true, "type" : "root" },
+  { "id" : "demo_root_2", "text" : "Root 2", "type" : "root" }
+]
