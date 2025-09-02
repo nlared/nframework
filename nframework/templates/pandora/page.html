@@ -1,0 +1,31 @@
+<header class="bg-white fg-dark">
+	<div class="container">
+		{{header|raw}}
+	</div>
+</header>
+<nav class="main-menu bg-control text-upper">
+    <div class="fluid-container {{theme.menuclass}}">
+        <div class="container">
+            <div data-role="appbar" class="pos-relative  {{theme.menuclass}}  app-bar" data-expand-point="md">
+                <ul class="app-bar-menu order-2 order-lg-1 collapsed" style="">
+                    <li><a href="/">Inicio</a></li>
+                    <li><a href="nosotros.php">Nosotros</a></li>
+                    <li><a href="consejo.php">Consejo</a></li>
+                    <li><a href="membresia.php">Membresia</a></li>
+                    <li><a href="contacto.php">Contacto</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</nav>
+{% if route=='index.php' %}
+<div class="fluid-container parallax-window {{theme.parallaxclass}}" style="height:{{theme.parallaxheight}}px;" data-parallax="scroll" data-image-src="{{theme.parallaximg}}"> 
+{{parallax|raw}}	
+</div>
+{% endif %}
+<div class="container">
+	{{page|raw}}
+</div>
+<div class="fluid-container">
+	{{footer|raw}}
+</div>

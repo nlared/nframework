@@ -1,0 +1,15 @@
+<div class="container">
+<div>
+<h1>Delete account requirements {{config['title']}} </h1>
+{% if config['canregister']=='on'  %} 
+----	
+</div>
+To close your account, you will first need to log in
+and access your user profile where you will find the <div class="button">DELETE ACCOUNT</div> button, which will delete the user data.
+You will lose all data and content from the account in question.
+If you are unable to log in, please contact support
+{% else %}
+This application does not allow the creation of public accounts, therefore accounts are created within and for the exclusive use of the institution's users,
+so to delete the account you must go to {{config['title']}} to  delete it.
+{% endif %}
+</div>

@@ -1,0 +1,35 @@
+<div class="wrapper">
+	<header>
+		{{header|raw}}
+	</header>
+    <main>
+      <!-- Tu contenido principal -->
+      {{page|raw}}
+    </main>
+    <footer>
+      <!-- Tu footer -->
+      {{footer|raw}}
+    </footer>
+</div>
+<style>
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Ocupa toda la altura de la pantalla */
+}
+header {
+  width:100%;
+}
+main {
+  flex: 1; /* Toma el espacio restante */
+}
+
+footer {
+  width:100%;
+}
+</style>

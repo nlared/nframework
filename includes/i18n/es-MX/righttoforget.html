@@ -1,0 +1,14 @@
+<div class="container">
+<h1>Requisito de Eliminación de Cuentas  {{config['title']}} </h1>
+{% if config['canregister']=='on'  %} 
+Para cerrar tu cuenta, primero tendrás que iniciar sesión
+acceder a tu perfil de usuario donde encontraras el boton de <div class="button">ELIMINAR CUENTA</div> de usuario, la cual eliminara los datos.
+Perderás todos los datos y el contenido de la cuenta en cuestión.
+Si no puedes iniciar sesión, ponte en contacto con soporte 
+{% else %}
+ 
+Esta aplicación no permite la creación de cuentas de manera publica por lo tanto las cuentas son creadas dentro y para uso exclusivo de los usuarios de la institución
+con lo cual para eliminar la cuenta debe acudir a {{config['title']}} para su eliminación.
+{% endif %}
+
+</div>
