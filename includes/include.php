@@ -194,12 +194,12 @@ class class_nframework
                 '100' => 'https://cdn.nlared.com/nframework/4.5.1/nframework.min.js',
             ];
 
-            $this->csss['050'] = 'https://cdn.metroui.org.ua/5.1.16/metro.css';
-            $this->csss['051'] = 'https://cdn.metroui.org.ua/5.1.16/icons.css';
+            $this->csss['050'] = 'https://cdn.metroui.org.ua/current/metro.css';
+            $this->csss['051'] = 'https://cdn.metroui.org.ua/current/icons.css';
             $this->csss['200'] = '/nframework/templates/panda/css.css';
            
             
-            $this->jss['050'] = 'https://cdn.metroui.org.ua/5.1.16/metro.js';
+            $this->jss['050'] = 'https://cdn.metroui.org.ua/current/metro.js';
             $this->jss['100'] = 'https://cdn.nlared.com/nframework/6.0.1/nframework.min.js?dev='.date('ymdhis');
             
             /*
@@ -588,7 +588,10 @@ if (! empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^
     }
 }
 
+
 $javas = new Javas;
+$themeswitcher=new ThemeSwitcher();
+
 function speak($text)
 {
     global $javas;

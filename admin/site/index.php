@@ -81,18 +81,21 @@ $letsencryptuse=new inputcheckbox(['dataset'=>&$dataset,'field'=>'letsencrypt_us
 
 
 
-$color_root_body__background=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.root.body_background','default'=>'#ffffff']);
+$color_root_body_background=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.root.body_background','default'=>'#ffffff']);
 $color_root_body_color=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.root.body_color','default'=>'#191919']);
 $color_root_border_color=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.root.border_color','default'=>'#e8e8e8']);
 $color_root_link_color=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.root.link_color','default'=>'#5a87cb']);
 $color_root_link_color_hover=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.root.link_color_hover','default'=>'#0056B3FF']);
-
+$color_root_body_accent_color=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.root.accent_color','default'=>'#ffffff']);
+$color_root_body_carent_color=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.root.caret_color','default'=>'#191919']);
 
 $color_dark_body__background=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.dark.body_background','default'=>'#1e1f22']);
 $color_dark_body_color=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.dark.body_color','default'=>'#dbdfe7']);
 $color_dark_border_color=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.dark.border_color','default'=>'#4a4d51']);
 $color_dark_link_color=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.dark.link_color','default'=>'#5a87cb']);
 $color_dark_link_color_hover=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.dark.link_color_hover','default'=>'#0056B3FF']);
+$color_dark_body_accent_color=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.root.accent_color','default'=>'#ffffff']);
+$color_dark_body_carent_color=new inputcolor(['dataset'=>&$dataset,'field'=>'colors.root.caret_color','default'=>'#191919']);
 
 
 if ($nframework->isAjax()) {

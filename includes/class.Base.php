@@ -434,22 +434,49 @@ class inputNumber extends baseInput
     }
 }
 
-/*class inputSpinner extends baseInput {
-    public $addclass;
+class inputSpinner extends baseInput {
+	public $addclass;
+	public function __toMongo($val){
+		return ($this->data_validate=='integer'||$this->data_validate=='digits'?(int)$val :(float)$val );
+	}
+	
     public function __toString() {
-        if($this->validate==''){
-            $this->validate="number"; //integer,float
-        }
-        return '<input type="text" data-role="spinner" id="'.$this->id.'" name="' . $this->name .'" value="'.$this->value .'"'.
-            $this->inputtags().
-        '">';
+    	if($this->validate==''){
+    		$this->validate="number"; //integer,float 
+    	}
+    	if($this->validate=='float'||$this->validate=='number'){
+    		$_SESSION['ANTIXSS'][$this->id]=[FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_THOUSAND];
+    	}else{
+    		/*$_SESSION['ANTIXSS'][$this->id]=[
+    			FILTER_VALIDATE_INT,[
+		        'options' => [
+		            'default' => $this->default,
+		            'min_range' => $this->min,
+		            'max_range' => $this->max
+		        ],
+		        'flags' => FILTER_FLAG_ALLOW_HEX]
+    		];*/
+    		$_SESSION['ANTIXSS'][$this->id]=[
+    			FILTER_VALIDATE_INT
+    		];
+    	}
+    	
+        return ($this->caption!=''?'<label for="'.$this->id.'">'.$this->caption.'</label>':'').
+        '<input type="text" data-role="spinner" id="'.$this->id.
+			'" name="' . $this->name .
+			'"' . $this->writetags() .
+			' data-validate="'.$this->data_validate().'" value="'.$this->value .'"'.
+			($this->datasize ? ' data-size="'.$this->datasize.'"' : '') .
+			($this->required ? ' required="required"' : '') .
+			($this->readonly ? ' readonly="readonly"' : '') .
+			($this->disabled ? ' disabled' : '') . 
+			($this->addclass ? ' class="'.$this->addclass.'"' : '') .
+			' autocomplete="off">';
     }
-    public function is_valid($newval) {
-        return is_numeric($newval);
-    }
-    public function __toMongo($val){
-        return ($this->data_validate=='integer'||$this->data_validate=='digits'?(int)$val :(float)$val );
-    }
+	public function is_valid($newval) {
+		return is_numeric($newval);	
+	}
+    
 }
 
 class inputRating extends baseInput {
@@ -462,7 +489,7 @@ class inputRating extends baseInput {
             '"' . $this->writetags() .' data-value="'.$this->value.'">';
     }
 }
-*/
+
 class inputColor extends baseInput
 {
     public $tags = ['data-values', 'onchange'];
@@ -560,13 +587,14 @@ class inputTime extends baseInput
 class inputDateTime extends baseInput
 {
     public $timezone = null;
-
+	public const ST_MONGODATE='st_mongodate';
+	public const ST_STRING='st_string';
+	public $storagetype;
+	
     public function __toString()
     {
         global $nframework;
-
         $this->validate = 'string';
-
         // $nframework->csss['099dtime']='//cdn.nlared.com/jquery-datetimepicker/build/jquery.datetimepicker.min.css';
         return
         '<input name="'.$this->name.'" id="'.$this->id.'" class="form-control" type="datetime-local" data-role="input"'.
@@ -582,11 +610,12 @@ class inputDateTime extends baseInput
     public function __toMongo($val)
     {
         if (! empty($val)) {
-            $orig_date = DateTime::createFromFormat('Y-m-d\TH:i', $val, $this->timezone);
-            $orig_date = $orig_date->getTimestamp();
-            $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
+	        //if($this->$storagetype=='st_mongodate'){
+	            $orig_date = DateTime::createFromFormat('Y-m-d\TH:i', $val, $this->timezone);
+	            $orig_date = $orig_date->getTimestamp();
+	            $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
+        	//}
         }
-
         return $utcdatetime;
     }
 
@@ -718,13 +747,9 @@ setup: function(editor) {
 class textArea extends baseInput
 {
     public $uppercase;
-
     public $charscounter;
-
     public $spellcheck = true;
-
     public $charscountertemplate;
-
     public function __toString()
     {
         return '
@@ -1616,6 +1641,7 @@ class dataset
         if ($errores == '') {
             $toset = [];
             $tounset = [];
+            
             foreach ($this->elements as $element) {
                 if (empty($element->field)) {
                     throw new Exception('key vacio:'.json_encode($this->elements));
@@ -1624,13 +1650,13 @@ class dataset
                     $element->value = (string) $this->_id;
                 } else {
                 	if(!$element->backreadonly){
-	                    $result['addata'][] = str_replace('$', $this->position, $this->fieldprefix.$element->field);
+	                    $results['addata'][] = str_replace('$', $this->position, $this->fieldprefix.$element->field);
 	                    if ($_POST[$this->nameprefix][$element->field] == '') {
 	                        $changes['$unset'][str_replace('$', $this->position, $this->fieldprefix.$element->field)] = 1;
 	                    } else {
 	                        $changes['$set'][str_replace('$', $this->position, $this->fieldprefix.$element->field)] =
 	                        $element->__toMongo($_POST[$this->nameprefix][$element->field]);
-	                        $result['addata'][] = str_replace('$', $this->position, $this->fieldprefix.$element->field);
+	                        $results['addata'][] = str_replace('$', $this->position, $this->fieldprefix.$element->field);
 	                    }
 	                    if (strpos($element->field, '.') !== false) {
 	                        $punto = true;
