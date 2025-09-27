@@ -45,6 +45,44 @@ $(window).resize(function() {
     nfWindowResizeTimer = setTimeout(nfWindowResize, 100);
 });
 
+
+const lightThemeVars = {
+    \'--button-background\': \'##ebebeb\',
+    \'--button-background-hover\': \'#dadada\',
+    \'--button-color\': \'#ebebeb\',
+    \'--button-border-color\': \'#191919\',
+    
+    \'--logo-background\': \'#f6f6f6\',
+    \'--logo-color\': \'#292826\',
+    \'accent-color\': \'292826\',
+    \'caret-color\': \'292826\'
+}
+//.dark-side {
+const darkThemeVars = {
+    \'--button-background\': \'#2b2d30\',
+    \'--button-background-hover\': \'#333439\',
+    \'--button-color\': \'#f3fcff\',
+    \'--button-border-color\': \'#4e5157\',
+    \'--logo-background\': \'#2c2d30\',
+    \'--logo-color\': \'#faf5f5\',
+    \'accent-color\': \'292826\',
+    \'caret-color\': \'292826\'
+}
+
+Object.entries(lightThemeVars).forEach(([key, value]) => {
+  //document.documentElement.style.setProperty(key, value);
+});
+
+// Apply to .dark-side (dark theme container)
+const darkContainer = document.querySelector(\'.dark-side\');
+if (darkContainer) {
+  Object.entries(darkThemeVars).forEach(([key, value]) => {
+	//darkContainer.style.setProperty(key, value);
+  });
+}
+
+
+
 function syscalls() {
     $.ajax({
       url: "/nframework/kernel.php", // URL to send the request to

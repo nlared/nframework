@@ -33,7 +33,7 @@ $nframework->languages['es-MX'] = [
         'yes' => 'Si',
         'no' => 'No',
         'random' => 'Aleatorio',
-        'save' => 'Salvar',
+        'save' => 'Guardar',
         'reset' => 'Reiniciar',
     ],
     'table' => [

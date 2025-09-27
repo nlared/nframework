@@ -99,8 +99,10 @@ class User implements ArrayAccess
 
     public function usermenu()
     {
-        global $themecolor,$config;
-
+        global $themecolor,$config,$themeswitcher;
+		
+	
+		
         $addtheme = ' '.$themecolor;
         if ($this->info['username'] != 'guest' && $this->info['username'] != '') {
             $result = '
@@ -136,14 +138,14 @@ class User implements ArrayAccess
         <span class="visible-md">&nbsp;Iniciar</span>
         </a>
         <div class="d-menu context drop-down place-right" data-role="dropdown" id="logindrop" >
-			<div class="p-3 bg-white fg-black" style="width:300px">
+			<div class="p-3 " style="width:300px">
                 <form method="POST" data-role="validator" action="/account/login">
                 	<input type="hidden" name="CSRFToken" value="'.csrfToken('/account/login').'">
                     <h4 class="text-light">Iniciar sesión...</h4>
                     
                     <div class="frm-group">
                     	<label>Usuario</label>
-                        <input name="login[username]" data-role="input" data-prepend="<span class=\'mif-user\'></span>"  
+                        <input name="login[username]" data-role="input" data-prepend="<span class=\'mif-account-circle\'></span>"  
                         type="text" data-validate="required">
                     </div>
                     <div class="frm-group">
@@ -158,17 +160,20 @@ class User implements ArrayAccess
                     </label>
                    
                    <button class="button mini js-push-btn"></button><br>
-                   <button class="button" onclick="Metro.getPlugin(\'#logindrop\',\'dropdown\').close();">Cerrar</button>'.
-                       ($config['canregister'] ?
+                         '.$themeswitcher.'
+		           <div class="d-inline-flex">
+                		<button class="button" onclick="Metro.getPlugin(\'#logindrop\',\'dropdown\').close();">Cerrar</button>'.
+                    	 ($config['canregister'] ?
                        '<button href="/account/new.php" class="button">Registrate</button>'
                        :
                            ''
                        ).
                        '<button name="op" value="Iniciar" class="button" type="submit">Iniciar</button>
+                       </div>
                 </form>
             </div>
 		</div>';
-
+			
             $resgult = '
                     <div class="button dropdown-toggle">Dropdown</div>
                      <div class="dropdown keep-open" data-role="dropdown" id="logindrop" data-no-close="true" style="width:300px">
@@ -188,7 +193,8 @@ class User implements ArrayAccess
 		                        <span class="check"></span>
 		                        <span class="caption">Recordar me</span>
 		                    </label>
-		                	<div data-role="button-group">
+		                    '.$themeswitcher.'
+		                	<div class="d-inline-flex">
 		                		<button class="button w-50" onclick="Metro.getPlugin(\'#logindrop\',\'dropdown\').close();">Cerrar</button>
 			                    <button class="button w-50" name="op" value="Iniciar" type="submit">Iniciar</button>
 		                    </div>

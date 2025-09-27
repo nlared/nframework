@@ -9,56 +9,53 @@
             background: url("/img/bg-2.jpg") bottom right no-repeat;
         }
     }
+     .formbox{
+    	inset: 0;
+    	margin: auto;
+    }
 </style>
-<div class="container-xl h-100">
-    <div class="h-100 d-flex flex-center">
-        <div class="row w-100 flex-justify-content-center">
-            <div class="cell-md-6 d-flex flex-center">
-                <div class="box shadow-large-extra bg-glassmorphism fg-white bd-white">
-                    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['signup']}}</div>
-                    <div>
-                        {{lng['welcomne']}}
-                    </div>
-                    <form action="javascript:" class="mt-4 mb-2">
-                        <div class="form-group">
-                            <input type="text" data-role="input" data-label="{{lng['username']}}" placeholder="{{lng['usernameplaceholder']}}" data-prepend="<span class='mif-person'>"/>
-                        </div>
-                        <div class="form-group">
-                            <input type="text" data-role="input" data-label="{{lng['email']}}" placeholder="{{lng['emailplaceholder']}}" data-prepend="<span class='mif-email'>"/>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" data-role="input" data-label="{{lng['password']}}" placeholder="{{lng['passwordplaceholder']}}" data-prepend="<span class='mif-lock'>"/>
-                            <input type="password" data-role="input" placeholder="Confirm password..." data-prepend="<span class='mif-lock'>" class="mt-1"/>
-                        </div>
-                        <div class="form-group" style="--checkbox-color: #fff">
-                            <label class=" d-flex flex-row gap-2">
-                                <input type="checkbox" data-role="checkbox" />
-                                {{lng['agree']}} <a href='#' class='fg-white'>{{lng['terms']}}</a>
-                            </label>
-                        </div>
-                        <div class="form-actions border-top border-bottom bd-white pt-6 pb-6 d-flex flex-center z-1">
-                            <button class="button success">{{lng['signup']}} <span class="mif-sign-pen ml-2"></span></button>
-                            <div class="ml-auto">
-                                {{lng['haveaccount']}}? <a class="ml-1 fg-white" href="/account/login">{{lng['login']}}</a>
-                            </div>
-                        </div>
-                        <div class="d-flex flex-column flex-align-items-center">
-                            <div>or use:</div>
-                            <div>
-                                <button class="button cycle bg-facebook">
-                                    <span class="mif-facebook"></span>
-                                </button>
-                                <button class="button cycle bg-twitter">
-                                    <span class="mif-x"></span>
-                                </button>
-                                <button class="button cycle bg-github">
-                                    <span class="mif-github"></span>
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+<div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox">
+    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['signup']}}</div>
+    <div>
+        {{lng['welcomne']}}
+    </div>
+    <form action="javascript:" class="mt-4 mb-2">
+        <div class="form-group">
+            <input type="text" data-role="input" data-label="{{lng['username']}}" placeholder="{{lng['usernameplaceholder']}}" data-prepend="<span class='mif-person'>"/>
+        </div>
+        <div class="form-group">
+            <input type="text" data-role="input" data-label="{{lng['email']}}" placeholder="{{lng['emailplaceholder']}}" data-prepend="<span class='mif-email'>"/>
+        </div>
+        <div class="form-group">
+            <input type="password" data-role="input" data-label="{{lng['password']}}" placeholder="{{lng['passwordplaceholder']}}" data-prepend="<span class='mif-lock'>"/>
+            <input type="password" data-role="input" placeholder="Confirm password..." data-prepend="<span class='mif-lock'>" class="mt-1"/>
+        </div>
+        <div class="form-group" style="--checkbox-color: #fff">
+            <label class=" d-flex flex-row gap-2">
+                <input type="checkbox" data-role="checkbox" />
+                {{lng['agree']}} <a href='#' class='fg-white'>{{lng['terms']}}</a>
+            </label>
+        </div>
+        <div class="form-actions border-top border-bottom bd-white pt-6 pb-6 d-flex flex-center z-1">
+            <button class="button success">{{lng['signup']}} <span class="mif-sign-pen ml-2"></span></button>
+            <div class="ml-auto">
+                {{lng['haveaccount']}}? <a class="ml-1 fg-white" href="/account/login">{{lng['login']}}</a>
             </div>
         </div>
-    </div>
+        <div class="d-flex flex-column flex-align-items-center">
+            <div>or use:</div>
+            <div>
+                <button class="button cycle bg-facebook">
+                    <span class="mif-facebook"></span>
+                </button>
+                <button class="button cycle bg-twitter">
+                    <span class="mif-x"></span>
+                </button>
+                <button class="button cycle bg-github">
+                    <span class="mif-github"></span>
+                </button>
+            </div>
+        </div>
+    </form>
 </div>
+{{themeswitcher| raw}}

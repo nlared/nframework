@@ -45,6 +45,7 @@ $router->addRoute('index', function($route, $variables){
 		'header'=>$header->html,
 		'footer'=>$footer->html,
 		'menu'=>$menu->code,
+		'themeswitcher'=>(string)$themeswitcher,
 		'route'=>'index.php'
 	]);
 },'GET');
@@ -60,7 +61,7 @@ $router->addRoute('/main.js', function(string $route,array $p){
 },'GET');
 
 $router->addRoute('/account/login', function(string $route,array $p){
-	global $twig,$config,$nframework;
+	global $twig,$config,$nframework,$themeswitcher;
 	
 	if (!empty($_POST['login'])){
 		$login=$_POST['login'];
@@ -104,7 +105,8 @@ $router->addRoute('/account/login', function(string $route,array $p){
 
 	echo $template->render([
 		'lng' => $nframework->language(),
-		'oauths'=>$oauths
+		'oauths'=>$oauths,
+		'themeswitcher'=>(string)$themeswitcher,
 	]);
 
 	

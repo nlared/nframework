@@ -1,13 +1,25 @@
+
 :root {
+    --button-background: #ebebeb;
+    --button-background-hover: #dadada;
+    --button-color: #191919;
+    --button-border-color: #ebebeb;
     --logo-background: #f6f6f6;
     --logo-color: #292826;
+    accent-color: 292826;
+    caret-color: 292826;
 }
 
 .dark-side {
+    --button-background: #2b2d30;
+    --button-background-hover: #333439;
+    --button-color: #f3fcff;
+    --button-border-color: #4e5157;
     --logo-background: #2c2d30;
     --logo-color: #faf5f5;
+    accent-color: 292826;
+    caret-color: 292826;
 }
-
 .logo-container, .logo-container-big {
     background: var(--logo-background);
     color: var(--logo-color);
