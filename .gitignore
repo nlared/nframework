@@ -3,4 +3,5 @@
 /includes/composer.lock
 /includes/composer.phar
 /test/*
+/doc/tmp/*
 *.log
