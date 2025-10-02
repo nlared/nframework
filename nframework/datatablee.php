@@ -42,8 +42,15 @@ foreach($m->{$datainfo['db']}->{$datainfo['collection']}->aggregate($pipeline, $
 	$d['_id']=(string)$d['_id'];
 	$toad=[];
 	foreach ($datainfo['columns'] as $column){
-        $toad[$column]=(string) $d[$column];   
-    }            
+		if($d[$column] instanceof MongoDB\BSON\UTCDateTime){
+			$toad[$column]=$d[$column]->toDateTime()->format("Y-m-d H:i:s");
+		}elseif($d[$column] instanceof MongoDB\BSON\ObjectId){
+			$toad[$column]=(string) $d[$column];
+		}elseif(is_array($d[$column]) || is_object($d[$column])){
+			$toad[$column]=json_encode($d[$column]);
+		}else{		
+        $toad[$column]=(string) $d[$column];
+	}
     $arrayData[]=array_values($toad);
 }
 

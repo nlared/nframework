@@ -7,7 +7,7 @@ if(empty($nframework)){
 
 if (!$nframework->isAjax()){
 $nframework->usecommon=true;
-$nframework->css['998']='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css';
+$nframework->csss['998']='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css';
 $nframework->jss['998']='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
 
 $nframework->csss['101']='/css/index.css?d='.date('Ymhis');

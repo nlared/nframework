@@ -89,7 +89,7 @@ class User implements ArrayAccess
 
     public function data()
     {
-        return $info;
+        return $this->info;
     }
 
     public function gravatar($width = '', $height = '')
@@ -105,32 +105,31 @@ class User implements ArrayAccess
 		
         $addtheme = ' '.$themecolor;
         if ($this->info['username'] != 'guest' && $this->info['username'] != '') {
-            $result = '
-        		<a href="#" class="app-bar-item">
-                        <img src="/images/resize/users/32/32/'.$this->info['_id'].'.png" alt="user picture" class="avatar">
-                        <span class="ml-2 app-bar-name">'.$this->info['nombres'].'</span>
-                    </a>
-                    <div class="d-menu context drop-down place-right" data-role="dropdown" id="logindrop">
-			<div class="p-3 bg-white fg-black text-center" style="width:300px">
-                            <img src="/images/resize/users/120/120/'.$this->info['_id'].'.png" alt="user picture" class="avatar">
-                            <div class="h4 mb-0">'.$this->info['nombres'].'</div>
-                            <div>'.$this->title.'</div>
-                        </div>
-                        <div class="bg-white d-flex flex-justify-between flex-equal-items p-2">
-                            <a href="/account/myprofile.php" class="button flat-button fg-black">
-                            	<span class="mif-profile icon"></span>&nbsp;Perfil</a>
-                            <a href="/account/cpassword.php" class="button flat-button fg-black">
-                            	<span class="mif-key"></span>&nbspContraseña</a>
-                            
-                        </div>
-                        <div class="bg-white d-flex flex-justify-between flex-equal-items p-2 bg-light">
-                            <a href="#" class="button fg-black mr-1">
-                            	<span class="mif-bug"></span>&nbsp;Reportar un problema</a>
-                            <a href="/account/logout" class="button fg-black">
-                            	<span class="mif-exit"></span>&nbsp;Salir</a>
-                        </div>
+            $result = <<<HTML
+                <a href="#" class="app-bar-item">
+                    <img src="/images/resize/users/32/32/{$this->info['_id']}.png" alt="user picture" class="avatar">
+                    <span class="ml-2 app-bar-name">{$this->info['username']}</span>
+                </a>
+                <div class="d-menu context drop-down place-right" data-role="dropdown" id="logindrop">
+                    <div class="p-3 bg-white fg-black text-center" style="width:300px">
+                        <img src="/images/resize/users/120/120/{$this->info['_id']}.png" alt="user picture" class="avatar">
+                        <div class="h4 mb-0">{$this->info['username']}</div>
+                        <div>{$this->title}</div>
                     </div>
-         ';
+                    <div class="bg-white d-flex flex-justify-between flex-equal-items p-2">
+                        <a href="/account/myprofile.php" class="button flat-button fg-black">
+                            <span class="mif-profile icon"></span>&nbsp;Perfil</a>
+                        <a href="/account/cpassword.php" class="button flat-button fg-black">
+                            <span class="mif-key"></span>&nbspContraseña</a>
+                    </div>
+                    <div class="bg-white d-flex flex-justify-between flex-equal-items p-2 bg-light">
+                        <a href="#" class="button fg-black mr-1">
+                            <span class="mif-bug"></span>&nbsp;Reportar un problema</a>
+                        <a href="/account/logout" class="button fg-black">
+                            <span class="mif-exit"></span>&nbsp;Salir</a>
+                    </div>
+                </div>
+HTML;
 
         } else {
             $result = '<a href="#" class="app-bar-item">

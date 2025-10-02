@@ -2,65 +2,55 @@
 
 class Signature_pad extends baseInput
 {
-    public $minWidth = 0.5;
-
-    public $maxWidth = 2.5;
-
-    public $throttle = 16;
-
-    public $minDistance = 5;
-
-    public $backgroundColor = 'rgba(0,0,0,0)';
-
-    public $penColor = 'black';
-
-    public $velocityFilterWeight = 0.7;
-
-    public $canvasContextOptions = '';
-
-    public $name;
-
-    public $path;
-
-    public function __toString(): string
-    {
-        global $nframework,$javas;
-        $_SESSION['nf5imageup'][$this->id] = [
-            'path' => $this->path,
-        ];
-        addVarToGarbage('nf5imageup\\'.$this->id, time() + (60 * 60));
-
-        if (! $nframework->onces['Signature_pad']) {
-            $nframework->jss['115'] = 'https://cdn.jsdelivr.net/npm/signature_pad@5.1.0/dist/signature_pad.umd.min.js';
-            $javas->addjs('
+  public $minWidth = 0.5;
+  public $maxWidth = 2.5;
+  public $throttle = 16;
+  public $minDistance = 5;
+  public $backgroundColor = 'rgba(0,0,0,0)';
+  public $penColor = 'black';
+  public $velocityFilterWeight = 0.7;
+  public $canvasContextOptions = '';
+  public $name;
+  public $path;
+  public function __toString(): string
+  {
+    global $nframework, $javas;
+    $_SESSION['nf5imageup'][$this->id] = [
+      'path' => $this->path,
+    ];
+    addVarToGarbage('nf5imageup\\' . $this->id, time() + (60 * 60));
+    if (! $nframework->onces['Signature_pad']) {
+      $nframework->jss['115'] = 'https://cdn.jsdelivr.net/npm/signature_pad@5.1.0/dist/signature_pad.umd.min.js';
+      $javas->addjs('
     		var canvaspad=[];
     		var signaturePad=[];
     		');
-            $javas->addjs('
+      $javas->addjs('
     		const ratio =  Math.max(window.devicePixelRatio || 1, 1);
     		', 'resize');
-            $nframework->onces['Signature_pad'] = true;
-        }
-        $options = [
-            'minWidth',
-            'maxWidth',
-            'throttle',
-            'minDistance',
-            'backgroundColor',
-            'penColor',
-            'velocityFilterWeight',
-            'canvasContextOptions',
-        ];
+      $nframework->onces['Signature_pad'] = true;
+    }
+    $options = [
+      'minWidth',
+      'maxWidth',
+      'throttle',
+      'minDistance',
+      'backgroundColor',
+      'penColor',
+      'velocityFilterWeight',
+      'canvasContextOptions',
+    ];
 
-        foreach ($options as $option) {
-            if (! empty($this->{$option})) {
-                $data[$option] = $this->{$option};
-            }
-        }
+    foreach ($options as $option) {
+      if (! empty($this->{$option})) {
+        $data[$option] = $this->{$option};
+      }
+    }
 
-        $javas->addjs('
-		signaturePad["'.$this->id.'"] = new SignaturePad(document.getElementById("canvaspad_'.$this->id.'"),'.json_encode($data).' );');
-        $javas->addjs(<<<addjs
+    $javas->addjs('
+		signaturePad["' . $this->id . '"] = new SignaturePad(document.getElementById("canvaspad_' . $this->id . '"),' . json_encode($data) . ' );');
+    $javas->addjs(
+      <<<addjs
 canvaspad_{$this->id}.width = canvaspad_{$this->id}.offsetWidth * ratio;
 canvaspad_{$this->id}.height = canvaspad_{$this->id}.offsetHeight * ratio;
 canvaspad_{$this->id}.getContext("2d").scale(ratio, ratio);
@@ -93,14 +83,14 @@ document.getElementById("canvaspad_{$this->id}_save").addEventListener("click", 
     console.error("Upload failed:", error);
     alert("Upload failed.");
   });
-});
-    		
-addjs
-            , 'resize');
+});    		
+addjs,
+      'resize'
+    );
 
-        return '<canvas id="canvaspad_'.$this->id.'" class="signature-pad" style="left: 0;top: 0;width:400px; height:200px;"></canvas><br>
-		<div class="button flat" id="canvaspad_'.$this->id.'_clear"><span class="mif-clear"></span> '.$nframework->language['buttons']['clear'].'</div>
-		<div class="button flat" id="canvaspad_'.$this->id.'_save"><span class="mif-sign-pen"></span> '.$nframework->language['buttons']['save'].'</div>
+    return '<canvas id="canvaspad_' . $this->id . '" class="signature-pad" style="left: 0;top: 0;width:400px; height:200px;"></canvas><br>
+		<div class="button flat" id="canvaspad_' . $this->id . '_clear"><span class="mif-clear"></span> ' . $nframework->language['buttons']['clear'] . '</div>
+		<div class="button flat" id="canvaspad_' . $this->id . '_save"><span class="mif-sign-pen"></span> ' . $nframework->language['buttons']['save'] . '</div>
 		';
-    }
+  }
 }

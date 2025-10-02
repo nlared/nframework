@@ -122,3 +122,43 @@ function renderEmbeddedFunctions(string $html): string {
         return "[undefined function: $funcName]";
     }, $html);
 }
+
+function normalizeBsonValue($value): mixed
+{
+    switch (true) {
+        case $value instanceof MongoDB\BSON\UTCDateTime:
+            return $value->toDateTime()->format(DATE_ATOM);
+        case $value instanceof MongoDB\BSON\ObjectId:
+            return (string) $value;
+        case $value instanceof MongoDB\BSON\Binary:
+            return base64_encode($value->getData());
+        case $value instanceof MongoDB\BSON\Regex:
+            return $value->getPattern();
+        case $value instanceof MongoDB\BSON\Decimal128:
+            return (string) $value;
+        case $value instanceof MongoDB\BSON\Javascript:
+            return $value->getCode();
+        case $value instanceof MongoDB\BSON\Timestamp:
+            return "Timestamp({$value->getTimestamp()}, {$value->getIncrement()})";
+        case $value instanceof MongoDB\BSON\MinKey:
+            return 'MinKey';
+        case $value instanceof MongoDB\BSON\MaxKey:
+            return 'MaxKey';
+        default:
+            return $value;
+    }
+}
+
+function flattenDocument($document, $prefix = '') {
+    $flat = [];
+    foreach ($document as $key => $value) {
+        $fullKey = $prefix === '' ? $key : "{$prefix}.{$key}";
+
+        if (is_array($value) || is_object($value)) {
+            $flat += flattenDocument((array)$value, $fullKey);
+        } else {
+            $flat[$fullKey] = normalizeBsonValue($value);
+        }
+    }
+    return $flat;
+}
