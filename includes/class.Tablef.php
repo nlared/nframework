@@ -3,13 +3,9 @@
 class TableF
 {
     public $filters = [];
-
     public $table;
-
     public $excelCell;
-
     public $excelFile;
-
     private $originalPipeline;
     public $codeid;
 	public $query;

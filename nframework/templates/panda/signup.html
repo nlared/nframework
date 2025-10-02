@@ -3,15 +3,17 @@
         background: url("/img/bg-1.jpg") bottom right no-repeat;
         background-size: cover;
     }
-    
+
     .dark-side {
         body {
             background: url("/img/bg-2.jpg") bottom right no-repeat;
+            background-size: cover;
         }
     }
-     .formbox{
-    	inset: 0;
-    	margin: auto;
+
+    .formbox {
+        inset: 0;
+        margin: auto;
     }
 </style>
 <div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox">
@@ -21,41 +23,31 @@
     </div>
     <form action="javascript:" class="mt-4 mb-2">
         <div class="form-group">
-            <input type="text" data-role="input" data-label="{{lng['username']}}" placeholder="{{lng['usernameplaceholder']}}" data-prepend="<span class='mif-person'>"/>
+            <input type="text" name="username" data-role="input" data-label="{{lng['username']}}"
+                placeholder="{{lng['username']}}" data-prepend="<span class='mif-person'>" />
         </div>
         <div class="form-group">
-            <input type="text" data-role="input" data-label="{{lng['email']}}" placeholder="{{lng['emailplaceholder']}}" data-prepend="<span class='mif-email'>"/>
+            <input type="text" name="email" data-role="input" data-label="{{lng['email']}}" placeholder="{{lng['email']}}"
+                data-prepend="<span class='mif-email'>" />
         </div>
         <div class="form-group">
-            <input type="password" data-role="input" data-label="{{lng['password']}}" placeholder="{{lng['passwordplaceholder']}}" data-prepend="<span class='mif-lock'>"/>
-            <input type="password" data-role="input" placeholder="Confirm password..." data-prepend="<span class='mif-lock'>" class="mt-1"/>
+            <input type="password" name="password" data-role="input" data-label="{{lng['password']}}"
+                placeholder="{{lng['password']}}" data-prepend="<span class='mif-lock'>" />
+            <input type="password" name="confirmpassword" data-role="input" placeholder="{{lng['confirmpassword']}}"
+                data-prepend="<span class='mif-lock'>" class="mt-1" />
         </div>
         <div class="form-group" style="--checkbox-color: #fff">
             <label class=" d-flex flex-row gap-2">
-                <input type="checkbox" data-role="checkbox" />
+                <input type="checkbox" name="agree" data-role="checkbox" />
                 {{lng['agree']}} <a href='#' class='fg-white'>{{lng['terms']}}</a>
             </label>
         </div>
         <div class="form-actions border-top border-bottom bd-white pt-6 pb-6 d-flex flex-center z-1">
-            <button class="button success">{{lng['signup']}} <span class="mif-sign-pen ml-2"></span></button>
+            <button class="button success">{{lng['signup']}}</button>
             <div class="ml-auto">
                 {{lng['haveaccount']}}? <a class="ml-1 fg-white" href="/account/login">{{lng['login']}}</a>
             </div>
-        </div>
-        <div class="d-flex flex-column flex-align-items-center">
-            <div>or use:</div>
-            <div>
-                <button class="button cycle bg-facebook">
-                    <span class="mif-facebook"></span>
-                </button>
-                <button class="button cycle bg-twitter">
-                    <span class="mif-x"></span>
-                </button>
-                <button class="button cycle bg-github">
-                    <span class="mif-github"></span>
-                </button>
-            </div>
-        </div>
+        </div>        
     </form>
 </div>
-{{themeswitcher| raw}}
+{{nframework['themeSwitcher']|raw}}

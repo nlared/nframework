@@ -2,6 +2,7 @@
 /*ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);//*/
+
 $errores=[];
 function return_bytes($val) {
     $val = (int)trim($val);
@@ -171,6 +172,8 @@ if($config['sitedb']==''){
 		$admin=$m->{$config['sitedb']}->users->findOne(['username'=>'admin']);
 		if(empty($admin)){
 			$errores[]="admin no existe";
+
+
 			$adminid=new  MongoDB\BSON\ObjectID();
 			$m->{$config['sitedb']}->users->insertOne([
 				'username'=>'admin',

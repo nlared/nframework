@@ -142,14 +142,18 @@ $codes=[
     ]
 ];
 
-
-foreach ($codes as $code) {
+$result='';
+foreach ($codes as $code) {    
     if ($code['code']!='') {
         $tmp=eval('return '.$code['code']);
-        $result.='
-		<div class="row">
-			<div class="cell"><h4>'.$code['title'].'</h4></div>
-		</div>
+        if(isset($code['title'])) {
+            $result. '<div class="row">
+                    <div class="cell"><h4>'.$code['title'].'</h4></div>
+                </div>';
+        }       
+        
+
+        $result.='		
 		<div class="row">
 			<div class="cell-sm">'.$tmp.'</div>
 			<div class="cell-sm">'.str_replace("\r", '<br>', htmlspecialchars($code['code'])).'</div>

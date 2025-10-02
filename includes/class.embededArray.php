@@ -2,101 +2,92 @@
 
 class embededArray
 {
-    public $action;
-
-    public $id;
-
-    public $containerid;
-
-    public $dialogid;
-
-    public $dataset;
-
-    public $embededArray;
-
-    private $database;
-
-    private $collection;
-
-    public $nameprefix;
-
-    private $historic;
-
-    private $_id;
-
-    private $simpleid;
-	public $elements=[];
-    public $nfparent;
+	public $action;
+	public $id;
+	public $containerid;
+	public $dialogid;
+	public $dataset;
+	public $embededArray;
+	private $database;
+	private $collection;
+	public $nameprefix;
+	public $field;
+	private $historic;
+	private $_id;
+	private $simpleid;
+	public $elements = [];
+	public $nfparent;
 	public $target;
-    public $template;
-	public $nfchilds=[];
+	public $template;
+	public $nfchilds = [];
 	public function addElement(&$object)
-    {
-        $this->elements[] = json_decode(json_encode($object), true);;
-    }
+	{
+		$this->elements[] = json_decode(json_encode($object), true);;
+	}
 
-    public function __construct($options = [])
-    {
-        global $nframework;
-        foreach ($options as $option => $value) {
-            $this->{$option} = $value;
-        }
-
-        $this->database = $this->dataset->collection->getDatabaseName();
-        $this->collection = $this->dataset->collection->getCollectionName();
-        $this->nameprefix = $this->dataset->nameprefix;
-        $this->historic = $this->dataset->historic;
-        $this->simpleid = $this->dataset->simpleid;
-        $this->_id = $this->dataset->_id;
-        if (empty($this->id)) {
-            $this->id = 'ArrayFront_'.hash('crc32', $_SERVER['PHP_SELF'].$this->_id).'_'.$nframework->counters('ajaxdialog');
-        }
-    }
-
-    public function function_new()
-    {
-    	
-        return $this->id.'_show()';
-    }
-
-    public function __toString()
-    {
-		global $nframework, $javas;
-		$elements=['test'];
-		foreach($this->elements as $e){
-			$elements[]=$e;
+	public function __construct($options = [])
+	{
+		global $nframework;
+		foreach ($options as $option => $value) {
+			$this->{$option} = $value;
 		}
-        $_SESSION['nfembeded'][$this->id] = [
-            'database' => $this->database,
-            'collection' => $this->collection,
-            'nameprefix' => $this->nameprefix,
-            'historic' => $this->historic,
-            'simpleid' => $this->simpleid,
-            '_id' => $this->_id,
-            'field' => $this->field,
-            'template' => $this->template,
-            'nfparent' => $this->nfparent,
-            'nfchilds' => $this->nfchilds,
-            'target'=>$this->target,
-            'elements'=>$elements
-        ];
-        
-        addVarToGarbage('nfembeded\\'.$this->id, time() + (60 * 60));
-        
-        
-        if (! $nframework->onces['embededArray']) {
-            $javas->addjs('var nfembededs=[];');
-            $nframework->onces['embededArray'] = true;
-        }
-        if(!empty($this->target)){
-        	$target='target:"'.$this->target.'",';
-        }
-        $parent = (empty($this->nparent) ? "''" : '$("#'.$this->nparent.'_form input[name=\'pos\']").val()');
-        foreach ($this->nfchilds as $c){
-        	$childs.= "\n".$c.'_load();';
-        }
-        
-        $java = <<<JAVA
+
+		$this->database = $this->dataset->collection->getDatabaseName();
+		$this->collection = $this->dataset->collection->getCollectionName();
+		$this->nameprefix = $this->dataset->nameprefix;
+		$this->historic = $this->dataset->historic;
+		$this->simpleid = $this->dataset->simpleid;
+		$this->_id = $this->dataset->_id;
+		if (empty($this->id)) {
+			$this->id = 'ArrayFront_' . hash('crc32', $_SERVER['PHP_SELF'] . $this->_id) . '_' . $nframework->counters('ajaxdialog');
+		}
+	}
+
+	public function function_new()
+	{
+
+		return $this->id . '_show()';
+	}
+
+	public function __toString()
+	{
+		global $nframework, $javas;
+		$elements = ['test'];
+		foreach ($this->elements as $e) {
+			$elements[] = $e;
+		}
+		$_SESSION['nfembeded'][$this->id] = [
+			'database' => $this->database,
+			'collection' => $this->collection,
+			'nameprefix' => $this->nameprefix,
+			'historic' => $this->historic,
+			'simpleid' => $this->simpleid,
+			'_id' => $this->_id,
+			'field' => $this->field,
+			'template' => $this->template,
+			'nfparent' => $this->nfparent,
+			'nfchilds' => $this->nfchilds,
+			'target' => $this->target,
+			'elements' => $elements
+		];
+
+		addVarToGarbage('nfembeded\\' . $this->id, time() + (60 * 60));
+
+
+		if (! $nframework->onces['embededArray']) {
+			$javas->addjs('var nfembededs=[];');
+			$nframework->onces['embededArray'] = true;
+		}
+		if (!empty($this->target)) {
+			$target = 'target:"' . $this->target . '",';
+		}
+		$parent = (empty($this->nfparent) ? "''" : '$("#' . $this->nfparent . '_form input[name=\'pos\']").val()');
+		$childs = '';
+		foreach ($this->nfchilds as $c) {
+			$childs .= "\n" . $c . '_load();';
+		}
+
+		$java = <<<JAVA
 	function {$this->id}_show(){
 		
 		$.ajax({
@@ -274,8 +265,8 @@ class embededArray
 	
 JAVA;
 
-        $javas->addjs($java);
+		$javas->addjs($java);
 
-        return '';
-    }
+		return '';
+	}
 }

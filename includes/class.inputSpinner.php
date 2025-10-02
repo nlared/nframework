@@ -31,16 +31,16 @@ class inputSpinner extends baseInput
             ];
         }
 
-        return ($this->caption != '' ? '<label for="'.$this->id.'">'.$this->caption.'</label>' : '').
-        '<input type="text" data-role="spinner" id="'.$this->id.
-            '" name="'.$this->name.
-            '"'.$this->writetags().
-            ' data-validate="'.$this->data_validate().'" value="'.$this->value.'"'.
-            ($this->datasize ? ' data-size="'.$this->datasize.'"' : '').
-            ($this->required ? ' required="required"' : '').
-            ($this->readonly ? ' readonly="readonly"' : '').
-            ($this->disabled ? ' disabled' : '').
-            ($this->addclass ? ' class="'.$this->addclass.'"' : '').
+        return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') .
+            '<input type="text" data-role="spinner" id="' . $this->id .
+            '" name="' . $this->name .
+            '"' . $this->writetags() .
+            ' data-validate="' . $this->data_validate() . '" value="' . $this->value . '"' .
+            ($this->datasize ? ' data-size="' . $this->datasize . '"' : '') .
+            ($this->required ? ' required="required"' : '') .
+            ($this->readonly ? ' readonly="readonly"' : '') .
+            ($this->disabled ? ' disabled' : '') .
+            ($this->addclass ? ' class="' . $this->addclass . '"' : '') .
             ' autocomplete="off">';
     }
 

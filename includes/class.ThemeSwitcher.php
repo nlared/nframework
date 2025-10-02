@@ -1,13 +1,15 @@
-<?
+<?php
 
-class ThemeSwitcher{
-	
-	public function __toString(): string
+class ThemeSwitcher
+{
+
+    public function __toString(): string
     {
-		global $javas,$nframework;
-		if (! $nframework->onces['ThemeSwitcher']) {
-		$javas->addjs(<<<ll
-			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+        global $javas, $nframework;
+        if (! $nframework->onces['ThemeSwitcher']) {
+            $javas->addjs(
+                <<<ll
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
     prefersDark.addEventListener('change', () => {
         if (localStorage.getItem('user-theme') === 'system') applyTheme('system');
     });
@@ -32,11 +34,11 @@ class ThemeSwitcher{
         applyTheme(storedTheme);
     });
 ll
-);
-$nframework->onces['ThemeSwitcher']=true;
-}
-		
-		return '<div class="theme-switcher" id="theme-switcher">
+            );
+            $nframework->onces['ThemeSwitcher'] = true;
+        }
+
+        return '<div class="theme-switcher" id="theme-switcher">
             <div class="button flat" data-tooltip="Light theme" data-theme="light">
                 <span class="mif-sunny icon"></span>
             </div>
@@ -48,6 +50,5 @@ $nframework->onces['ThemeSwitcher']=true;
             </div>
             <span class="switch-handle"></span>
         </div>';
-
-	}
+    }
 }

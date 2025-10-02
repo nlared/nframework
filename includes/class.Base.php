@@ -1,7 +1,5 @@
 <?php
 
-// namespace nframework;
-
 function booltotag($tag, $val)
 {
     return ' '.$tag.'="'.($val ? 'true' : 'false').'"';
@@ -45,61 +43,35 @@ class Base
 class baseInput
 {
     public $required;
-
     public $addclass;
-
     public $class;
-
+    public $type;
+    public $role;
     public $infobox;
-
     public $id;
-
     public $name;
-
     public $nameprefix;
-
     public $dataset;
-
     public $nfembeded;
-
     public $field;
-
     public $disabled;
-
     public $placeholder;
-
     public $caption;
-
     public $prependicon;
-
     public $readonly;
-
     public $default;
-
     public $validate;
-
     public $prepend;
-
     public $append;
-
     public $prepend_options;
-
     public $append_options;
-
     public $autocomplete;
-
     public $title;
-
     public $pattern;
-
     public $onChange;
-
     public $tags;
-
     public $value;
-
     public $datasize;
-
 	public $backreadonly=false;
     public function __toMongo($val)
     {
@@ -241,7 +213,11 @@ class baseInput
 
     public function data_validate()
     {
-        $rules = explode(' ', $this->validate);
+        if (!empty($this->validate) ) {
+            $rules = explode(' ', $this->validate);            
+        }else {
+            $rules = [];
+        }
         if ($this->required && ! in_array('required', $rules)) {
             $rules[] = 'required';
         }
@@ -387,11 +363,8 @@ class inputText extends baseInput
 class inputNumber extends baseInput
 {
     public $max;
-
     public $min;
-
     public $step;
-
     public $data_validate; // integer,digits,float
 
     public function __construct($options = [])
@@ -507,9 +480,10 @@ class inputColor extends baseInput
 class inputDate extends baseInput
 {
     private $format = 'Y-m-d';
-
     public $timezone;
-
+    public $storeagetype=self::ST_MONGODATE;
+    const ST_MONGODATE = 'st_mongodate';
+    const ST_STRING = 'st_string';
     public function __toString()
     {
         if ($this->type == '') {
@@ -527,31 +501,44 @@ class inputDate extends baseInput
     public function is_valid($date)
     {
         $d = DateTime::createFromFormat($this->format, $date);
-
         return (empty($date) && ! $this->required) || ($d && $d->format($this->format) == $date);
     }
 
     public function __toMongo($val)
-    {
-        if (! empty($val)) {
-            $orig_date = DateTime::createFromFormat($this->format, $val, new DateTimeZone('UTC'));
-            $orig_date = $orig_date->getTimestamp();
-            $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
+    {   
+        if ($this->timezone==null){
+            $this->timezone=new DateTimeZone('UTC');
         }
 
-        return $utcdatetime;
+        if (! empty($val)) {
+            if ($this->storeagetype == self::ST_STRING) {
+                return $val;
+            } elseif ($this->storeagetype == self::ST_MONGODATE) {
+                $orig_date = DateTime::createFromFormat($this->format, $val, $this->timezone);
+                $orig_date = $orig_date->getTimestamp();
+                /** @var \MongoDB\BSON\UTCDateTime $fecha */
+                $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
+                return $utcdatetime;
+            }
+        }else {
+            return null;
+        }
     }
 
     public function __toPHP($val)
     {
-        if ($val instanceof MongoDB\BSON\UTCDateTime) {
-            $datetime = $val->toDateTime();
-            $date = $datetime->format($this->format);
-        } else {
-            $date = $val;
+        if ($this->storeagetype==self::ST_STRING){
+            return $val;
+        }elseif ($this->storeagetype==self::ST_MONGODATE) {
+            if ($val instanceof MongoDB\BSON\UTCDateTime) {
+                $datetime = $val->toDateTime();
+                $date = $datetime->format($this->format);
+            } else {
+                $date = $val;
+            }
+            return $date;
         }
 
-        return $date;
     }
 }
 class inputTime extends baseInput
@@ -566,22 +553,35 @@ class inputTime extends baseInput
 
         return
             '<div class="form-group">
-        	<input type="time" name="'.$this->name.'" id="'.$this->id.'" data-role="input" value="'.$this->__toPHP($this->value).'" '.
+            <input type="time" name="'.$this->name.'" id="'.$this->id.'" data-role="input" value="'.$this->__toPHP($this->value).'" '.
                  $this->inputtags().
                 '></div>';
     }
 
+    public function __toPHP($val)
+    {
+        // If stored as MongoDB UTCDateTime convert to H:i, otherwise return as-is
+        if ($val instanceof MongoDB\BSON\UTCDateTime) {
+            $datetime = $val->toDateTime();
+            return $datetime->format('H:i');
+        } else {
+            return $val;
+        }
+    }
+    public function __toMongo($val)
+    {
+        if (! empty($val)) {
+            $orig_date = DateTime::createFromFormat('H:i', $val, new DateTimeZone('UTC'));
+            $orig_date = $orig_date->getTimestamp();
+            $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
+        }
+
+        return $utcdatetime;
+    }
     public function is_valid($date)
     {
-        /*$d = DateTime::createFromFormat('H-m-i', $date);
-        if(str_replace([' ','-','/','_'],['','','',''],$date)==''){
-            if ($this->required){
-                return false;
-            }else{
-                return true;
-            }
-        }
-        return $d && $d->format('Y-m-d') == $date;*/
+        //todo: implement validation logic
+        return preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $date);        
     }
 }
 class inputDateTime extends baseInput
@@ -589,7 +589,7 @@ class inputDateTime extends baseInput
     public $timezone = null;
 	public const ST_MONGODATE='st_mongodate';
 	public const ST_STRING='st_string';
-	public $storagetype;
+	public $storagetype=self::ST_MONGODATE;
 	
     public function __toString()
     {
@@ -609,26 +609,37 @@ class inputDateTime extends baseInput
 
     public function __toMongo($val)
     {
+        if($this->timezone==null){
+            $this->timezone=new DateTimeZone('UTC');
+        }
+
         if (! empty($val)) {
-	        //if($this->$storagetype=='st_mongodate'){
-	            $orig_date = DateTime::createFromFormat('Y-m-d\TH:i', $val, $this->timezone);
+	        if($this->storagetype==self::ST_STRING){
+            	return $val;
+            }else{
+                $orig_date = DateTime::createFromFormat('Y-m-d\TH:i', $val, $this->timezone);
 	            $orig_date = $orig_date->getTimestamp();
 	            $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
-        	//}
-        }
-        return $utcdatetime;
+                return $utcdatetime;
+            }
+        }else {
+            return null;
+        }        
     }
 
     public function __toPHP($val)
     {
-        if ($val instanceof MongoDB\BSON\UTCDateTime) {
-            $datetime = $val->toDateTime();
-            $date = $datetime->format('Y-m-d\TH:i');
-        } else {
-            $date = $val;
+        if($this->storagetype==self::ST_STRING){
+            return $val;
+        }elseif ($this->storagetype==self::ST_MONGODATE) {
+            if ($val instanceof MongoDB\BSON\UTCDateTime) {
+                $datetime = $val->toDateTime();
+                $date = $datetime->format('Y-m-d\TH:i');
+            } else {
+                $date = $val;
+            }    
+            return $date;
         }
-
-        return $date;
     }
 }
 
@@ -773,6 +784,7 @@ class inputRadios extends baseOptions
     public function __toString()
     {
         $contas = 0;
+        $result = '';
         foreach ($this->options as $value => $text) {
             $result .= '<input type="radio" name="'.$this->name.'" id="'.$this->id.'_'.$contas.'" value="'.$value
             .'" data-role="radio" data-caption="'.$text.'"'.
@@ -903,15 +915,10 @@ function nflistoptionsIcons($options, $selected = [])
 class SelectIcon extends baseOptions
 {
     public $combobox;
-
     public $multiple;
-
     public $options = [];
-
     public $canadd;
-
     public $datafilter = true;
-
     public function __toString()
     {
         if ($this->combobox && $this->value != '' && ! array_search($this->value, $this->options)) {
@@ -935,7 +942,7 @@ class SelectIcon extends baseOptions
                 $result.='<option value="' . $value . '"' . ($value == $this->value ? ' selected>' : '>') . $text . '</option>';
             }
         }*/
-        $result .= nflistoptionsIcons($this->options, $this->value);
+        $result = nflistoptionsIcons($this->options, $this->value);
 
         // onfocus=\"Autoformonfocus(this)\" onblur=\"Autoformonblur(this)\">\n";
         // $_SESSION['ANTIXSS'][$this->name]=[FILTER_VALIDATE_SELE];
@@ -1257,11 +1264,11 @@ class mapmarker extends baseInput
         $nframework->csss['005rte'] = 'https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin="';
         $nframework->jss['100leaflet'] = 'https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin="';
 
-        if (! $nframework->onces['maps']) {
+        if (!isset($nframework->onces['maps'])) {
             $javas->addjs('var maps=[];');
             $nframework->onces['maps'] = true;
         }
-        if (! $nframework->onces['mapsmarker']) {
+        if (!isset($nframework->onces['mapsmarker'])) {
             $javas->addjs('var mapsmarker=[];');
             $nframework->onces['mapsmarker'] = true;
         }
@@ -1335,22 +1342,15 @@ class example extends Base
 class datasetpdo
 {
     public $elements;
-
     private $collection;
-
     private $_id;
-
     public $info = [];
-
     public $nameprefix;
-
     public $simpleid;
-
     public $autosave;
-
     public $position;
-
     public $fieldprefix;
+    private $exists=false;
 
     public function addElement(&$element)
     {
@@ -1378,14 +1378,14 @@ class datasetpdo
 
     public function save()
     {
+        $errores = '';
         foreach ($this->elements as $element) {
             $element->value = $_POST[$this->nameprefix][$element->field];
             if ($element->disabled != false && ! $element->is_valid($_POST[$this->nameprefix][$element->field])) {
                 $errores .= 'Error en:'.$element->field.'<br/>';
             }
         }
-        if ($errores == '') {
-
+        if (empty($errores)) {
             if (! $this->exists) {
                 foreach ($this->elements as $element) {
                     $changes[$element->field] = $_POST[$this->nameprefix][$element->field];
@@ -1393,7 +1393,6 @@ class datasetpdo
                 $sql = 'INSERT INTO '.$this->table
                 .' ('.implode(',', array_keys($changes)).') values("'.implode('","', $changes).'")';
             } else {
-
                 foreach ($this->elements as $element) {
                     if ($element->field == $this->key) {
                         $where = ' where '.$element->field.'="'.$this->_id.'"';
@@ -1401,10 +1400,10 @@ class datasetpdo
                         $sqls[] = $element->field.'="'.$_POST[$this->nameprefix][$element->field].'"';
                     }
                 }
-                $sql .= 'UPDATE '.$this->table.' SET '.implode(',', $sqls).$where;
+                $sql = 'UPDATE '.$this->table.' SET '.implode(',', $sqls).$where;
 
             }
-            echo $sql;
+            //echo $sql;
             $this->pdo->query($sql);
         }
     }
@@ -1439,29 +1438,17 @@ class datasetpdo
 class dataset
 {
     public $elements = [];
-
     public $collection;
-
     private $_id;
-
     public $info = [];
-
     public $nameprefix;
-
     public $simpleid;
-
     public $autosave; // pensar
-
     public $mongo_session;
-
     public $position; // se va
-
     public $fieldprefix; // se va
-
     public $historic = false;
-
     private $nfprotected;
-
     public function addElement(&$element)
     {
         $this->elements[] = $element;
@@ -1500,7 +1487,7 @@ class dataset
         if ($this->_id != '') {
             $this->info = $this->collection->findOne(['_id' => ($this->simpleid == true ?
                 trim($this->_id)
-                : new MongoId(trim($this->_id))
+                : toMongoId(trim($this->_id))
             ),
             ]);
             if (count($this->info) == 0) {
@@ -1626,8 +1613,12 @@ class dataset
     {
         global $result;
         $options = [];
+        $errores = '';
+        $punto = false;
+        $changes = [];
+
         if (! empty($this->mongo_session)) {
-            $options->session = $this->mongo_session;
+            $options['session'] = $this->mongo_session;
         }
         foreach ($this->elements as $element) {
             if ($element->disabled != false && ! $element->is_valid($_POST[$this->nameprefix][$element->field])) {
@@ -1636,9 +1627,7 @@ class dataset
         		 $element->value = $_POST[$this->nameprefix][$element->field];
             }
         }
-        
-
-        if ($errores == '') {
+        if (empty($errores)) {
             $toset = [];
             $tounset = [];
             
@@ -1686,19 +1675,14 @@ class dataset
         }
     }
 }
-
+/*
 class datasetArray
 {
     private $info;
-
     public $elements;
-
     public $nameprefix;
-
     public $dataset;
-
     public $name;
-
     public $field;
 
     public function addElement(&$element)
@@ -1740,7 +1724,7 @@ class datasetArray
     {
         return true; // TODO check
     }
-}
+}*/
 
 class Icon
 {
@@ -1762,13 +1746,9 @@ class Icon
 class TreeViewItem
 {
     public $children;
-
     public $icon;
-
     public $caption;
-
     public $addnodetag;
-
     public function __construct($caption, $icon, $options = [])
     {
         $this->caption = $caption;
@@ -1780,17 +1760,16 @@ class TreeViewItem
 
     public function __toString()
     {
+        $tmp = (string) $this->icon.$this->caption;
         if (count($this->children) > 0) {
             $tmp .= '<ul>'.implode('', $this->children).'</ul>';
         }
-
         return '<li class="item" '.$this->addnodetag.' data-icon="'.$this->icon->data().'" data-caption="'.$this->caption.'">'.$tmp.'</li>';
     }
 }
 class TreeView
 {
     public $children;
-
     public function __toString()
     {
         return '<ul data-role="treeview"

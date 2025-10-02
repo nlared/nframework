@@ -1,5 +1,4 @@
 <?php
-use MongoDB\BSON\UTCDateTime;
 if (! empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
     $_SERVER['REQUEST_SCHEME'] = str_replace('http', 'https', $_SERVER['REQUEST_SCHEME']);
     $_SERVER['SERVER_PROTOCOL'] = str_replace('HTTP', 'HTTPS', $_SERVER['SERVER_PROTOCOL']);
@@ -26,8 +25,13 @@ if (php_sapi_name() != 'cli') {
         exit;
     }*/
 }
-require 'vendor/autoload.php';
-require 'functions.php';
+require __DIR__.'/vendor/autoload.php';
+require __DIR__.'/functions.php';
+
+use MongoDB\Client;
+use MongoDB\BSON\UTCDateTime;
+use MongoDB\BSON\ObjectId;
+
 class nFrameworkException extends Exception
 {
     public function errorMessage()
@@ -109,51 +113,33 @@ $config = new class_config;
 class class_nframework
 {
     public string $title;
-
     public string $image;
-
     public array $language;
-
     public bool $isAjax = false;
-
     public bool $https = false;
-
     public string $lang;
-
     public string $lang_;
-
     public string $langshort;
-
     public array $languages;
-
     public $shutdown;
+
+ 
 
     // public String $language;
     private array $config;
-
     private array $counters = [];
-
     public array $errores = [];
-
     public array $csss = [];
-
     public array $jss = [];
-
     public array $javas = [];
-
     public array $javasonce = [];
-
     public array $docend = [];
-
     public bool $usecommon = false;
-
     public string $include_path;
-
     public string $api_path;
-
     public string $body_addtag = '';
-
     public string $html_addtag = '';
+    public array $onces = [];
 
     public function __construct()
     {
@@ -256,6 +242,11 @@ class class_nframework
         return $this->counters[$v];
     }
 
+    public function  themeSwitcher(): ThemeSwitcher
+    {
+        return new ThemeSwitcher();        
+    }
+
     public function isAjax(): bool
     {
         return $this->isAjax;
@@ -329,16 +320,15 @@ class class_nframework
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="'.$filename.'.pdf"');
         $tmpfname = tempnam(sys_get_temp_dir(), 'xlsxpdf');
-        $word->saveAs($tmpfile.'.docx');
+        $word->saveAs($tmpfname.'.docx');
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="'.$filename.'.pdf"');
         shell_exec('unoconv -f pdf '.$tmpfname.'.docx');
         $size = filesize($tmpfname.'.pdf');
         header("Content-length: $size");
         readfile($tmpfname.'.pdf');
-        unlink($tmpfname.'.xlsx');
+        unlink($tmpfname.'.docx');
         unlink($tmpfname.'.pdf');
-
     }
 
     public function language()
@@ -357,9 +347,6 @@ try {
     echo 'Excepción capturada: ',  $e->getMessage(), "\n";
     phpinfo();
 }
-
-
-
 
 
 if(isset($config['user_agents_blockeds'])){
@@ -385,11 +372,11 @@ if(isset($config['security_ip_blacklist'])){
 $attempt=false;
 
 $m->{$config['sitedb']}->nfuristats->insertOne([
-	'created_at'=>new UTCDateTime(),
-	'ip'=>$ip,
-	'host'=>$_SERVER['HTTP_HOST'],
-	'path'=>$_SERVER['REQUEST_URI'],
-	'agent'=>$_SERVER['HTTP_USER_AGENT'],
+    'created_at'=>new \DateTime(), // use PHP DateTime; the MongoDB driver will convert it to BSON UTC datetime
+    'ip'=>$ip,
+    'host'=>$_SERVER['HTTP_HOST'],
+    'path'=>$_SERVER['REQUEST_URI'],
+    'agent'=>$_SERVER['HTTP_USER_AGENT'],
 ]);
 $rules=[];
 foreach($m->{$config['sitedb']}->nfsecurityrules->find() as $rule){
@@ -401,12 +388,12 @@ if(!isset($config['windowSeconds'])){
 }
 $attemps=0;
 if(count($rules)>0){
-	$attemps=$m->{$config['sitedb']}->nfuristats->count([
-		'ip'=>$ip,
-		'created_at'=>['$gt'=>new UTCDateTime(time() - $config['windowSeconds'])],
-		'$or'=>$rules
-	]);
-	header('malicius_attemps: '.$attemps);
+    $attemps=$m->{$config['sitedb']}->nfuristats->count([
+        'ip'=>$ip,
+        'created_at'=>['$gt'=> new \DateTime('@'.(time() - $config['windowSeconds']))], // use DateTime for comparison; driver converts to BSON UTC datetime
+        '$or'=>$rules
+    ]);
+    header('malicius_attemps: '.$attemps);
 }
 
 if($attemps>10){
@@ -436,9 +423,9 @@ if (! empty($config['timezone'])) {
 $nframework->title = (! empty($config['title']) ? $config['title'] : 'nframework 5');
 $nframework->image = (! empty($config['image']) ? $config['image'] : '/images/config///logo.png');
 
-function toMongoId($item): MongoDB\BSON\ObjectID
+function toMongoId($item): ObjectId
 {
-    return new MongoDB\BSON\ObjectID($item);
+    return new ObjectId($item);
 }
 function toMongoIds(array $items): array
 {
@@ -467,7 +454,7 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
                 '$set' => ['lasttime' => date('Y-m-d H:i:s')],
                 '$setOnInsert' => ['type' => $errno, 'file' => $errfile, 'number' => $errline],
             ], ['upsert' => true]);
-            if ($errordoc['type'] & E_FATAL) {
+            if ($errno & E_FATAL) {
                 http_response_code(200);
                 echo 'ocurrio una incidencia en el programa, reportando el problema para su solucion, disculpe las molestias ';
 
@@ -814,14 +801,16 @@ function secureform(
 ): string {
     global $nframework;
     //	$csrftoken = csrfToken($arg['action']);
-    if ($id == '') {
+    if (empty($id)) {
         $id = 'secureform'.($nframework->counters('secureform'));
     }
+    if($action==''){
+    	$action='javascript:" data-on-submit="nAjaxOnSubmit';
+    }
+    $addEnctype = $files ? ' enctype="multipart/form-data"' : '';
 
-    return '<form method="POST" id="'.$id.'" data-role="validator"'.
-    ($action == '' ? ' action="javascript:" data-on-submit="nAjaxOnSubmit"' : 'action="'.$action.'"').
-    ($files ? ' enctype="multipart/form-data"' : '').
-' data-interactive-check="true" 
+    return '<form method="POST" id="'.$id.'" data-role="validator" action="'.$action.'"'.
+$addEnctype.' data-interactive-check="true" 
 data-on-error-form="
 var log = arguments[0];
 var msg=\'Error de captura<br>\';
@@ -846,7 +835,7 @@ $.each(log, function(){
 toast(msg,null,5000);
 "'.($onbeforesubmit == '' ? '' : ' data-on-before-submit="'.$onbeforesubmit.'"').
 ($onvalidateform == '' ? '' : ' data-on-validate-form="'.$onvalidateform.'"').' class="'.$class.'">
-<input type="hidden" name="op" id="'.$opid.'" value="">
+<input type="hidden" name="op" value="">
 <input type="hidden" name="CSRFToken" value="'.csrfToken($action).'">';
     // $nframework['secureformcounter']++;
 }
@@ -858,7 +847,7 @@ function _setNotification(array $users, $content)
         $_user = trim((string) $_user);
         if ($_user != null) {
             $nuevo = new MongoDB\BSON\ObjectID;
-            $m->{$config['sitedb']}->registros->updateOne(['_id' => new MongoDB\BSON\ObjectID($nuevo)], [
+            $m->{$config['sitedb']}->registros->updateOne(['_id' => $nuevo], [
                 '$set' => [
                     'user' => $_user,
                     'content' => $content,
