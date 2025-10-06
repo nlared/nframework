@@ -306,6 +306,7 @@ $router->addRoute('/account/forgot', function (string $route, array $p) {
 
 $router->addRoute('/account/reset', function (string $route, array $p) {
 	global $twig, $config, $nframework;
+	$lng = $nframework->language();
 	if (!empty($_GET['token']) && !empty($_GET['user'])) {
 		$user = new User([
 			'_id' => toMongoId($_GET['user']),
