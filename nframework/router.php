@@ -316,9 +316,9 @@ $router->addRoute('/account/reset', function (string $route, array $p) {
 		if (!empty($user->_id)) {
 			if (!empty($_POST['password']) && !empty($_POST['confirmpassword'])) {
 				if ($_POST['password'] != $_POST['confirmpassword']) {
-					$msgError = 'Las contraseñas no coinciden';
+					$msgError = $lng['passwords_do_not_match'];
 				} elseif (strlen($_POST['password']) < 6) {
-					$msgError = 'La contraseña debe tener al menos 6 caracteres';
+					$msgError = $lng['password_too_short'];
 				} else {
 					$user->password = trim($_POST['password']);
 					$user->resettoken = null;
@@ -329,10 +329,10 @@ $router->addRoute('/account/reset', function (string $route, array $p) {
 				}
 			}
 		} else {
-			$msgError = 'Token inválido';
+			$msgError = $lng['invalid_token'];
 		}
 	} else {
-		$msgError = 'No se ha proporcionado un token';
+		$msgError = $lng['no_token_provided'];
 	}
 	
 	$nframework->usecommon = true;	
@@ -341,7 +341,7 @@ $router->addRoute('/account/reset', function (string $route, array $p) {
 		'nframework' => [
 			'themeSwitcher' => $nframework->themeSwitcher()
 		],
-		'lng' => $nframework->language()
+		'lng' => $lng
 	]);
 
 
