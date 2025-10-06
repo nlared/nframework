@@ -248,6 +248,7 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 
 $router->addRoute('/account/forgot', function (string $route, array $p) {
 	global $twig, $config, $nframework, $m;
+	$lng = $nframework->language();
 	if (!empty($_POST['login'])) {
 		$login = $_POST['login'];
 		$user = new User([
