@@ -1,0 +1,22 @@
+{
+    "rules": [
+        {
+            "name": "PetalBot",
+            "query": {
+                "field": "user_agent",
+                "pattern": "PetalBot",
+                "action": "block",
+                "description": "Blocks requests from PetalBot user agent"
+            }
+        },
+        {
+            "name": "bingbot",
+            "query": {
+                "field": "user_agent",
+                "pattern": "bingbot",
+                "action": "block",
+                "description": "Blocks requests from bingbot user agent"
+            }
+        }
+    ]
+}

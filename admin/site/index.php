@@ -19,9 +19,6 @@ foreach($themesdir as $themedir){
 }
 
 
-
-
-
 $title=new inputText(['dataset'=>&$dataset,'field'=>'title','caption'=>$nframework->language['title'].':','required'=>true]);
 $shortname=new inputText(['dataset'=>&$dataset,'field'=>'shortname','caption'=>$nframework->language['shortname'].':','required'=>true]);
 $tagline=new inputText(['dataset'=>&$dataset,'field'=>'tagline','caption'=>'Tagline:']);
@@ -62,16 +59,18 @@ $canregister=new inputcheckbox(['dataset'=>&$dataset,'field'=>'canregister','cap
 $passwordmask=new inputText(['dataset'=>&$dataset,'field'=>'passwordmask','caption'=>$nframework->language['passwordmask'].':','default'=>'/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/','required'=>true]);
 
 
-$mailhost=new inputText(['dataset'=>&$dataset,'field'=>'mailhost','caption'=>$nframework->language['host'].':']);
-$mailusername=new inputText(['dataset'=>&$dataset,'field'=>'mailusername','caption'=>$nframework->language['username'].':']);
-$mailpassword=new inputText(['dataset'=>&$dataset,'field'=>'mailpassword','caption'=>$nframework->language['password'].':']);
-$mailport=new inputNumber(['dataset'=>&$dataset,'field'=>'mailport','caption'=>$nframework->language['port'].':']);
-$mailsmtpauth=new inputcheckbox(['dataset'=>&$dataset,'field'=>'mailsmtpauth','caption'=>$nframework->language['smtpauth'].':']);
-$mailcrypt=new inputradios(['dataset'=>&$dataset,'field'=>'mailcrypt','caption'=>$nframework->language['encrypt'].':','options'=>[
+$mailhost=new inputText(['dataset'=>&$dataset,'field'=>'smtp.host','caption'=>$nframework->language['host'].':']);
+$mailusername=new inputText(['dataset'=>&$dataset,'field'=>'smtp.username','caption'=>$nframework->language['username'].':']);
+$mailpassword=new inputText(['dataset'=>&$dataset,'field'=>'smtp.password','caption'=>$nframework->language['password'].':']);
+$mailport=new inputNumber(['dataset'=>&$dataset,'field'=>'smtp.port','caption'=>$nframework->language['port'].':']);
+$mailsmtpauth=new inputcheckbox(['dataset'=>&$dataset,'field'=>'smtp.mailsmtpauth','caption'=>$nframework->language['smtpauth'].':']);
+$mailcrypt=new inputradios(['dataset'=>&$dataset,'field'=>'smtp.secure','caption'=>$nframework->language['encrypt'].':','options'=>[
 	'ssl'=>'ssl',
 	'tls'=>'tls'
 	]]);
-//$mailauth=new inputcheckbox(['dataset'=>&$dataset,'field'=>'mailauth','caption'=>'Auth:']);
+$mailfromname=new inputText(['dataset'=>&$dataset,'field'=>'smtp.fromname','caption'=>$nframework->language['fromname'].':']);
+$mailfromemail=new inputText(['dataset'=>&$dataset,'field'=>'smtp.fromemail','caption'=>$nframework->language['fromemail'].':']);
+
 
 
 $letsencryptemail=new inputText(['dataset'=>&$dataset,'field'=>'letsencrypt_email','caption'=>$nframework->language['email'].':']);
@@ -116,14 +115,16 @@ if ($nframework->isAjax()) {
 	$nframework->usecommon=true;
 	
 ?>
-<div class="container p-5">
-	<div class="bg-cyan fg-white p-3"><h4><?=$nframework->language['siteconfig']?></h4></div>
-	<div class="bg-white p-3">
+<div class="container p-5">	
+	<div class="mt-4 mb-4">
+		<h1 class="text-weight-10 text-center gradient gr-text-blue"><?= $nframework->language['siteconfig'] ?></h1>
+	</div>
+	<div class="box shadow-large-extra p-5">
 	<?=secureform()?>
 		<div class="grid">
 			<div class="row">
-				<div class="cell"><?=$title?></div>
-				<div class="cell"><?=$shortname?></div>
+				<div class="cell-md-6"><?=$title?></div>
+				<div class="cell-md-6"><?=$shortname?></div>
 			</div>
 			<div class="row">
 				<div class="cell"><?=$tagline?></div>
@@ -184,38 +185,42 @@ if ($nframework->isAjax()) {
 			</div>
 			</div>
 		
-			<div class="row bg-cyan fg-white p-3">
-				<div class="cell">Mail Config</div>
+			<div class="row">
+				<div class="cell box-title">Mail Config</div>
 			</div>
 			<div class="row">
-				<div class="cell"><?=$mailhost?></div>
-				<div class="cell"><?=$mailport?></div>
+				<div class="cell-md-6"><?=$mailhost?></div>
+				<div class="cell-md-6"><?=$mailport?></div>
 			</div>
 			<div class="row">
-				<div class="cell"><?=$mailusername?></div>
-				<div class="cell"><?=$mailpassword?></div>
+				<div class="cell-md-6"><?=$mailusername?></div>
+				<div class="cell-md-6"><?=$mailpassword?></div>
 			</div>
 			<div class="row">
-				<div class="cell"><?=$mailcrypt?></div>
-				<div class="cell"><?=$mailsmtpauth?></div>
-			</div>
-			<div class="row bg-cyan fg-white p-3">
-				<div class="cell">Lets Encrypt</div>
+				<div class="cell-md-6"><?=$mailfromemail?></div>	
+				<div class="cell-md-6"><?=$mailfromname?></div>				
 			</div>
 			<div class="row">
-				<div class="cell"><?=$letsencryptuse?></div>
-				<div class="cell"><?=$letsencryptemail?></div>
-			</div>
-			<div class="row bg-cyan fg-white p-3">
-				<div class="cell">Google keys</div>
+				<div class="cell-md-6"><?=$mailcrypt?></div>
+				<div class="cell-md-6"><?=$mailsmtpauth?></div>
 			</div>
 			<div class="row">
-				<div class="cell"><?=$google_site_verification?></div>
-				<div class="cell"><?=$google_maps_api?></div>
+				<div class="cell box-title">Lets Encrypt</div>
 			</div>
 			<div class="row">
-				<div class="cell"><?=$google_captcha_key?></div>
-				<div class="cell"><?=$google_captcha_secret?></div>
+				<div class="cell-md-6"><?=$letsencryptuse?></div>
+				<div class="cell-md-6"><?=$letsencryptemail?></div>
+			</div>
+			<div class="row">
+				<div class="cell box-title">Google keys</div>
+			</div>
+			<div class="row">
+				<div class="cell-md-6"><?=$google_site_verification?></div>
+				<div class="cell-md-6"><?=$google_maps_api?></div>
+			</div>
+			<div class="row">
+				<div class="cell-md-6"><?=$google_captcha_key?></div>
+				<div class="cell-md-6"><?=$google_captcha_secret?></div>
 			</div>
 			
 			<div class="row justify-content-md-right">

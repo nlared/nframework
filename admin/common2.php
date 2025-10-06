@@ -2,7 +2,7 @@
 require 'include.php';
 $nframework->usecommon=true;
 if(!$user->in('admins')){
-	//header('Location: /');
+	header('Location: /');
 	exit();
 }
 

@@ -141,6 +141,12 @@ class class_nframework
     public string $html_addtag = '';
     public array $onces = [];
 
+    // Explicitly declare optional runtime properties to avoid "Undefined property" errors
+    public ?string $etag = null;
+    public ?int $lastmodified = null;
+    public ?int $expiretime = null;
+    public array $metas = [];
+
     public function __construct()
     {
         $this->shutdown = true;

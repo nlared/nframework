@@ -1,0 +1,43 @@
+<style>
+    body {
+        background: url("/img/bg-1.jpg") bottom right no-repeat;
+        background-size: cover;
+    }
+
+    .dark-side {
+        body {
+            background: url("/img/bg-2.jpg") bottom right no-repeat;
+            background-size: cover;
+        }
+    }
+
+    .formbox {
+        inset: 0;
+        margin: auto;
+    }
+</style>
+<div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox">
+    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['reset']}}</div>
+    <div>
+        {{lng['resettext']}}
+    </div>
+    <form method="POST" class="mt-4 mb-2">
+        <div class="form-group">
+            <input type="password" name="password" data-role="input" data-label="{{lng['password']}}"
+                placeholder="{{lng['password']}}" data-prepend="<span class='mif-lock'>" />
+            <input type="password" name="confirmpassword" data-role="input" placeholder="{{lng['confirmpassword']}}"
+                data-prepend="<span class='mif-lock'>" class="mt-1" />
+        </div>
+        <div class="form-actions border-top border-bottom bd-white pt-6 pb-6 d-flex flex-center z-1">
+            <button class="button success">{{lng['reset']}}</button>
+        </div>
+        {% if msgError %}
+        <div class="mt-2">
+            <div class="alert alert-danger">
+                {{msgError}}
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</div>
+{{nframework['themeSwitcher']|raw}}

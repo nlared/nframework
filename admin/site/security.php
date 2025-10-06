@@ -63,53 +63,6 @@ echo $dialogIps;
 echo $arrayIps;
 
 
-$dialogIps=new Dialog([
-	'title'=>'Imputado',
-	]);
-$arrayIps=new embededArray([
-	'dataset'=>&$dataset,
-	'field'=>'blacklist',
-	'containerid'=>'list_ips',
-	'dialogid'=>'dialogs_0',
-	'template'=><<<T
-	{% if items|length > 0 %}
-    	<table class="table">
-        {% for key,item in items %}
-            <tr><td>{{ item.ip|e }}</td><td>{{ item.time|e }}</td><td>
-            		<div class="button primary" onclick="javascript:{{function_get}}('{{key}}')"><span class="mif-pencil"></span></div>
-					<div class="button alert" onclick="javascript:{{function_delete}}('{{key}}')"><span class="mif-cross"></span></div>
-				</td>
-            </tr>
-        {% endfor %}
-    	</table>
-	{% else %}
-	no hay
-	{% endif %}
-T
-]);
-
-$blockedips_ip=new inputtext(['nfembeded'=>&$arrayIps,'field'=>'ip','caption'=>'IP:']);
-$blockedips_until=new inputdatetime(['nfembeded'=>&$arrayIps,'field'=>'time','caption'=>'Until:']);
-$dialogIps->content=<<<FORM
-	<div class="grid">
-		<div class="row">
-			<div class="cell">
-				$blockedips_ip
-			</div>	
-		</div>
-		<div class="row">
-			<div class="cell">
-				$blockedips_until
-			</div>	
-		</div>
-	</div>
-FORM;
-
-echo $dialogIps;
-echo $arrayIps;
-
-
-
 $datatable=new Table();
 $datatable->Ajax([
     'id'=>'testid',

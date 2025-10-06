@@ -32,9 +32,11 @@ if ($nframework->isAjax()) {
 	$nframework->usecommon=true;
 ?>
 <div class="container p-5">
-	<div class="bg-cyan fg-white p-5"><h2><?=$nframework->language['users']?></h2></div>
-	<div class="bg-white p-5">
-		<a href="user.php" class="button primary btn btn-primary"><span class="mif-user-plus bi-person-add"></span>&nbsp;<?=$nframework->language['new']?></a>
+	<div class="mt-4 mb-4">
+		<h1 class="text-weight-10 text-center gradient gr-text-blue"><?=$nframework->language['users']?></h1>
+	</div>
+	<div class="box shadow-large-extra p-5">
+		<a href="user.php" class="button primary "><span class="mif-add-person"></span>&nbsp;<?=$nframework->language['new']?></a>
 		<?=$datatable;?>
 	</div>
 </div>

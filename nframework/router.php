@@ -12,6 +12,16 @@ $twig = new \Twig\Environment($loader, [
 
 
 use Intervention\Image\ImageManager;
+use OTPHP\TOTP;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use FontLib\Table\Type\head;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+use Google\Service\DriveActivity\Create;
+use MongoDB\Model\BSONDocument;
+
 //https://github.com/alexdodonov/mezon-router#routing--
 
 
@@ -42,7 +52,7 @@ $router->addRoute('index', function ($route, $variables) {
 		'page' => $page->html,
 		'header' => $header->html,
 		'footer' => $footer->html,
-		'menu' => $menu->code,		
+		'menu' => $menu->code,
 		'route' => 'index.php'
 	]);
 }, 'GET');
@@ -68,7 +78,11 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 		]);
 
 		if (!empty($user->_id)) {
-			header('edtoy: sss1');
+			if (!empty($user->twofa_secret)) {
+				$_SESSION['tmp_user'] = $user->_id;
+				header('location: /account/twofa');
+				exit();
+			}
 			$_SESSION['user'] = $user->_id;
 			session_write_close();
 			if ($_SESSION['nframework']['loginpage'] != '' && $_SESSION['nframework']['loginpage'] != '/account/login.php') {
@@ -98,26 +112,340 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 		'facebook' => $config['facebook_oauth_client_enable'],
 	];
 	echo $template->render([
-		'nframework' =>[
-			'themeSwitcher'=>$nframework->themeSwitcher()
+		'nframework' => [
+			'themeSwitcher' => $nframework->themeSwitcher()
 		],
 		'lng' => $nframework->language(),
-		'oauths' => $oauths,		
+		'config' => $config, //TODO: Solo pasar lo necesario
+		'oauths' => $oauths,
+		'msgError' => $msgError
 	]);
 	//print_r($config);
 }, ['GET', 'POST']);
 
-$router->addRoute('/account/signup', function (string $route, array $p) {
+$router->addRoute('/account/twofa', function (string $route, array $p) {
 	global $twig, $config, $nframework;
+	if (empty($_SESSION['tmp_user'])) {
+		header('location: /account/login');
+		exit();
+	}
+	if (!empty($_POST['code'])) {
+		$user = new User([
+			'_id' => $_SESSION['tmp_user']
+		]);
+		$totp = TOTP::create($user->twofa_secret);
+		if ($totp->verify($_POST['code'])) {
+			$_SESSION['user'] = $user->_id;
+			unset($_SESSION['tmp_user']);
+			session_write_close();
+			if ($_SESSION['nframework']['loginpage'] != '' && $_SESSION['nframework']['loginpage'] != '/account/login.php') {
+				header('location: ' . $_SESSION['nframework']['loginpage']);
+			} else {
+				if ($user->in('admins')) {
+					header('location: /admin/');
+				} else {
+					header('location: /');
+				}
+			}
+			exit();
+		} else {
+			$msgError = 'Código incorrecto';
+		}
+	}	
+
+	$nframework->usecommon = true;
+	$template = $twig->load('twofa.html');
+	echo $template->render([
+		'nframework' => [
+			'themeSwitcher' => $nframework->themeSwitcher()
+		],
+		'msgError' => $msgError,
+		'lng' => $nframework->language(),
+	]);
+}, ['GET', 'POST']);
+
+
+$router->addRoute('/account/signup', function (string $route, array $p) {
+	global $twig, $config, $nframework, $m;
+	$lng = $nframework->language();
+	if (!empty($_POST['signup'])) {
+		$signup = $_POST['signup'];
+		if ($signup['password'] != $signup['confirmpassword']) {
+			$msgError = 'Las contraseñas no coinciden';
+		} elseif (strlen($signup['password']) < 6) {
+			$msgError = 'La contraseña debe tener al menos 6 caracteres';
+		} elseif (empty($signup['username']) || !filter_var($signup['username'], FILTER_VALIDATE_EMAIL)) {
+			$msgError = 'Debe indicar un email válido';
+		} else {
+			$user = new User([
+				'username' => trim($signup['username']),
+			]);
+			if (!empty($user->_id)) {
+				$msgError = 'Ya existe un usuario con ese email';
+			} else {
+				$token = bin2hex(random_bytes(16));
+				$nuser = User::create([
+					'username' => trim($signup['username']),
+					'name' => trim($signup['name']),
+					'password' => trim($signup['password'], PASSWORD_DEFAULT),
+					'active' => false,
+					'created_at' => time(),
+					'updated_at' => time(),					
+					'sessions' => [],
+					'activatetoken' => $token,
+					'activatetokenexp' => time() + (60 * 60 * 24),
+				]);
+				$mail = new PHPMailer();				
+				try {					
+					$mail->isSMTP();
+					$mail->CharSet = 'UTF-8';                                            // Send using SMTP
+					$mail->Host       = $config['smtp']['host'];               // Set the SMTP server to send through
+					$mail->SMTPAuth   = boolval($config['smtp']['auth']);                                   // Enable SMTP authentication
+					$mail->Username   = $config['smtp']['username'];            // SMTP username
+					$mail->Password   = $config['smtp']['password'];            // SMTP password
+					if (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'ssl') {
+						$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
+					} elseif (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'tls') {
+						$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;        // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
+					}
+					$mail->Port       = $config['smtp']['port'];               // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
+
+					//Recipients
+					$mail->setFrom($config['smtp']['fromemail'], $config['smtp']['fromname']);
+					$mail->addAddress($nuser->username, $nuser->name);     // Add a recipient
+					// Content
+					$mail->isHTML(true);                                  // Set email format to HTML
+					$mail->Subject = ;
+					$mail->Body    = 'Hola ' . $nuser->name . '<br>Has solicitado activar tu cuenta.<br>Si no has sido tú, puedes ignorar este mensaje.<br>Para activar tu cuenta, haz clic en el siguiente enlace:<br><a href="https://' . $_SERVER['HTTP_HOST'] . '/account/activate?token=' . $token . '&user=' . $nuser->_id . '">https://' . $_SERVER['HTTP_HOST'] . '/account/activate?token=' . $token . '&user=' . $nuser->_id . '</a><br>Este enlace es válido durante 1 hora.';
+
+					$c =$mail->send();					
+					if ($c) {
+						$msgError = 'Se ha enviado un correo con las instrucciones para activar la cuenta.';
+					} else {
+						$msgError = "No se pudo enviar el correo. Error: {$mail->ErrorInfo}";
+					}
+					//header('location: /account/login');
+					//exit();
+
+				} catch (Exception $e) {
+					$msgError='Error al enviar el correo: ' . $e->getMessage();				}
+			}
+		}
+	}
 	$nframework->usecommon = true;
 	$template = $twig->load('signup.html');
 	echo $template->render([
-		'nframework' =>[
-			'themeSwitcher'=>$nframework->themeSwitcher()
+		'nframework' => [
+			'themeSwitcher' => $nframework->themeSwitcher()
+		],
+		'lng' => $nframework->language(),
+		'msgError' => $msgError
+	]);
+	
+}, ['GET', 'POST']);
+
+
+$router->addRoute('/account/forgot', function (string $route, array $p) {
+	global $twig, $config, $nframework, $m;
+	if (!empty($_POST['login'])) {
+		$login = $_POST['login'];
+		$user = new User([
+			'username' => ['$regex' => trim($login['username']), '$options' => 'i'],
+		]);
+		if (!empty($user->_id)) {
+			$token = bin2hex(random_bytes(16));
+			$user->resettoken = $token;
+			$user->resettokenexp = time() + (60 * 60);
+			//$user->save();
+			//Enviar email
+			$mail = new PHPMailer();
+			$mail->CharSet = 'UTF-8';
+			try {
+				//Server settings
+				$mail->isSMTP();                                            // Send using SMTP
+				$mail->Host       = $config['smtp']['host'];               // Set the SMTP server to send through
+				$mail->SMTPAuth   = $config['smtp']['auth'];                                   // Enable SMTP authentication
+				$mail->Username   = $config['smtp']['username'];            // SMTP username
+				$mail->Password   = $config['smtp']['password'];            // SMTP password
+				if (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'ssl') {
+					$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
+				} elseif (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'tls') {
+					$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;        // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
+				}
+				$mail->Port       = $config['smtp']['port'];               // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
+
+				//Recipients
+				$mail->setFrom($config['smtp']['fromemail'], $config['smtp']['fromname']);
+				$mail->addAddress($user->username, $user->name);     // Add a recipient		
+				// Content			
+				$mail->isHTML(true);                                  // Set email format to HTML
+				$mail->Subject = $lng['reset_password_subject'];
+				$mail->Body    = $lng['reset_password_body'];
+				$mail->AltBody = $lng['reset_password_altbody'];
+				$mail->send();
+				$msgError = $lng['reset_password_sent'];
+			} catch (Exception $e) {
+				$msgError = $lng['reset_password_error'] . $mail->ErrorInfo;
+			}
+		} else {
+			$msgError = $lng['user_not_found'];
+		}
+	} else {
+		$msgError = $lng['must_provide_username'];
+	}
+	$nframework->usecommon = true;
+	$template = $twig->load('forgot.html');
+	echo $template->render([
+		'nframework' => [
+			'themeSwitcher' => $nframework->themeSwitcher()
+		],
+		'lng' => $lng,
+		'msgError' => $msgError
+	]);
+}, ['GET', 'POST']);
+
+$router->addRoute('/account/reset', function (string $route, array $p) {
+	global $twig, $config, $nframework;
+	if (!empty($_GET['token']) && !empty($_GET['user'])) {
+		$user = new User([
+			'_id' => toMongoId($_GET['user']),
+			'resettoken' => $_GET['token'],
+			'resettokenexp' => ['$gt' => time()]
+		]);
+		if (!empty($user->_id)) {
+			if (!empty($_POST['password']) && !empty($_POST['confirmpassword'])) {
+				if ($_POST['password'] != $_POST['confirmpassword']) {
+					$msgError = 'Las contraseñas no coinciden';
+				} elseif (strlen($_POST['password']) < 6) {
+					$msgError = 'La contraseña debe tener al menos 6 caracteres';
+				} else {
+					$user->password = trim($_POST['password']);
+					$user->resettoken = null;
+					$user->resettokenexp = null;
+					//$user->save();
+					header('location: /account/login');
+					exit();
+				}
+			}
+		} else {
+			$msgError = 'Token inválido';
+		}
+	} else {
+		$msgError = 'No se ha proporcionado un token';
+	}
+	
+	$nframework->usecommon = true;	
+	$template = $twig->load('reset.html');	
+	echo $template->render([
+		'nframework' => [
+			'themeSwitcher' => $nframework->themeSwitcher()
 		],
 		'lng' => $nframework->language()
 	]);
+
+
+}, ['GET', 'POST']);
+$router->addRoute('/account/activate/', function (string $route, array $p) {
+	global $twig, $config, $nframework;
+	$nframework->usecommon = true;	
+	if (!empty($_GET['token'])) {
+		$user = new User([
+			'_id' => toMongoId($_GET['user']),
+			'activatetoken' => $_GET['token'],
+			'activatetokenexp' => ['$gt' => time()]
+		]);
+		if (!empty($user->_id)) {
+			$user->activatetoken = null;
+			$user->activatetokenexp = null;
+			$user->active = true;
+			//$user->save();
+			$_SESSION['user'] = $user->_id;
+			session_write_close();	
+			header('location: /');
+			exit();
+		} else {		
+			$msgError = 'Token invalid';
+		}			
+	}else{
+		$msgError='No token provided';
+	}
+	$nframework->usecommon = true;
+	$template = $twig->load('messages.html');
+	echo $template->render([
+		'nframework' => [
+			'themeSwitcher' => $nframework->themeSwitcher()
+		],
+		'lng' => $nframework->language(),
+		'msgError' => $msgError
+	]);
+}, ['GET']);
+
+$router->addRoute('/account/totp-setup', function ($route, $arg) {
+    global $user, $m, $config;
+
+    // Genera el secreto y guárdalo en la base de datos del usuario
+    if (empty($user->totp_secret)) {
+        $totp = TOTP::create();
+        $secret = $totp->getSecret();
+        $user->totp_secret = $secret;
+        //$user->save();
+    } else {
+        $secret = $user->totp_secret;
+        $totp = TOTP::create($secret);
+    }
+
+    $totp->setLabel($user->username);
+    $totp->setIssuer($config['title']);
+    $uri = $totp->getProvisioningUri();
+
+    // Genera el QR
+    $qr = QrCode::create($uri);
+    $writer = new PngWriter();
+    $result = $writer->write($qr);
+
+    header('Content-Type: image/png');
+    echo $result->getString();
 }, 'GET');
+
+
+$router->addRoute('/account/profile', function (string $route, array $p) {
+	global $twig, $config, $nframework, $user;
+	$nframework->usecommon = true;
+	$template = $twig->load('profile.html');
+	echo $template->render([
+		'nframework' => [
+			'themeSwitcher' => $nframework->themeSwitcher()
+		],
+		'lng' => $nframework->language(),
+		'user' => $user
+	]);
+}, ['GET', 'POST']);
+$router->addRoute('/account/sessions', function (string $route, array $p) {
+	global $twig, $config, $nframework, $user;
+	$nframework->usecommon = true;
+	$template = $twig->load('sessions.html');
+	echo $template->render([
+		'nframework' => [
+			'themeSwitcher' => $nframework->themeSwitcher()
+		],
+		'lng' => $nframework->language(),
+		'user' => $user
+	]);
+}, 'GET');
+$router->addRoute('/account/apitokens', function (string $route, array $p) {
+	global $twig, $config, $nframework, $user;
+	$nframework->usecommon = true;
+	$template = $twig->load('apitokens.html');
+	echo $template->render([
+		'nframework' => [
+			'themeSwitcher' => $nframework->themeSwitcher()
+		],
+		'lng' => $nframework->language(),
+		'user' => $user
+	]);
+}, 'GET');
+
+
 
 $router->addRoute('/account/logout', function (string $route, array $p) {
 	global $twig, $config, $nframework, $user, $m;
@@ -368,7 +696,7 @@ $router->addRoute('/images/resize/[s:id]/[i:w]/[i:h]/[s:file]', function (string
 
 		if (!file_exists($dst)) {
 			if (!file_exists($conf['dst'])) {
-				mkdir($dir, 0777, true);
+				mkdir($conf['dst'], 0777, true);
 			}
 			$actualizar = true;
 		} else {
