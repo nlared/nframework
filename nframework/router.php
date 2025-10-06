@@ -215,20 +215,21 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 					$mail->addAddress($nuser->username, $nuser->name);     // Add a recipient
 					// Content
 					$mail->isHTML(true);                                  // Set email format to HTML
-					$mail->Subject = ;
-					$mail->Body    = 'Hola ' . $nuser->name . '<br>Has solicitado activar tu cuenta.<br>Si no has sido tú, puedes ignorar este mensaje.<br>Para activar tu cuenta, haz clic en el siguiente enlace:<br><a href="https://' . $_SERVER['HTTP_HOST'] . '/account/activate?token=' . $token . '&user=' . $nuser->_id . '">https://' . $_SERVER['HTTP_HOST'] . '/account/activate?token=' . $token . '&user=' . $nuser->_id . '</a><br>Este enlace es válido durante 1 hora.';
+					$mail->Subject = $lng['activate_account_subject'];					
+					$mail->Body    = $lng['activate_account_body'] . 'https://' . $_SERVER['HTTP_HOST'] . '/account/activate?token=' . $token . '&user=' . $nuser->_id;
 
 					$c =$mail->send();					
 					if ($c) {
-						$msgError = 'Se ha enviado un correo con las instrucciones para activar la cuenta.';
+						$msgError = $lng['activate_account_sent'];
 					} else {
-						$msgError = "No se pudo enviar el correo. Error: {$mail->ErrorInfo}";
+						$msgError = $lng['activate_account_error'] . $mail->ErrorInfo;
 					}
 					//header('location: /account/login');
 					//exit();
 
 				} catch (Exception $e) {
-					$msgError='Error al enviar el correo: ' . $e->getMessage();				}
+					$msgError = $lng['activate_account_error'] . $e->getMessage();
+				}
 			}
 		}
 	}
