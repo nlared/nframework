@@ -9,9 +9,6 @@ $dataset=new dataset(
     'nameprefix'=>'data']
 );
 
-
-
-
 $google_oauth_client_id = new inputText([
 	'dataset'=>&$dataset,
 	'field'=>'google_oauth_client_id',
@@ -80,38 +77,40 @@ if ($nframework->isAjax()) {
 } else {
 	$nframework->usecommon=true;
 ?>
-<div class="container p-5">
-	<div class="bg-cyan fg-white p-3"><h4>OAuths2.0</h4></div>
-	<div class="bg-white p-3">
+<div class="container p-5">	
+	<div class="mt-4 mb-4">
+		<h1 class="text-weight-10 text-center gradient gr-text-blue">OAuths2.0</h1>
+	</div>
+	<div class="box shadow-large-extra p-5">
 	<?=secureform()?>
 		<div class="grid">
-			<div class="row bg-cyan fg-white p-3">
-				<div class="cell">Google</div>
+			<div class="row">
+				<div class="cell box-title">Google</div>
 			</div>
 			<div class="row">
-				<div class="cell"><?=$google_oauth_client_enable?></div>
-				<div class="cell"><?=$google_oauth_client_id?></div>
-				<div class="cell"><?=$google_oauth_client_secret?></div>
-			</div>
-			<div class="row bg-cyan fg-white p-3">
-				<div class="cell">Facebook</div>
+				<div class="cell-md-2"><?=$google_oauth_client_enable?></div>
+				<div class="cell-md-5"><?=$google_oauth_client_id?></div>
+				<div class="cell-md-5"><?=$google_oauth_client_secret?></div>
 			</div>
 			<div class="row">
-				<div class="cell"><?=$facebook_oauth_client_enable?></div>
-				<div class="cell"><?=$facebook_oauth_client_id?></div>
-				<div class="cell"><?=$facebook_oauth_client_secret?></div>
+				<div class="cell box-title">Facebook</div>
 			</div>
-			<div class="row bg-cyan fg-white p-3">
-				<div class="cell">Microsoft 
+			<div class="row">
+				<div class="cell-md-2"><?=$facebook_oauth_client_enable?></div>
+				<div class="cell-md-5"><?=$facebook_oauth_client_id?></div>
+				<div class="cell-md-5"><?=$facebook_oauth_client_secret?></div>
+			</div>
+			<div class="row">
+				<div class="cell box-title">Microsoft 
 				<a class="button" target="_blank" href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade">
 					<span class="mif-link"></span>
 				</a>
 				</div>
 			</div>
 			<div class="row">
-				<div class="cell"><?=$microsoft_oauth_client_enable?></div>
-				<div class="cell"><?=$microsoft_oauth_client_id?></div>
-				<div class="cell"><?=$microsoft_oauth_client_secret?></div>
+				<div class="cell-md-2"><?=$microsoft_oauth_client_enable?></div>
+				<div class="cell-md-5"><?=$microsoft_oauth_client_id?></div>
+				<div class="cell-md-5"><?=$microsoft_oauth_client_secret?></div>
 			</div>
 			<div class="row justify-content-md-right">
 				<div class="cell-md-2 offset-md-8"><a href="./" class="btn btn-primary button primary w-100"><span class="mif-exit"></span>&nbsp;<?=$nframework->language['close']?></a></div>

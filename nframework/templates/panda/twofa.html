@@ -1,0 +1,40 @@
+<style>
+    body {
+        background: url("/img/bg-1.jpg") bottom right no-repeat;
+        background-size: cover;
+    }
+
+    .dark-side {
+        body {
+            background: url("/img/bg-2.jpg") bottom right no-repeat;
+            background-size: cover;
+        }
+    }
+
+    .formbox {
+        inset: 0;
+        margin: auto;
+    }
+</style>
+<div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox">
+    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['twofa_info']}}</div>
+    <div>
+        {{lng['twofa_info']}}
+    </div>
+    <form action="/account/signup" method="POST" class="mt-4 mb-2">                
+        <div class="form-group">
+            <input type="password" name="code" data-role="input" data-label="{{lng['code']}}"
+                placeholder="{{lng['code']}}" data-prepend="<span class='mif-lock'>" />
+            <input type="password" name="signup[confirmpassword]" data-role="input" placeholder="{{lng['confirmpassword']}}"
+                data-prepend="<span class='mif-lock'>" class="mt-1" />
+        </div>
+        {% if msgError %}
+        <div class="mt-2">
+            <div class="alert alert-danger">
+                {{msgError}}
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</div>
+{{nframework['themeSwitcher']|raw}}

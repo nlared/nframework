@@ -42,11 +42,11 @@
             <div class="ml-auto">
                 {{lng['forgotpassword']}} <a class="ml-1 fg-white" href="/account/forgot">{{lng['resetit']}}</a>
                 {% if config['canregister'] %}
-                    {{lng['noaccount']}} <a class="ml-1 fg-white" href="/account/login">{{lng['signup']}}</a>
+                    {{lng['noaccount']}} <a class="ml-1 fg-white" href="/account/signup">{{lng['signup']}}</a>
                 {% endif %}
             </div>
         </div>
-        {% if config['google_oauth_client_enable'] or config['facebook_oauth_client_enable'] or config['microsoft_oauth_client_enable'] or config['twitter_oauth_client_enable'] or config['github_oauth_client_enable'] %}
+        {% if config['canregister']  and (config['google_oauth_client_enable'] or config['facebook_oauth_client_enable'] or config['microsoft_oauth_client_enable'] or config['twitter_oauth_client_enable'] or config['github_oauth_client_enable']) %}
         <div class="d-flex flex-column flex-align-items-center">
             <div>{{lng['oruse']}}:</div>
             <div>

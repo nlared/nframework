@@ -21,24 +21,24 @@
     <div>
         {{lng['welcomne']}}
     </div>
-    <form action="javascript:" class="mt-4 mb-2">
+    <form action="/account/signup" method="POST" class="mt-4 mb-2">
         <div class="form-group">
-            <input type="text" name="username" data-role="input" data-label="{{lng['username']}}"
+            <input type="text" name="signup[name]" data-role="input" data-label="{{lng['username']}}"
                 placeholder="{{lng['username']}}" data-prepend="<span class='mif-person'>" />
         </div>
         <div class="form-group">
-            <input type="text" name="email" data-role="input" data-label="{{lng['email']}}" placeholder="{{lng['email']}}"
+            <input type="text" name="signup[username]" data-role="input" data-label="{{lng['email']}}" placeholder="{{lng['email']}}"
                 data-prepend="<span class='mif-email'>" />
         </div>
         <div class="form-group">
-            <input type="password" name="password" data-role="input" data-label="{{lng['password']}}"
+            <input type="password" name="signup[password]" data-role="input" data-label="{{lng['password']}}"
                 placeholder="{{lng['password']}}" data-prepend="<span class='mif-lock'>" />
-            <input type="password" name="confirmpassword" data-role="input" placeholder="{{lng['confirmpassword']}}"
+            <input type="password" name="signup[confirmpassword]" data-role="input" placeholder="{{lng['confirmpassword']}}"
                 data-prepend="<span class='mif-lock'>" class="mt-1" />
         </div>
         <div class="form-group" style="--checkbox-color: #fff">
             <label class=" d-flex flex-row gap-2">
-                <input type="checkbox" name="agree" data-role="checkbox" />
+                <input type="checkbox" name="signup[agree]" data-role="checkbox" />
                 {{lng['agree']}} <a href='#' class='fg-white'>{{lng['terms']}}</a>
             </label>
         </div>
@@ -47,7 +47,14 @@
             <div class="ml-auto">
                 {{lng['haveaccount']}}? <a class="ml-1 fg-white" href="/account/login">{{lng['login']}}</a>
             </div>
-        </div>        
+        </div>
+        {% if msgError %}
+        <div class="mt-2">
+            <div class="alert alert-danger">
+                {{msgError}}
+            </div>
+        </div>
+        {% endif %}
     </form>
 </div>
 {{nframework['themeSwitcher']|raw}}

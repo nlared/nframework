@@ -67,25 +67,15 @@ class User implements ArrayAccess
         return !empty($f);
     }
 
-    public function create($info)
+    public static function create($info) : User
     {
-        global $config;
+        global $config , $m;
         $info['username'] = strtolower($info['username']);
-        $this->info = $this->m->{$config['sitedb']}->users->findOne(['username' => $info['username']]);
-        if ($this->info['activationcode'] != '') {
-            header('Location: /account/activate');
-            exit();
-        }
-
-        if ($this->info) {
-            $this->info['error'] = 'Cuenta ya existe';
-        } else {
-            $info['password'] = hash('sha512', $info['password']); // hash
-            $info['activationcode'] = uniqid();
-            $this->m->{$this->db}->users->insertOne($info);
-            $this->info = (array) $this->m->{$this->db}->users->findOne($info);
-        }
-    }
+        $info['password'] = hash('sha512', $info['password']); // hash
+        $info['_id'] = new MongoDB\BSON\ObjectId();
+        $m->{$config['sitedb']}->users->insertOne($info);
+        return new User(['_id' =>  $info['_id']]);         
+    }         
 
     public function data()
     {
@@ -122,6 +112,9 @@ class User implements ArrayAccess
                         <a href="/account/cpassword.php" class="button flat-button fg-black">
                             <span class="mif-key"></span>&nbspContraseña</a>
                     </div>
+                    <div class="bg-white d-flex flex-justify-between flex-equal-items p-2">
+                        {$themeswitcher}
+                    </div>
                     <div class="bg-white d-flex flex-justify-between flex-equal-items p-2 bg-light">
                         <a href="#" class="button fg-black mr-1">
                             <span class="mif-bug"></span>&nbsp;Reportar un problema</a>
@@ -132,79 +125,42 @@ class User implements ArrayAccess
 HTML;
 
         } else {
-            $result = '<a href="#" class="app-bar-item">
-        <span class="mif-enter icon"></span>
-        <span class="visible-md">&nbsp;Iniciar</span>
-        </a>
-        <div class="d-menu context drop-down place-right" data-role="dropdown" id="logindrop" >
-			<div class="p-3 " style="width:300px">
-                <form method="POST" data-role="validator" action="/account/login">
-                	<input type="hidden" name="CSRFToken" value="'.csrfToken('/account/login').'">
-                    <h4 class="text-light">Iniciar sesión...</h4>
-                    
-                    <div class="frm-group">
-                    	<label>Usuario</label>
-                        <input name="login[username]" data-role="input" data-prepend="<span class=\'mif-account-circle\'></span>"  
-                        type="text" data-validate="required">
-                    </div>
-                    <div class="frm-group">
-                    	<label>Contraseña</label>
-                        <input name="login[password]" data-role="input" data-prepend="<span class=\'mif-lock\'></span>" 
-                        type="password" data-validate="required">
-                    </div>
-                    <label class="input-control checkbox small-check">
-                        <input name="login[remember]" type="checkbox">
-                        <span class="check"></span>
-                        <span class="caption">Recordar me</span>
-                    </label>
-                   
-                   <button class="button mini js-push-btn"></button><br>
-                         '.$themeswitcher.'
-		           <div class="d-inline-flex">
-                		<button class="button" onclick="Metro.getPlugin(\'#logindrop\',\'dropdown\').close();">Cerrar</button>'.
-                    	 ($config['canregister'] ?
-                       '<button href="/account/new.php" class="button">Registrate</button>'
-                       :
-                           ''
-                       ).
-                       '<button name="op" value="Iniciar" class="button" type="submit">Iniciar</button>
-                       </div>
-                </form>
+            $result = <<<HTML
+<a href="#" class="app-bar-item">
+    <span class="mif-enter icon"></span>
+    <span class="visible-md">&nbsp;Iniciar</span>
+</a>
+<div class="d-menu context drop-down place-right" data-role="dropdown" id="logindrop" >
+    <div class="p-3 " style="width:300px">
+        <form method="POST" data-role="validator" action="/account/login">
+            <input type="hidden" name="CSRFToken" value="{$csrfToken}">
+            <h4 class="text-light">Iniciar sesión...</h4>
+            <div class="frm-group">
+                <label>Usuario</label>
+                <input name="login[username]" data-role="input" data-prepend="<span class='mif-account-circle'></span>"  
+                type="text" data-validate="required">
             </div>
-		</div>';
-			
-            $resgult = '
-                    <div class="button dropdown-toggle">Dropdown</div>
-                     <div class="dropdown keep-open" data-role="dropdown" id="logindrop" data-no-close="true" style="width:300px">
-                        <form method="POST" data-role="validator" action="/account/login.php">
-		                	<input type="hidden" name="CSRFToken" value="'.csrfToken('/account/login.php').'">
-		                    <h4 class="text-light">Iniciar sesión...</h4>
-		                    <div class="frm-group">
-		                        <input name="login[username]" data-label="Usuario" data-role="input" data-prepend="<span class=\'mif-user\'></span>"  
-		                        type="text" data-validate="required">
-		                    </div>
-		                    <div class="frm-group">
-		                        <input name="login[password]" data-label="Contraseña" data-role="input" data-prepend="<span class=\'mif-lock\'></span>" 
-		                        type="password" data-validate="required">
-		                    </div>
-		                    <label class="input-control checkbox small-check">
-		                        <input name="login[remember]" type="checkbox">
-		                        <span class="check"></span>
-		                        <span class="caption">Recordar me</span>
-		                    </label>
-		                    '.$themeswitcher.'
-		                	<div class="d-inline-flex">
-		                		<button class="button w-50" onclick="Metro.getPlugin(\'#logindrop\',\'dropdown\').close();">Cerrar</button>
-			                    <button class="button w-50" name="op" value="Iniciar" type="submit">Iniciar</button>
-		                    </div>
-		                   
-		                   <button class="button mini js-push-btn"></button><br>
-		                   '.
-                               ($config['canregister'] ? '<button href="/account/new.php" class="button">Registrate</button>' : '').
-                                '
-                		</form>
-                    </div>
-                </div>';
+            <div class="frm-group">
+                <label>Contraseña</label>
+                <input name="login[password]" data-role="input" data-prepend="<span class='mif-lock'></span>" 
+                type="password" data-validate="required">
+            </div>
+            <label class="input-control checkbox small-check">
+                <input name="login[remember]" type="checkbox">
+                <span class="check"></span>
+                <span class="caption">Recordar me</span>
+            </label>
+            <button class="button mini js-push-btn"></button><br>
+            {$themeswitcher}
+            <div class="d-inline-flex">
+                <button class="button" onclick="Metro.getPlugin('#logindrop','dropdown').close();">Cerrar</button>
+                {$registerButton}
+                <button name="op" value="Iniciar" class="button" type="submit">Iniciar</button>
+            </div>
+        </form>
+    </div>
+</div>
+HTML;
 
         }
 
