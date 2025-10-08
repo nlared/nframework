@@ -71,7 +71,7 @@ class User implements ArrayAccess
     {
         global $config , $m;
         $info['username'] = strtolower($info['username']);
-        $info['password'] = hash('sha512', $info['password']); // hash
+        $info['password'] = hash($config['users']['algos'][0], $info['password']); // hash
         $info['_id'] = new MongoDB\BSON\ObjectId();
         $m->{$config['sitedb']}->users->insertOne($info);
         return new User(['_id' =>  $info['_id']]);         

@@ -338,7 +338,7 @@ $router->addRoute('/account/reset', function (string $route, array $p) {
 				} elseif (strlen($_POST['password']) < 6) {
 					$msgError = $lng['password_too_short'];
 				} else {
-					$user->password = trim($_POST['password']);
+					$user->password =  hash($config['users']['algos'][0], trim($_POST['password']));
 					$user->resettoken = null;
 					$user->resettokenexp = null;
 					//$user->save();
