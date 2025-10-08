@@ -1,4 +1,15 @@
 <?php
+use Intervention\Image\ImageManager;
+use OTPHP\TOTP;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use FontLib\Table\Type\head;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+use Google\Service\DriveActivity\Create;
+use MongoDB\Model\BSONDocument;
+use Rogierw\RwAcme\AcmeClient;
 require 'include.php';
 $loader1 = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates');
 $loader2 = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates/panda');
@@ -11,16 +22,8 @@ $twig = new \Twig\Environment($loader, [
 ]);
 
 
-use Intervention\Image\ImageManager;
-use OTPHP\TOTP;
-use Endroid\QrCode\QrCode;
-use Endroid\QrCode\Writer\PngWriter;
-use FontLib\Table\Type\head;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
-use Google\Service\DriveActivity\Create;
-use MongoDB\Model\BSONDocument;
+
+
 
 //https://github.com/alexdodonov/mezon-router#routing--
 
@@ -384,7 +387,7 @@ $router->addRoute('/account/activate/', function (string $route, array $p) {
 }, ['GET']);
 
 $router->addRoute('/account/totp-setup', function ($route, $arg) {
-    global $user, $m, $config;
+    global $user, $m, $config,$nframework;
 
     // Genera el secreto y guárdalo en la base de datos del usuario
     if (empty($user->totp_secret)) {
@@ -397,17 +400,17 @@ $router->addRoute('/account/totp-setup', function ($route, $arg) {
         $totp = TOTP::create($secret);
     }
 
-    $totp->setLabel($user->username);
-    $totp->setIssuer($config['title']);
-    $uri = $totp->getProvisioningUri();
+	$totp->setLabel($user->username);
+	$totp->setIssuer($config['title']);
+	$uri = $totp->getProvisioningUri();
+	
+	// Genera el QR
+	$qr = new Endroid\QrCode\QrCode($uri);
+	$writer = new PngWriter();
+	$result = $writer->write($qr);
 
-    // Genera el QR
-    $qr = QrCode::create($uri);
-    $writer = new PngWriter();
-    $result = $writer->write($qr);
-
-    header('Content-Type: image/png');
-    echo $result->getString();
+	header('Content-Type: image/png');
+	echo $result->getString();
 }, 'GET');
 
 
