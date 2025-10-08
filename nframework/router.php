@@ -21,8 +21,13 @@ $twig = new \Twig\Environment($loader, [
 	'auto_reload' => true,
 ]);
 
-
-
+function replaceVarsAtUrl($url, $vars) {
+    foreach ($vars as $clave => $valor) {
+        // Reemplaza {clave} por el valor codificado
+        $url = str_replace("{" . $clave . "}", urlencode($valor), $url);
+    }
+    return $url;
+}
 
 
 //https://github.com/alexdodonov/mezon-router#routing--
@@ -218,8 +223,15 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 					$mail->addAddress($nuser->username, $nuser->name);     // Add a recipient
 					// Content
 					$mail->isHTML(true);                                  // Set email format to HTML
-					$mail->Subject = $lng['activate_account_subject'];					
-					$mail->Body    = $lng['activate_account_body'] . 'https://' . $_SERVER['HTTP_HOST'] . '/account/activate?token=' . $token . '&user=' . $nuser->_id;
+					$mail->Subject = $lng['activate_account_subject'];
+					$mail->Body    = $lng['activate_account_body'] . replaceVarsAtUrl('https://' . $_SERVER['HTTP_HOST'] . '/account/activate?token=' . $token . '&user=' . $nuser->_id, [
+						'token' => $token,
+						'user' => $nuser->_id
+					]);
+					$mail->AltBody = $lng['activate_account_altbody'] . replaceVarsAtUrl('https://' . $_SERVER['HTTP_HOST'] . '/account/activate?token=' . $token . '&user=' . $nuser->_id, [
+						'token' => $token,
+						'user' => $nuser->_id
+					]);
 
 					$c =$mail->send();					
 					if ($c) {
@@ -283,10 +295,15 @@ $router->addRoute('/account/forgot', function (string $route, array $p) {
 				$mail->setFrom($config['smtp']['fromemail'], $config['smtp']['fromname']);
 				$mail->addAddress($user->username, $user->name);     // Add a recipient		
 				// Content			
+
+
+
+
 				$mail->isHTML(true);                                  // Set email format to HTML
 				$mail->Subject = $lng['reset_password_subject'];
-				$mail->Body    = $lng['reset_password_body'];
-				$mail->AltBody = $lng['reset_password_altbody'];
+				$mail->Body    =  replaceVarsAtUrl($lng['reset_password_body'], ['token' => $token, 'user' => $user->_id]);
+				$mail->AltBody = replaceVarsAtUrl($lng['reset_password_altbody'], [
+					'token' => $token, 'user' => $user->_id]);
 				$mail->send();
 				$msgError = $lng['reset_password_sent'];
 			} catch (Exception $e) {
