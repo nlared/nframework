@@ -63,7 +63,7 @@ $mailhost=new inputText(['dataset'=>&$dataset,'field'=>'smtp.host','caption'=>$n
 $mailusername=new inputText(['dataset'=>&$dataset,'field'=>'smtp.username','caption'=>$nframework->language['username'].':']);
 $mailpassword=new inputText(['dataset'=>&$dataset,'field'=>'smtp.password','caption'=>$nframework->language['password'].':']);
 $mailport=new inputNumber(['dataset'=>&$dataset,'field'=>'smtp.port','caption'=>$nframework->language['port'].':']);
-$mailsmtpauth=new inputcheckbox(['dataset'=>&$dataset,'field'=>'smtp.mailsmtpauth','caption'=>$nframework->language['smtpauth'].':']);
+$mailsmtpauth=new inputcheckbox(['dataset'=>&$dataset,'field'=>'smtp.auth','caption'=>$nframework->language['smtpauth'].':']);
 $mailcrypt=new inputradios(['dataset'=>&$dataset,'field'=>'smtp.secure','caption'=>$nframework->language['encrypt'].':','options'=>[
 	'ssl'=>'ssl',
 	'tls'=>'tls'

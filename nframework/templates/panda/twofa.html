@@ -15,6 +15,20 @@
         inset: 0;
         margin: auto;
     }
+
+.code-input {
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.code-input:focus {
+    border-color: #0078D7;
+    outline: none;
+}
+
 </style>
 <div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox">
     <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['twofa_info']}}</div>
@@ -22,11 +36,14 @@
         {{lng['twofa_info']}}
     </div>
     <form action="/account/signup" method="POST" class="mt-4 mb-2">                
-        <div class="form-group">
-            <input type="password" name="code" data-role="input" data-label="{{lng['code']}}"
-                placeholder="{{lng['code']}}" data-prepend="<span class='mif-lock'>" />
-            <input type="password" name="signup[confirmpassword]" data-role="input" placeholder="{{lng['confirmpassword']}}"
-                data-prepend="<span class='mif-lock'>" class="mt-1" />
+        <div class="form-group">            
+            <input type="text" name="code1" maxlength="1" class="code-input" />
+            <input type="text" name="code2" maxlength="1" class="code-input" />
+            <input type="text" name="code3" maxlength="1" class="code-input" />
+            <input type="text" name="code4" maxlength="1" class="code-input" />
+            <input type="text" name="code5" maxlength="1" class="code-input" />
+            <input type="text" name="code6" maxlength="1" class="code-input" />
+            <input type="hidden" name="code" value="" />
         </div>
         {% if msgError %}
         <div class="mt-2">
@@ -37,4 +54,22 @@
         {% endif %}
     </form>
 </div>
+
+<script>
+document.querySelectorAll('.code-input').forEach((input, index, inputs) => {
+    input.addEventListener('input type=[text]', () => {
+        if (input.value.length === 1 && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+        }else if ( index == inputs.length-1 ){
+            input.blur(); // Optionally blur the last input
+        
+            // Update hidden input with concatenated code
+            const code = Array.from(inputs).map(i => i.value).join('');
+            document.querySelector('input[name="code"]').value = code;
+            console.log
+        }
+    });
+});
+</script>
+
 {{nframework['themeSwitcher']|raw}}
