@@ -215,4 +215,9 @@ $nframework->languages['es-MX'] = [
     'currentlanguage' => 'Idioma actual',
     'selectlanguage' => 'Seleccionar idioma',
     'loading' => 'Cargando...',
+    'reset' => 'Restablecer',
+    'activate_account_subject' => 'Activar tu cuenta',
+    'activate_account_body' => 'Hola {name}<br>Gracias por registrarte.<br>Para activar tu cuenta, haz clic en el siguiente enlace:<br><a href="{link}">{link}</a><br>¡Estamos felices de tenerte con nosotros!',
+    'activate_account_altbody' => 'Hola {name}\nGracias por registrarte.\nPara activar tu cuenta, haz clic en el siguiente enlace:\n{link}\n¡Estamos felices de tenerte con nosotros!',
+
 ];

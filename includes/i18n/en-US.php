@@ -192,4 +192,8 @@ $nframework->languages['en-US'] = [
     'currentlanguage' => 'Current language',
     'selectlanguage' => 'Select language',
     'loading' => 'Loading...',
+    'reset' => 'Reset',
+    'activate_account_subject' => 'Activate your account',
+    'activate_account_body' => 'Hello {name}<br>Thank you for registering.<br>To activate your account, click the link below:<br><a href="{link}">{link}</a><br>We are happy to have you with us!',
+    'activate_account_altbody' => 'Hello {name}\nThank you for registering.\nTo activate your account, click the link below:\n{link}\nWe are happy to have you with us!',
 ];  // End of translations
