@@ -295,15 +295,11 @@ $router->addRoute('/account/forgot', function (string $route, array $p) {
 				$mail->setFrom($config['smtp']['fromemail'], $config['smtp']['fromname']);
 				$mail->addAddress($user->username, $user->name);     // Add a recipient		
 				// Content			
-
-
-
-
 				$mail->isHTML(true);                                  // Set email format to HTML
 				$mail->Subject = $lng['reset_password_subject'];
-				$mail->Body    =  replaceVarsAtUrl($lng['reset_password_body'], ['token' => $token, 'user' => $user->_id]);
+				$mail->Body    =  replaceVarsAtUrl($lng['reset_password_body'], ['host' => $_SERVER['HTTP_HOST'], 'token' => $token, 'user' => $user->_id]);
 				$mail->AltBody = replaceVarsAtUrl($lng['reset_password_altbody'], [
-					'token' => $token, 'user' => $user->_id]);
+					'host' => $_SERVER['HTTP_HOST'], 'token' => $token, 'user' => $user->_id]);
 				$mail->send();
 				$msgError = $lng['reset_password_sent'];
 			} catch (Exception $e) {
