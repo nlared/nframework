@@ -53,7 +53,6 @@ $datatable->Ajax([
 ]);
 
 
-
 $tablef=new Tablef([
 	//'excelFile'=>__DIR__.'/alumnos.xlsx',
 	//'excelCell'=>'A2',
@@ -86,28 +85,26 @@ if ($nframework->isAjax()) {
 	
 ?>
 <div class="container p-5">
-	<div class="bg-cyan fg-white p-5"><h2>Rule</h2></div>
-	<form action="excel.php">
-	<div class="bg-white p-5">
-		<?=$tablef?>
-		<?=$datatable;?>
-	</form>
-	
-	<?=secureform()?>
-		<div class="grid">
-			<div class="row">
-				<div class="cell"><?=$name?></div>
+	<div class="box">
+		<div class="box-title">Rule</div>
+		<form action="excel.php">	
+			<?=$tablef?>
+			<?=$datatable;?>
+		</form>		
+		<?=secureform()?>
+			<div class="grid">
+				<div class="row">
+					<div class="cell"><?=$name?></div>
+				</div>
+				<div class="row">
+					<div class="cell"><?=$rule?></div>
+				</div>
+				<div class="row">
+					<div class="cell-md-2 offset-md-8"><a href="security.php" class="button primary btn btn-primary w-100"><span class="mif-exit"></span>&nbsp;Cerrar</a></div>
+					<div class="cell-md-2"><button class="button success btn btn-success secureop  w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;Guardar</button></div>
+				</div>
 			</div>
-			<div class="row">
-				<div class="cell"><?=$rule?></div>
-			</div>
-			<div class="row">
-				<div class="cell-md-2 offset-md-8"><a href="security.php" class="button primary btn btn-primary w-100"><span class="mif-exit"></span>&nbsp;Cerrar</a></div>
-				<div class="cell-md-2"><button class="button success btn btn-success secureop  w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;Guardar</button></div>
-			</div>
-		</div>
-	</form>
+		</form>
 	</div>
 </div>
-
 <?}?>
