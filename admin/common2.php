@@ -29,11 +29,11 @@ $sidemenu.='
     </a></li>
 	<li class="slide"><a href="/admin/site/auths.php" >
         <span class="icon"><span class="mif-user-secret"></span></span>
-        <span class="caption">'.$nframework->language['site'].' Auths</span>
+        <span class="caption">'.$nframework->language['auths'].'</span>
     </a></li> 
     <li class="slide"><a href="/admin/site/security.php" >
         <span class="icon"><span class="mif-security"></span></span>
-        <span class="caption">'.$nframework->language['security'].' Auths</span>
+        <span class="caption">'.$nframework->language['security'].'</span>
     </a></li> 
     <li class="slide"><a href="/admin/theme/tconfig.php" >
         <span class="icon"><span class="mif-insert-template"></span></span>
