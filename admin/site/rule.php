@@ -71,19 +71,12 @@ $tablef=new Tablef([
 	]);
 if ($nframework->isAjax()) {
 	$nframework->usecommon=false;
-	if ($_POST['op']=='save') {
-        $session = $m->startSession();
-        $session->startTransaction();
-        $dataset->session=$session;
+	if ($_POST['op']=='save') {        
         try {
-            $dataset->other=date('Y-m-d');
             $result=[
-                'error'=>$dataset->save(),
-                
-            ];
-            $session->commitTransaction();
-        } catch (Exception $e) {
-            $session->abortTransaction();
+                'error'=>$dataset->save(),                
+            ];        
+        } catch (Exception $e) {            
             $result=[
             	'error'=>$e->getMessage()
         	];
