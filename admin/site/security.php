@@ -131,37 +131,36 @@ if ($nframework->isAjax()) {
 	
 </style>
 <div class="container p-5">
-	<div class="bg-cyan fg-white p-3"><h4>Security</h4></div>
-	<div class="bg-white p-3">
-	<?=secureform()?>
-		<div class="grid">
-			<div class="row bg-cyan fg-white p-3">
-				<div class="cell">Blockeds IPS</div>
-			</div>
-			<div class="row">
-				<div class="cell"><?=$blockips?></div>
-			</div>
-			<div class="row">
-				<div class="cell" id="list_ips"></div>
-			</div>
-			<div class="row">
-				<div class="cell">
-					<div class="button" onclick="<?=$arrayIps->function_new()?>"><span class="mif-plus">Agregar</span></div>
+	<div class="box">
+		<div class="box-title">Security</div>	
+		<?=secureform()?>
+			<div class="grid">
+				<div class="row bg-cyan fg-white p-3">
+					<div class="cell">Blockeds IPS</div>
 				</div>
-			</div>
-			<div class="row">
-				<div class="cell"> 
-					<?=$datatable?>
+				<div class="row">
+					<div class="cell"><?=$blockips?></div>
 				</div>
-			</div>
-			<div class="row ">
-				<div class="cell-md-2"><a href="rule.php" class="btn btn-primary button primary w-100"><span class="mif-plus"></span>&nbsp;<?=$nframework->language['new']?></a></div>
-				<div class="cell-md-2 offset-md-6"><a href="./" class="btn btn-primary button primary w-100"><span class="mif-exit"></span>&nbsp;<?=$nframework->language['close']?></a></div>
-				<div class="cell-md-2"><button class="button btn btn-success secureop success w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;<?=$nframework->language['save']?></button></div>
-			</div>
-		</div>
-		
-	</form>
+				<div class="row">
+					<div class="cell" id="list_ips"></div>
+				</div>
+				<div class="row">
+					<div class="cell">
+						<div class="button" onclick="<?=$arrayIps->function_new()?>"><span class="mif-plus">Agregar</span></div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="cell"> 
+						<?=$datatable?>
+					</div>
+				</div>
+				<div class="row ">
+					<div class="cell-md-2"><a href="rule.php" class="btn btn-primary button primary w-100"><span class="mif-plus"></span>&nbsp;<?=$nframework->language['new']?></a></div>
+					<div class="cell-md-2 offset-md-6"><a href="./" class="btn btn-primary button primary w-100"><span class="mif-exit"></span>&nbsp;<?=$nframework->language['close']?></a></div>
+					<div class="cell-md-2"><button class="button btn btn-success secureop success w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;<?=$nframework->language['save']?></button></div>
+				</div>
+			</div>				
+		</form>
 	</div>
 </div>
 <?}?>
