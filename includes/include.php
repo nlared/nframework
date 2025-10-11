@@ -354,78 +354,92 @@ try {
     phpinfo();
 }
 
-
-if(isset($config['user_agents_blockeds'])){
+if(isset($config['security_user_agents_blacklist'])){
 	$userAgent =strtolower( $_SERVER['HTTP_USER_AGENT']);
-	foreach ($config['user_agents_blockeds'] as $bot) {
+	foreach ($config['security_user_agents_blacklist'] as $bot) {
 	    if (str_contains($userAgent, $bot) !== false) {
 	    	header("HTTP/1.1 403 Forbidden");
 	    	exit("Access denied.");
 	    }
 	}
 }
-
-if(isset($config['security_ip_blacklist'])){
-	///wp-includes/, /xmlrpc.php, and /wlwmanifest.xml
-	foreach(mongotoarray($config['security_ip_blacklist']) as $tmp){
-		$blacklist[$tmp['ip']]=strtotime($tmp['time']);
-	}
-	if (isset($blacklist[$ip]) && time() < $blacklist[$ip]) {
-	    http_response_code(403);
-	    exit("Access denied.");
-	}
+/*
+if(isset($config['security_ip_ranges_blacklist'])){	
+    foreach($config['security_ip_ranges_blacklist'] as $tmp){    
+        if(ip_in_range($ip,$tmp['from'],$tmp['to'])){    http_response_code(403);
+            exit("Access denied.");
+        }
+    }
+}*/
+if(isset($config['security_ip_blacklist'])){	
+    foreach($config['security_ip_blacklist'] as $tmp){    
+        if($ip==$tmp['ip'] ){    
+            if(!empty($tmp['end'])){
+                if(time()<$tmp['end']->toDateTime()->getTimestamp()){
+                    http_response_code(403);
+                    exit("Access denied." .  $tmp['end']->toDateTime()->format('Y-m-d H:i:s') );        
+                }   else {
+                    // remove expired
+                    $m->{$config['sitedb']}->configs->updateOne(['_id'=>'site'],['$pull'=>['security_ip_blacklist'=>['ip'=>$tmp['ip']]]]);
+                }
+            }else{
+                http_response_code(403);
+                exit("Access denied.");
+            }
+        }
+    }
 }
-$attempt=false;
+if(isset($config['security_host_blacklist'])){	
+    foreach($config['security_host_blacklist'] as $tmp){    
+        if($_SERVER['HTTP_HOST']==$tmp['host']){    
+            http_response_code(403);
+            exit("Access denied.");
+        }
+    }
+}
+if(isset($config['security_path_blacklist'])){	
+    foreach($config['security_path_blacklist'] as $tmp){    
+        if($_SERVER['REQUEST_URI']==$tmp['path']){    
+            http_response_code(403);
+            exit("Access denied.");
+        }
+    }
+}
+
+if (! empty($config['timezone'])) {
+    date_default_timezone_set($config['timezone']);
+}
 
 $m->{$config['sitedb']}->nfuristats->insertOne([
-    'created_at'=>new \DateTime(), // use PHP DateTime; the MongoDB driver will convert it to BSON UTC datetime
+    'created_at'=>new MongoDB\BSON\UTCDateTime(time() * 1000), // use PHP DateTime; the MongoDB driver will convert it to BSON UTC datetime
     'ip'=>$ip,
     'host'=>$_SERVER['HTTP_HOST'],
     'path'=>$_SERVER['REQUEST_URI'],
     'agent'=>$_SERVER['HTTP_USER_AGENT'],
 ]);
-$rules=[];
+
+$rules=[['host'=>['$exists'=>false]]];
 foreach($m->{$config['sitedb']}->nfsecurityrules->find() as $rule){
-	$rules[]=json_decode($rule->rule);
+    if(!empty($rule->rule) && !empty($rule->enabled)  && $rule->enabled===true){
+        $rules[]=fixSingleQuery(json_decode($rule->rule,true));
+    }
 }
+$attempts = $m->{$config['sitedb']}->nfuristats->count([
+    'ip'=>$ip,
+    'created_at'=>['$gt'=> new MongoDB\BSON\UTCDateTime((time() - (isset($config['windowSeconds'])?$config['windowSeconds']:900)) * 1000)], // use DateTime for comparison; driver converts to BSON UTC datetime
+    '$or'=>$rules,
+]);
 
-if(!isset($config['windowSeconds'])){
-	$config['windowSeconds']=900;
-}
-$attemps=0;
-if(count($rules)>0){
-    $attemps=$m->{$config['sitedb']}->nfuristats->count([
+if($attempts>10){
+    $doc=[
         'ip'=>$ip,
-        'created_at'=>['$gt'=> new \DateTime('@'.(time() - $config['windowSeconds']))], // use DateTime for comparison; driver converts to BSON UTC datetime
-        '$or'=>$rules
-    ]);
-    header('malicius_attemps: '.$attemps);
-}
-
-if($attemps>10){
-	$doc=[
-		'ip'=>$ip,
-		'end'=>time() + $config['windowSeconds']
-	];
-	$m->{$config['sitedb']}->configs->updateOne(['_id'=>'site'],['$addToSet'=>['security_ip_blacklist'=>$doc]]);
-	http_response_code(403);
+        'end'=>new MongoDB\BSON\UTCDateTime((time() + (isset($config['windowSeconds'])?$config['windowSeconds']:900)) * 1000)
+    ];
+    $m->{$config['sitedb']}->configs->updateOne(['_id'=>'site'],['$addToSet'=>['security_ip_blacklist'=>$doc]]);
+    http_response_code(403);
     exit("Access denied.");
 }
-//*/
 
-/*
-function block_ip_temporarily($ip, $durationSeconds = 3600) {
-    $file = __DIR__ . '/blacklist.json';
-    $blacklist = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
-    $blacklist[$ip] = time() + $durationSeconds;
-    file_put_contents($file, json_encode($blacklist));
-}*/
-
-
-
-if (! empty($config['timezone'])) {
-    date_default_timezone_set($config['timezone']);
-}
 $nframework->title = (! empty($config['title']) ? $config['title'] : 'nframework 5');
 $nframework->image = (! empty($config['image']) ? $config['image'] : '/images/config///logo.png');
 

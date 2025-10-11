@@ -7,9 +7,6 @@ $dataset=new dataset([
     'nameprefix'=>'data']
 );
 
-
-
-
 $blockips = new inputCheckbox([
 	'dataset'=>&$dataset,
 	'field'=>'blockips',
@@ -29,7 +26,7 @@ $arrayIps=new embededArray([
 	{% if items|length > 0 %}
     	<table class="table">
         {% for key,item in items %}
-            <tr><td>{{ item.ip|e }}</td><td>{{ item.time|e }}</td><td>
+            <tr><td>{{ item.ip|e }}</td><td>{{ item.end|e }}</td><td>
             		<div class="button primary" onclick="javascript:{{function_get}}('{{key}}')"><span class="mif-pencil"></span></div>
 					<div class="button alert" onclick="javascript:{{function_delete}}('{{key}}')"><span class="mif-cross"></span></div>
 				</td>
@@ -43,7 +40,7 @@ T
 ]);
 
 $blockedips_ip=new inputtext(['nfembeded'=>&$arrayIps,'field'=>'ip','caption'=>'IP:']);
-$blockedips_until=new inputdatetime(['nfembeded'=>&$arrayIps,'field'=>'time','caption'=>'Until:']);
+$blockedips_until=new inputText(['nfembeded'=>&$arrayIps,'field'=>'end','caption'=>'Until:']);
 $dialogIps->content=<<<FORM
 	<div class="grid">
 		<div class="row">
