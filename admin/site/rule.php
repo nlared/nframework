@@ -36,7 +36,7 @@ $developermode=true;
 
 $name=new inputText(['dataset'=>&$dataset,'field'=>'name','caption'=>'Name:','required'=>true]);
 $rule=new textarea(['dataset'=>&$dataset,'field'=>'rule','caption'=>'Code:','readonly'=>true]);
-
+$enabled=new inputCheckBox(['dataset'=>&$dataset,'field'=>'enabled','caption'=>'Enabled:','checkedvalue'=>true,'novalue'=>false]);
 
 
 $base=[];
@@ -94,7 +94,8 @@ if ($nframework->isAjax()) {
 		<?=secureform()?>
 			<div class="grid">
 				<div class="row">
-					<div class="cell"><?=$name?></div>
+					<div class="cell-md-8"><?=$name?></div>
+					<div class="cell-md-4"><?=$enabled?></div>
 				</div>
 				<div class="row">
 					<div class="cell"><?=$rule?></div>

@@ -162,3 +162,230 @@ function flattenDocument($document, $prefix = '') {
     }
     return $flat;
 }
+
+
+/**
+ * @param mixed $doc 
+ * @param mixed $query 
+ * @return bool 
+ *  True if the document matches the query, false otherwise
+ * 
+ * Supported operators:
+ *  - $and
+ *  - $or
+ *  - $nor
+ *  - $gt
+ *  - $lt
+ *  - $gte
+ *  - $lte
+ *  - $eq
+ *  - $ne
+ *  - $in
+ *  - $nin
+ *  - $regex
+ *  - $exists
+ *  - $size
+ *  - $type (only basic types: string, integer, array, object, boolean, double)
+ *  - $options (for regex)      
+ */
+function matchesQuery($doc, $query) {
+    // Handle logical operators first
+    if (isset($query['$and'])) {
+        foreach ($query['$and'] as $subQuery) {
+            if (!matchesQuery($doc, $subQuery)) {
+                return false;
+            }
+        }
+        unset($query['$and']);
+    }
+    
+    if (isset($query['$or'])) {
+        $orMatched = false;
+        foreach ($query['$or'] as $subQuery) {
+            if (matchesQuery($doc, $subQuery)) {
+                $orMatched = true;
+                break;
+            }
+        }
+        if (!$orMatched) return false;
+        unset($query['$or']);
+    }
+    
+    if (isset($query['$nor'])) {
+        foreach ($query['$nor'] as $subQuery) {
+            if (matchesQuery($doc, $subQuery)) {
+                return false;
+            }
+        }
+        unset($query['$nor']);
+    }
+    
+    // Handle field-level queries
+    foreach ($query as $field => $condition) {
+        if (!matchesField($doc, $field, $condition)) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+function matchesField($doc, $field, $condition) {
+    // Get field value (supports dot notation)
+    $fieldValue = getNestedValue($doc, $field);
+    
+    // Handle direct value comparison
+    if (!is_array($condition)) {
+        return $fieldValue === $condition;
+    }
+    
+    // Handle operators
+    foreach ($condition as $op => $value) {
+        switch ($op) {
+            case '$gt':
+                if (!($fieldValue > $value)) return false;
+                break;
+            case '$lt':
+                if (!($fieldValue < $value)) return false;
+                break;
+            case '$gte':
+                if (!($fieldValue >= $value)) return false;
+                break;
+            case '$lte':
+                if (!($fieldValue <= $value)) return false;
+                break;
+            case '$eq':
+                if ($fieldValue !== $value) return false;
+                break;
+            case '$ne':
+                if ($fieldValue === $value) return false;
+                break;
+            case '$in':
+                if (!in_array($fieldValue, $value, true)) return false;
+                break;
+            case '$nin':
+                if (in_array($fieldValue, $value, true)) return false;
+                break;
+            case '$regex':
+                $pattern = '/' . str_replace('/', '\/', $value) . '/';
+                if (isset($condition['$options'])) {
+                    $pattern .= $condition['$options'];
+                }
+                if (!preg_match($pattern, (string)$fieldValue)) return false;
+                break;
+            case '$exists':
+                $exists = hasNestedKey($doc, $field);
+                if ($value && !$exists) return false;
+                if (!$value && $exists) return false;
+                break;
+            case '$size':
+                if (!is_array($fieldValue) || count($fieldValue) !== $value) return false;
+                break;
+            case '$type':
+                if (gettype($fieldValue) !== $value) return false;
+                break;
+            case '$options':
+                // Skip options, handled by $regex
+                break;
+            default:
+                // Unknown operator
+                return false;
+        }
+    }
+    
+    return true;
+}
+
+function getNestedValue($array, $key) {
+    if (strpos($key, '.') === false) {
+        return $array[$key] ?? null;
+    }
+    
+    $keys = explode('.', $key);
+    $current = $array;
+    
+    foreach ($keys as $k) {
+        if (!is_array($current) || !isset($current[$k])) {
+            return null;
+        }
+        $current = $current[$k];
+    }
+    
+    return $current;
+}
+
+function hasNestedKey($array, $key) {
+    if (strpos($key, '.') === false) {
+        return isset($array[$key]);
+    }
+    
+    $keys = explode('.', $key);
+    $current = $array;
+    
+    foreach ($keys as $k) {
+        if (!is_array($current) || !isset($current[$k])) {
+            return false;
+        }
+        $current = $current[$k];
+    }
+    
+    return true;
+}
+
+
+function fixSingleQuery($query){
+	if(isset($query['$and']) && count($query['$and'])==1){
+		return $query['$and'][0];
+	}elseif(isset($query['$or']) && count($query['$or'])==1){
+		return $query['$or'][0];
+	}
+	return $query;
+}
+
+/*
+$rules[]=fixSingleQuery(json_decode('{"$and":[{"path":{"$regex":"wp-includes","$options":"i"}}]}',true));
+$rules[]=fixSingleQuery(json_decode('{"$and":[{"host":{"$regex":"localhost","$options":"i"}}]}',true));
+$rules[]=fixSingleQuery(json_decode('{"$and":[{"host":"localhost"}]}',true));
+
+$query=fixSingleQuery(['$or'=>$rules]);*/
+
+
+
+
+function nflogAttempt($ip, $limit = 5, $blockTime = 300) { 
+    global $m, $config;
+    $collection = $m->{$config['sitedb']}->nf_attempts;
+    $now = new MongoDB\BSON\UTCDateTime(time() * 1000);
+    $record = $collection->findOne(['ip' => $ip]);
+    if ($record && isset($record['blocked_until']) && $record['blocked_until'] > $now) {
+        return false; // Bloqueado
+    }
+
+    if (!$record) {
+        $collection->insertOne([
+            'ip' => $ip,
+            'count' => 1,
+            'last_attempt' => $now
+        ]);
+        return true;
+    }
+
+    $count = $record['count'] + 1;
+
+    if ($count > $limit) {
+        $blockedUntil = new MongoDB\BSON\UTCDateTime((time() + $blockTime) * 1000);
+        $collection->updateOne(
+            ['ip' => $ip],
+            ['$set' => ['count' => $count, 'blocked_until' => $blockedUntil, 'last_attempt' => $now]]
+        );
+        return false;
+    }
+
+    $collection->updateOne(
+        ['ip' => $ip],
+        ['$set' => ['count' => $count, 'last_attempt' => $now]]
+    );
+
+    return true;
+}
+
