@@ -515,8 +515,7 @@ class inputDate extends baseInput
                 return $val;
             } elseif ($this->storeagetype == self::ST_MONGODATE) {
                 $orig_date = DateTime::createFromFormat($this->format, $val, $this->timezone);
-                $orig_date = $orig_date->getTimestamp();
-                /** @var \MongoDB\BSON\UTCDateTime $fecha */
+                $orig_date = $orig_date->getTimestamp();                
                 $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
                 return $utcdatetime;
             }

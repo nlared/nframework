@@ -1,7 +1,5 @@
 <?
 require 'include.php';
-
-
 function getParentPositions(array $nodes, string $startId): array {
     $positions = [];
     $current   = $startId;
@@ -45,7 +43,6 @@ $dataset=new dataset([
 
 
 $field=$info['field'];
-
 $parents = getParentPositions($_SESSION['nfembeded'],$id);
 $result['parents']=$parents;
 //$result['ss']=$_SESSION['nfembeded'];
@@ -62,7 +59,6 @@ function get_data($dataset, string $field)
 {
     $parts = explode('.', $field);
     $ref   = $dataset;
-
     foreach ($parts as $part) {
         if (is_array($ref)) {
             // 1) existe la clave en el array?
@@ -101,17 +97,14 @@ $items=mongotoArray($items);
 if(isset($_POST['pos'])){
 	$pos=(int)$_POST['pos'];
 }
-
 if($_POST['op']=='pos'){
 	$_SESSION['nfembeded'][$id]['pos']=$pos;
-	$result['items']=$items;
-	
+	$result['items']=$items;	
 }elseif($_POST['op']=='load'){
 	$result['item']=$items[$pos];
 	$_SESSION['nfembeded'][$id]['pos']=$pos;
 }else{
-	if($_POST['op']=='update'){
-		
+	if($_POST['op']=='update'){		
 		foreach($_POST[$info['nameprefix']] as $k=>$pfield){
 			$set[$field.'.'.$pos.'.'.$k]=$pfield;
 			$items[$pos][$k]=$pfield;
@@ -120,14 +113,10 @@ if($_POST['op']=='pos'){
 		$m->{$info['database']}->{$info['collection']}->updateOne(['_id'=>($info['simpleid']?$info['_id']:tomongoid($info['_id']))],['$set'=>$set],['upsert' => true]);
 	
 	}elseif($_POST['op']=='delete'){
-	    unset($items[$pos]);
+        unset($items[$pos]);
 	    $items=array_values($items);
-	   // $m->{$info['database']}->{$info['collection']}->updateOne(['_id'=>($info['simpleid']?$info['_id']:tomongoid($info['_id']))],['$unset'=>[$field.'.'.$pos=>1]]);
-	   
-	    $m->{$info['database']}->{$info['collection']}->updateOne(['_id'=>($info['simpleid']?$info['_id']:tomongoid($info['_id']))],['$set'=>[$field=>$items]]);
-	  
-	     
-	    
+        // $m->{$info['database']}->{$info['collection']}->updateOne(['_id'=>($info['simpleid']?$info['_id']:tomongoid($info['_id']))],['$unset'=>[$field.'.'.$pos=>1]]);
+	    $m->{$info['database']}->{$info['collection']}->updateOne(['_id'=>($info['simpleid']?$info['_id']:tomongoid($info['_id']))],['$set'=>[$field=>$items]]);	  
 	}
 	$result['field']=$field;
 	$template = $twig->createTemplate($info['template']);

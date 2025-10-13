@@ -61,7 +61,7 @@ class class_config implements ArrayAccess
         }
     }
 
-    public function loadfromdb()
+    public function loadfromdb():void
     {
         global $m;
         $dbconf = $m->{$this->contenedor['sitedb']}->configs->findOne(['_id' => 'site']);
@@ -866,6 +866,7 @@ function _setNotification(array $users, $content)
     foreach ($users as $_user) {
         $_user = trim((string) $_user);
         if ($_user != null) {
+            /** @noinspection PhpUndefinedClassInspection */
             $nuevo = new MongoDB\BSON\ObjectID;
             $m->{$config['sitedb']}->registros->updateOne(['_id' => $nuevo], [
                 '$set' => [
