@@ -564,7 +564,7 @@ $router->addRoute('/sitemap.xml', function ($route, $variables) {
 
 $router->addRoute('/.well-known/acme-challenge/[s:filename]', function ($route, $variables) {
 	global $m, $config;
-	$client = new Api($config->letsencrypt_email, __DIR__ . '/__account');
+	$client = new Api($config['letsencrypt_email'], __DIR__ . '/__account');
 	$account = $client->account()->get();
 
 

@@ -37,7 +37,6 @@ class User implements ArrayAccess
                     header('Location: /account/activate.php');
                     exit();
                 }
-
             }
         }
         $this->notifications = new Notifications;
@@ -61,21 +60,21 @@ class User implements ArrayAccess
     {
         global $config;
         $f = $this->m->{$config['sitedb']}->usersgroups->findOne([
-            'users' => tomongoid($this->info['_id'] ),
+            'users' => tomongoid($this->info['_id']),
             'name' => $verb,
         ]);
         return !empty($f);
     }
 
-    public static function create($info) : User
+    public static function create($info): User
     {
-        global $config , $m;
+        global $config, $m;
         $info['username'] = strtolower($info['username']);
         $info['password'] = hash($config['users']['algos'][0], $info['password']); // hash
         $info['_id'] = new MongoDB\BSON\ObjectId();
         $m->{$config['sitedb']}->users->insertOne($info);
-        return new User(['_id' =>  $info['_id']]);         
-    }         
+        return new User(['_id' =>  $info['_id']]);
+    }
 
     public function data()
     {
@@ -84,16 +83,16 @@ class User implements ArrayAccess
 
     public function gravatar($width = '', $height = '')
     {
-        return '/images/resize/users/32/32/'.$this->info['_id'].'.png';
+        return '/images/resize/users/32/32/' . $this->info['_id'] . '.png';
     }
 
     public function usermenu()
     {
-        global $themecolor,$config,$themeswitcher;
-		
-	
-		
-        $addtheme = ' '.$themecolor;
+        global $themecolor, $config, $themeswitcher;
+
+
+
+        $addtheme = ' ' . $themecolor;
         if ($this->info['username'] != 'guest' && $this->info['username'] != '') {
             $result = <<<HTML
                 <a href="#" class="app-bar-item">
@@ -123,7 +122,6 @@ class User implements ArrayAccess
                     </div>
                 </div>
 HTML;
-
         } else {
             $result = <<<HTML
 <a href="#" class="app-bar-item">
@@ -161,7 +159,6 @@ HTML;
     </div>
 </div>
 HTML;
-
         }
 
         return $result;
@@ -201,7 +198,8 @@ HTML;
                 unset($this->info[$name]);
                 $this->m->{$this->db}->users->updateOne(
                     ['_id' => tomongoid($this->info['_id'])],
-                    ['$unset' => [$name => '']]);
+                    ['$unset' => [$name => '']]
+                );
         }
     }
 
@@ -210,9 +208,9 @@ HTML;
         $result = null;
         switch ($name) {
             case 'fullname':
-                $result = $this->info['nombres'].' '.
-                $this->info['primerap'].' '.
-                $this->info['segundoap'];
+                $result = $this->info['nombres'] . ' ' .
+                    $this->info['primerap'] . ' ' .
+                    $this->info['segundoap'];
                 break;
             case '':
                 $result = false;
@@ -272,7 +270,8 @@ HTML;
                 unset($this->info[$name]);
                 $this->m->{$this->db}->users->updateOne(
                     ['_id' => $this->info['_id']],
-                    ['$unset' => [$name => '']]);
+                    ['$unset' => [$name => '']]
+                );
         }
     }
 
@@ -281,9 +280,9 @@ HTML;
         $result = null;
         switch ($name) {
             case 'fullname':
-                $result = $this->info['nombres'].' '.
-                $this->info['primerap'].' '.
-                $this->info['segundoap'];
+                $result = $this->info['nombres'] . ' ' .
+                    $this->info['primerap'] . ' ' .
+                    $this->info['segundoap'];
                 break;
             case '':
                 $result = false;
