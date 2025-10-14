@@ -1,4 +1,5 @@
 <?php
+
 use Intervention\Image\ImageManager;
 use OTPHP\TOTP;
 use Endroid\QrCode\QrCode;
@@ -10,6 +11,7 @@ use PHPMailer\PHPMailer\Exception;
 use Google\Service\DriveActivity\Create;
 use MongoDB\Model\BSONDocument;
 use Rogierw\RwAcme\AcmeClient;
+
 require 'include.php';
 $loader1 = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates');
 $loader2 = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates/panda');
@@ -21,12 +23,13 @@ $twig = new \Twig\Environment($loader, [
 	'auto_reload' => true,
 ]);
 
-function replaceVarsAtUrl($url, $vars) {
-    foreach ($vars as $clave => $valor) {
-        // Reemplaza {clave} por el valor codificado
-        $url = str_replace("{" . $clave . "}", urlencode($valor), $url);
-    }
-    return $url;
+function replaceVarsAtUrl($url, $vars)
+{
+	foreach ($vars as $clave => $valor) {
+		// Reemplaza {clave} por el valor codificado
+		$url = str_replace("{" . $clave . "}", urlencode($valor), $url);
+	}
+	return $url;
 }
 
 
@@ -77,7 +80,19 @@ $router->addRoute('/main.js', function (string $route, array $p) {
 
 $router->addRoute('/account/login', function (string $route, array $p) {
 	global $twig, $config, $nframework;
+	if (!empty($_SESSION['user'])) {
+		header('location: /');
+		exit();
+	}
+	$msgError = '';
 
+	if (isset($_GET['sid'])) {
+		$decryptedSid = decryptSessionId($_GET['sid'], SESSION_KEY);
+		if ($decryptedSid) {
+			session_id($decryptedSid);
+			session_start();
+		}
+	}
 	if (!empty($_POST['login'])) {
 		$login = $_POST['login'];
 		$user = new User([
@@ -159,7 +174,7 @@ $router->addRoute('/account/twofa', function (string $route, array $p) {
 		} else {
 			$msgError = 'Código incorrecto';
 		}
-	}	
+	}
 
 	$nframework->usecommon = true;
 	$template = $twig->load('twofa.html');
@@ -198,13 +213,13 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 					'password' => trim($signup['password'], PASSWORD_DEFAULT),
 					'active' => false,
 					'created_at' => time(),
-					'updated_at' => time(),					
+					'updated_at' => time(),
 					'sessions' => [],
 					'activatetoken' => $token,
 					'activatetokenexp' => time() + (60 * 60 * 24),
 				]);
-				$mail = new PHPMailer();				
-				try {					
+				$mail = new PHPMailer();
+				try {
 					$mail->isSMTP();
 					$mail->CharSet = 'UTF-8';                                            // Send using SMTP
 					$mail->Host       = $config['smtp']['host'];               // Set the SMTP server to send through
@@ -233,7 +248,7 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 						'user' => $nuser->_id
 					]);
 
-					$c =$mail->send();					
+					$c = $mail->send();
 					if ($c) {
 						$msgError = $lng['activate_account_sent'];
 					} else {
@@ -257,7 +272,6 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 		'lng' => $nframework->language(),
 		'msgError' => $msgError
 	]);
-	
 }, ['GET', 'POST']);
 
 
@@ -299,7 +313,10 @@ $router->addRoute('/account/forgot', function (string $route, array $p) {
 				$mail->Subject = $lng['reset_password_subject'];
 				$mail->Body    =  replaceVarsAtUrl($lng['reset_password_body'], ['host' => $_SERVER['HTTP_HOST'], 'token' => $token, 'user' => $user->_id]);
 				$mail->AltBody = replaceVarsAtUrl($lng['reset_password_altbody'], [
-					'host' => $_SERVER['HTTP_HOST'], 'token' => $token, 'user' => $user->_id]);
+					'host' => $_SERVER['HTTP_HOST'],
+					'token' => $token,
+					'user' => $user->_id
+				]);
 				$mail->send();
 				$msgError = $lng['reset_password_sent'];
 			} catch (Exception $e) {
@@ -352,21 +369,19 @@ $router->addRoute('/account/reset', function (string $route, array $p) {
 	} else {
 		$msgError = $lng['no_token_provided'];
 	}
-	
-	$nframework->usecommon = true;	
-	$template = $twig->load('reset.html');	
+
+	$nframework->usecommon = true;
+	$template = $twig->load('reset.html');
 	echo $template->render([
 		'nframework' => [
 			'themeSwitcher' => $nframework->themeSwitcher()
 		],
 		'lng' => $lng
 	]);
-
-
 }, ['GET', 'POST']);
 $router->addRoute('/account/activate/', function (string $route, array $p) {
 	global $twig, $config, $nframework;
-	$nframework->usecommon = true;	
+	$nframework->usecommon = true;
 	if (!empty($_GET['token'])) {
 		$user = new User([
 			'_id' => toMongoId($_GET['user']),
@@ -379,14 +394,14 @@ $router->addRoute('/account/activate/', function (string $route, array $p) {
 			$user->active = true;
 			//$user->save();
 			$_SESSION['user'] = $user->_id;
-			session_write_close();	
+			session_write_close();
 			header('location: /');
 			exit();
-		} else {		
+		} else {
 			$msgError = 'Token invalid';
-		}			
-	}else{
-		$msgError='No token provided';
+		}
+	} else {
+		$msgError = 'No token provided';
 	}
 	$nframework->usecommon = true;
 	$template = $twig->load('messages.html');
@@ -400,23 +415,23 @@ $router->addRoute('/account/activate/', function (string $route, array $p) {
 }, ['GET']);
 
 $router->addRoute('/account/totp-setup', function ($route, $arg) {
-    global $user, $m, $config,$nframework;
+	global $user, $m, $config, $nframework;
 
-    // Genera el secreto y guárdalo en la base de datos del usuario
-    if (empty($user->totp_secret)) {
-        $totp = TOTP::create();
-        $secret = $totp->getSecret();
-        $user->totp_secret = $secret;
-        //$user->save();
-    } else {
-        $secret = $user->totp_secret;
-        $totp = TOTP::create($secret);
-    }
+	// Genera el secreto y guárdalo en la base de datos del usuario
+	if (empty($user->totp_secret)) {
+		$totp = TOTP::create();
+		$secret = $totp->getSecret();
+		$user->totp_secret = $secret;
+		//$user->save();
+	} else {
+		$secret = $user->totp_secret;
+		$totp = TOTP::create($secret);
+	}
 
 	$totp->setLabel($user->username);
 	$totp->setIssuer($config['title']);
 	$uri = $totp->getProvisioningUri();
-	
+
 	// Genera el QR
 	$qr = new Endroid\QrCode\QrCode($uri);
 	$writer = new PngWriter();
