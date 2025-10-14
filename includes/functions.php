@@ -389,3 +389,16 @@ function nflogAttempt($ip, $limit = 5, $blockTime = 300) {
     return true;
 }
 
+function encryptSessionId($sessionId, $key) {
+    $iv = openssl_random_pseudo_bytes(16); // vector de inicialización
+    $encrypted = openssl_encrypt($sessionId, 'AES-256-CBC', $key, 0, $iv);
+    return base64_encode($iv . $encrypted); // concatenamos IV + datos cifrados
+}
+
+function decryptSessionId($encryptedData, $key) {
+    $data = base64_decode($encryptedData);
+    $iv = substr($data, 0, 16);
+    $encrypted = substr($data, 16);
+    return openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
+}
+``
