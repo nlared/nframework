@@ -1,4 +1,5 @@
 <?php
+
 /**
  *  Copyright (c) Microsoft. All rights reserved. Licensed under the MIT license.
  *  See LICENSE in the project root for license information.
@@ -11,7 +12,7 @@
  *  @license  MIT License
  *  @link     http://github.com/microsoftgraph/php-connect-rest-sample
  */
- 
+
 /*! 
     @abstract The page that the user will be redirected to after 
               Azure Active Directory (AD) finishes the authentication flow.

@@ -4,7 +4,7 @@
 $provider = new \League\OAuth2\Client\Provider\Facebook([
     'clientId'           => $config['facebook_oauth_client_id'],
     'clientSecret'       => $config['facebook_oauth_client_secret'],
-    'redirectUri'        => 'https://'.$config['cookie_domain'].'/login-facebook/oauth',
+    'redirectUri'        => 'https://' . $config['cookie_domain'] . '/login-facebook/oauth',
     'graphApiVersion'    => 'v2.10',
 ]);
 
@@ -15,7 +15,7 @@ if (!isset($_GET['code'])) {
     ]);
     $_SESSION['oauth2state'] = $provider->getState();
     //echo '<a href="' . $authUrl . '">Log in with Facebook!</a>';
-    header('Location: '.$authUrl);
+    header('Location: ' . $authUrl);
     exit;
 } elseif (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state'])) {
     unset($_SESSION['oauth2state']);
