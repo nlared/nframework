@@ -58,31 +58,37 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
             $_SESSION['google_email'] = $profile['email'];
             $_SESSION['google_name'] = implode(' ', $google_name_parts);
             $_SESSION['google_picture'] = isset($profile['picture']) ? $profile['picture'] : '';
-            
-            $useroauth=$m->{$config['sitedb']}->users->findOne(['username'=>$profile['email']]);
-            if(!empty($useroauth->_id)){
-            	$_SESSION['user']=(string)$useroauth->_id;
-            }else{
-            	$newid=new MongoDB\BSON\ObjectID();
-        		$doc=[
-        			'_id'=>	$newid,
-        			'username'=>$profile['email'],
-        			'name'=>implode(' ', $google_name_parts),
-        		];
-        		$m->{$config['sitedb']}->users->insertOne($doc);
-        		$_SESSION['user']=(string)$newid;
+
+            $useroauth = $m->{$config['sitedb']}->users->findOne(['username' => $profile['email']]);
+            if (!empty($useroauth->_id)) {
+                $_SESSION['user'] = (string)$useroauth->_id;
+            } else {
+                $newid = new MongoDB\BSON\ObjectID();
+                $doc = [
+                    '_id' =>    $newid,
+                    'username' => $profile['email'],
+                    'name' => implode(' ', $google_name_parts),
+                ];
+                $m->{$config['sitedb']}->users->insertOne($doc);
+                $_SESSION['user'] = (string)$newid;
             }
-            $_SESSION['oauth']=[
-            	'provider'=>'google',
-            	'picture'=>isset($profile['picture']) ? $profile['picture'] : '',
-            	'name'=>implode(' ', $google_name_parts),
-            	'token'=>$token,
-    			//'tokenExpires'=>$token->getExpires(),
+            $_SESSION['oauth'] = [
+                'provider' => 'google',
+                'picture' => isset($profile['picture']) ? $profile['picture'] : '',
+                'name' => implode(' ', $google_name_parts),
+                'token' => $token,
+                //'tokenExpires'=>$token->getExpires(),
             ];
-            	session_write_close();
+            session_write_close();
             // Redirect to profile page
+            if (!empty($_SESSION['login_redirect'])) {
+                $redir = $_SESSION['login_redirect'];
+                unset($_SESSION['login_redirect']);
+                header('Location: ' . $redir);
+                exit;
+            }
             header('Location: /');
-            
+
             exit;
         } else {
             exit('Could not retrieve profile information! Please try again later!');
