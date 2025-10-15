@@ -53,8 +53,8 @@ foreach ($m->{$datainfo['db']}->{$datainfo['collection']}->aggregate($pipeline, 
 		} else {
 			$toad[$column] = (string) $d[$column];
 		}
-		$arrayData[] = array_values($toad);
 	}
+	$arrayData[] = array_values($toad);
 }
 
 $spreadsheet->getActiveSheet()
