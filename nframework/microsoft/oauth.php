@@ -6,7 +6,7 @@ use Microsoft\Kiota\Authentication\Oauth\AuthorizationCodeContext;
 use Microsoft\Kiota\Authentication\PhpLeagueAuthenticationProvider;
 use Microsoft\Kiota\Http\GuzzleRequestAdapter;
 
-require'GraphApiClient.php';
+require 'GraphApiClient.php';
 
 try {
     $clientId = $config['microsoft_oauth_client_id'];
@@ -14,7 +14,7 @@ try {
     $authorizationCode = 'authCode';
 
     $tenantId = 'common';
-    $redirectUri = 'https://'.$_SERVER['HTTP_HOST'].'/login-microsoft/oauth';
+    $redirectUri = 'https://' . $_SERVER['HTTP_HOST'] . '/login-microsoft/oauth';
 
     // The auth provider will only authorize requests to
     // the allowed hosts, in this case Microsoft Graph

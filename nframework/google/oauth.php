@@ -16,7 +16,7 @@ session_start();
 // Update the following variables
 $google_oauth_client_id = $config['google_oauth_client_id'];
 $google_oauth_client_secret =  $config['google_oauth_client_secret'];
-$google_oauth_redirect_uri = 'https://'.$config['cookie_domain'].'/login-google/oauth';
+$google_oauth_redirect_uri = 'https://' . $config['cookie_domain'] . '/login-google/oauth';
 $google_oauth_version = 'v3';
 // If the captured code param exists and is valid
 if (isset($_GET['code']) && !empty($_GET['code'])) {
@@ -43,7 +43,7 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
         curl_setopt($ch, CURLOPT_URL, 'https://www.googleapis.com/oauth2/' . $google_oauth_version . '/userinfo');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $response['access_token']]);
-        $token=$response['access_token'];
+        $token = $response['access_token'];
         $response = curl_exec($ch);
         curl_close($ch);
         $profile = json_decode($response, true);
@@ -103,4 +103,3 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
     header('Location: https://accounts.google.com/o/oauth2/auth?' . http_build_query($params));
     exit;
 }
-?>
