@@ -57,7 +57,8 @@ function ifset($array, $key): mixed
     return isset($array[$key]) ? $array[$key] : null;
 }
 
-function buildMetroMenu(array $nodes, string $menuClass = '',string $data_role=''): string {
+function buildMetroMenu(array $nodes, string $menuClass = '', string $data_role = ''): string
+{
     $html = $menuClass ? "<ul class=\"$menuClass\" data-role=\"$data_role\">\n" : "<ul>\n";
 
     foreach ($nodes as $node) {
@@ -76,12 +77,12 @@ function buildMetroMenu(array $nodes, string $menuClass = '',string $data_role='
         }
 
         if (!$shouldRender) continue;
-		
-		if(!empty($node['children'])){
-			 $html .= "<li><a href=\"#\" class=\"dropdown-toggle\">$text</a>".buildMetroMenu($node['children'],"d-menu", "dropdown");
-		}else{
-        	$html .= "<li><a href=\"$link\">$text</a>";
-		}
+
+        if (!empty($node['children'])) {
+            $html .= "<li><a href=\"#\" class=\"dropdown-toggle\">$text</a>" . buildMetroMenu($node['children'], "d-menu", "dropdown");
+        } else {
+            $html .= "<li><a href=\"$link\">$text</a>";
+        }
 
         $html .= "</li>\n";
     }
@@ -91,20 +92,22 @@ function buildMetroMenu(array $nodes, string $menuClass = '',string $data_role='
 }
 
 
-function nfMetroMenu( $menuName,  $menuClass = 'h-menu'): string{
-    global $m,$config;
-	$menu=$m->{$config['sitedb']}->menus->findOne(['name'=>$menuName]);
-	if($menu){
-    	$json=$menu->code;
-	    $nodes = json_decode($json, true);
-	    $html = buildMetroMenu($nodes,$menuClass);
-	}else{
-		$html='';
-	}
+function nfMetroMenu($menuName,  $menuClass = 'h-menu'): string
+{
+    global $m, $config;
+    $menu = $m->{$config['sitedb']}->menus->findOne(['name' => $menuName]);
+    if ($menu) {
+        $json = $menu->code;
+        $nodes = json_decode($json, true);
+        $html = buildMetroMenu($nodes, $menuClass);
+    } else {
+        $html = '';
+    }
     return $html;
 }
 
-function renderEmbeddedFunctions(string $html): string {
+function renderEmbeddedFunctions(string $html): string
+{
     return preg_replace_callback('/{{\s*(\w+)\((.*?)\)\s*}}/', function ($matches) {
         $funcName = $matches[1];
         $args = array_map('trim', explode(',', $matches[2]));
@@ -149,7 +152,8 @@ function normalizeBsonValue($value): mixed
     }
 }
 
-function flattenDocument($document, $prefix = '') {
+function flattenDocument($document, $prefix = '')
+{
     $flat = [];
     foreach ($document as $key => $value) {
         $fullKey = $prefix === '' ? $key : "{$prefix}.{$key}";
@@ -188,7 +192,8 @@ function flattenDocument($document, $prefix = '') {
  *  - $type (only basic types: string, integer, array, object, boolean, double)
  *  - $options (for regex)      
  */
-function matchesQuery($doc, $query) {
+function matchesQuery($doc, $query)
+{
     // Handle logical operators first
     if (isset($query['$and'])) {
         foreach ($query['$and'] as $subQuery) {
@@ -198,7 +203,7 @@ function matchesQuery($doc, $query) {
         }
         unset($query['$and']);
     }
-    
+
     if (isset($query['$or'])) {
         $orMatched = false;
         foreach ($query['$or'] as $subQuery) {
@@ -210,7 +215,7 @@ function matchesQuery($doc, $query) {
         if (!$orMatched) return false;
         unset($query['$or']);
     }
-    
+
     if (isset($query['$nor'])) {
         foreach ($query['$nor'] as $subQuery) {
             if (matchesQuery($doc, $subQuery)) {
@@ -219,26 +224,27 @@ function matchesQuery($doc, $query) {
         }
         unset($query['$nor']);
     }
-    
+
     // Handle field-level queries
     foreach ($query as $field => $condition) {
         if (!matchesField($doc, $field, $condition)) {
             return false;
         }
     }
-    
+
     return true;
 }
 
-function matchesField($doc, $field, $condition) {
+function matchesField($doc, $field, $condition)
+{
     // Get field value (supports dot notation)
     $fieldValue = getNestedValue($doc, $field);
-    
+
     // Handle direct value comparison
     if (!is_array($condition)) {
         return $fieldValue === $condition;
     }
-    
+
     // Handle operators
     foreach ($condition as $op => $value) {
         switch ($op) {
@@ -292,54 +298,57 @@ function matchesField($doc, $field, $condition) {
                 return false;
         }
     }
-    
+
     return true;
 }
 
-function getNestedValue($array, $key) {
+function getNestedValue($array, $key)
+{
     if (strpos($key, '.') === false) {
         return $array[$key] ?? null;
     }
-    
+
     $keys = explode('.', $key);
     $current = $array;
-    
+
     foreach ($keys as $k) {
         if (!is_array($current) || !isset($current[$k])) {
             return null;
         }
         $current = $current[$k];
     }
-    
+
     return $current;
 }
 
-function hasNestedKey($array, $key) {
+function hasNestedKey($array, $key)
+{
     if (strpos($key, '.') === false) {
         return isset($array[$key]);
     }
-    
+
     $keys = explode('.', $key);
     $current = $array;
-    
+
     foreach ($keys as $k) {
         if (!is_array($current) || !isset($current[$k])) {
             return false;
         }
         $current = $current[$k];
     }
-    
+
     return true;
 }
 
 
-function fixSingleQuery($query){
-	if(isset($query['$and']) && count($query['$and'])==1){
-		return $query['$and'][0];
-	}elseif(isset($query['$or']) && count($query['$or'])==1){
-		return $query['$or'][0];
-	}
-	return $query;
+function fixSingleQuery($query)
+{
+    if (isset($query['$and']) && count($query['$and']) == 1) {
+        return $query['$and'][0];
+    } elseif (isset($query['$or']) && count($query['$or']) == 1) {
+        return $query['$or'][0];
+    }
+    return $query;
 }
 
 /*
@@ -352,7 +361,8 @@ $query=fixSingleQuery(['$or'=>$rules]);*/
 
 
 
-function nflogAttempt($ip, $limit = 5, $blockTime = 300) { 
+function nflogAttempt($ip, $limit = 5, $blockTime = 300)
+{
     global $m, $config;
     $collection = $m->{$config['sitedb']}->nf_attempts;
     $now = new MongoDB\BSON\UTCDateTime(time() * 1000);
