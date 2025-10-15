@@ -80,12 +80,7 @@ $router->addRoute('/main.js', function (string $route, array $p) {
 
 $router->addRoute('/account/login', function (string $route, array $p) {
 	global $twig, $config, $nframework;
-	if (!empty($_SESSION['user'])) {
-		header('location: /');
-		exit();
-	}
 	$msgError = '';
-
 	if (!empty($_POST['login'])) {
 		$login = $_POST['login'];
 		$user = new User([
@@ -121,6 +116,21 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 	} elseif (!empty($_GET['login_redirect'])) {
 		$_SESSION['login_redirect'] = decryptSessionId($_GET['login_redirect']);
 	}
+	if (!empty($_SESSION['user'])) {
+		if (!empty($_SESSION['login_redirect']) && $_SESSION['login_redirect'] != '' && $_SESSION['login_redirect'] != '/account/login.php') {
+			$redir = $_SESSION['login_redirect'];
+			$_SESSION['login_redirect'] = '';
+			if (strpos($redir, '//') !== 0) {
+				$redir .= '&sid=' . encryptSessionId(session_id(), SESSION_KEY);
+			}
+			header('location: ' . $redir);
+			exit();
+		}
+		header('location: /');
+		exit();
+	}
+
+
 
 	/*
 	if (!empty($_SESSION['nframework']['loginpage'])) {
