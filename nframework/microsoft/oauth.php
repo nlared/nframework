@@ -34,12 +34,16 @@ try {
     $client = new GraphApiClient($requestAdapter);
 
     $me = $client->me()->get()->wait();
-	$email = $me->getMail(); 
-	
-	
-    echo "Hello {$me->getDisplayName()}, your ID is {$me->getId()}";
+    $email = $me->getMail();
 
+
+    echo "Hello {$me->getDisplayName()}, your ID is {$me->getId()}";
+    if (!empty($_SESSION['login_redirect'])) {
+        $redir = $_SESSION['login_redirect'];
+        unset($_SESSION['login_redirect']);
+        header('Location: ' . $redir);
+        exit;
+    }
 } catch (ApiException $ex) {
     echo $ex->getMessage();
 }
-?>
