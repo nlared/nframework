@@ -86,13 +86,6 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 	}
 	$msgError = '';
 
-	if (isset($_GET['sid'])) {
-		$decryptedSid = decryptSessionId($_GET['sid'], SESSION_KEY);
-		if ($decryptedSid) {
-			session_id($decryptedSid);
-			session_start();
-		}
-	}
 	if (!empty($_POST['login'])) {
 		$login = $_POST['login'];
 		$user = new User([
@@ -108,8 +101,13 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 			}
 			$_SESSION['user'] = $user->_id;
 			session_write_close();
-			if ($_SESSION['nframework']['loginpage'] != '' && $_SESSION['nframework']['loginpage'] != '/account/login.php') {
-				header('location: ' . $_SESSION['nframework']['logiopage']);
+			if ($_SESSION['login_redirect'] != '' && $_SESSION['login_redirect'] != '/account/login.php') {
+				$redir = $_SESSION['login_redirect'];
+				$_SESSION['login_redirect'] = '';
+				if (strpos($redir, '//') !== 0) {
+					$redir .= '&sid=' . encryptSessionId(session_id(), SESSION_KEY);
+				}
+				header('location: ' . $redir);
 			} else {
 				if ($user->in('admins')) {
 					header('location: /admin/');
@@ -120,12 +118,15 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 			exit();
 		}
 		$msgError = 'Datos incorrectos';
+	} elseif (!empty($_GET['login_redirect'])) {
+		$_SESSION['login_redirect'] = decryptSessionId($_GET['login_redirect']);
 	}
 
+	/*
 	if (!empty($_SESSION['nframework']['loginpage'])) {
 		$_SESSION['nframework']['loginerror'] = 'Datos incorrectos';
 		header('location: ' . $_SESSION['nframework']['loginpage']);
-	}
+	}*/
 
 
 	$nframework->usecommon = true;
