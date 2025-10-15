@@ -399,16 +399,33 @@ function nflogAttempt($ip, $limit = 5, $blockTime = 300)
     return true;
 }
 
-function encryptSessionId($sessionId, $key) {
+function encryptSessionId($sessionId, $key)
+{
     $iv = openssl_random_pseudo_bytes(16); // vector de inicialización
     $encrypted = openssl_encrypt($sessionId, 'AES-256-CBC', $key, 0, $iv);
     return base64_encode($iv . $encrypted); // concatenamos IV + datos cifrados
 }
 
-function decryptSessionId($encryptedData, $key) {
+function decryptSessionId($encryptedData, $key)
+{
     $data = base64_decode($encryptedData);
     $iv = substr($data, 0, 16);
     $encrypted = substr($data, 16);
     return openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
 }
-``
+function isValidSession($encryptedSessionId, $key)
+{
+    if (empty($encryptedSessionId) || empty($key)) {
+        return false;
+    }
+
+    $sessionId = decryptSessionId($encryptedSessionId, $key);
+    if ($sessionId === false) {
+        return false; // Desencriptación fallida
+    }
+
+    session_id($sessionId);
+    session_start();
+
+    return session_status() === PHP_SESSION_ACTIVE;
+}
