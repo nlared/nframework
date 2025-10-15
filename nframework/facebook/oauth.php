@@ -32,32 +32,41 @@ $token = $provider->getAccessToken('authorization_code', [
 try {
     $user = $provider->getResourceOwner($token);
     //printf('Hello %s!', $user->getFirstName());
-    
-    
-    $useroauth=$m->{$config['sitedb']}->users->findOne(['username'=>$user->getEmail()]);
-    if(!empty($useroauth->_id)){
-    	$_SESSION['user']=(string)$useroauth->_id;
-    }else{
-    	$newid=new MongoDB\BSON\ObjectID();
-		$doc=[
-			'_id'=>	$newid,
-			'username'=>$user->getEmail(),
-			'name'=>$user->getName(),
-		];
-		$m->{$config['sitedb']}->users->insertOne($doc);
-		$_SESSION['user']=(string)$newid;
+
+
+    $useroauth = $m->{$config['sitedb']}->users->findOne(['username' => $user->getEmail()]);
+    if (!empty($useroauth->_id)) {
+        $_SESSION['user'] = (string)$useroauth->_id;
+    } else {
+        $newid = new MongoDB\BSON\ObjectID();
+        $doc = [
+            '_id' =>    $newid,
+            'username' => $user->getEmail(),
+            'name' => $user->getName(),
+        ];
+        $m->{$config['sitedb']}->users->insertOne($doc);
+        $_SESSION['user'] = (string)$newid;
     }
-    
-    
-    $_SESSION['oauth']=[
-    	'provider'=>'facebook',
-    	'picture'=>$user->getPictureUrl(),
-    	'name'=>$user->getName(),
-    	'token'=>$token,
-    	//'tokenExpires'=>$user->getExpires(),
+
+
+    $_SESSION['oauth'] = [
+        'provider' => 'facebook',
+        'picture' => $user->getPictureUrl(),
+        'name' => $user->getName(),
+        'token' => $token,
+        //'tokenExpires'=>$user->getExpires(),
     ];
     session_write_close();
     // Redirect to profile page
+    if (!empty($_SESSION['login_redirect'])) {
+        $redir = $_SESSION['login_redirect'];
+        unset($_SESSION['login_redirect']);
+        if (strpos($redir, '//') !== 0) {
+            $redir .= '&sid=' . encryptSessionId(session_id(), SESSION_KEY);
+        }        
+        header('Location: ' . $redir);
+        exit;
+    }
     header('Location: /');
     /*echo '<pre>';
     var_dump($user); // User details
