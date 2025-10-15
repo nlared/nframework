@@ -394,10 +394,11 @@ $router->addRoute('/account/activate/', function (string $route, array $p) {
 	global $twig, $config, $nframework;
 	$nframework->usecommon = true;
 	if (!empty($_GET['token'])) {
+
 		$user = new User([
 			'_id' => toMongoId($_GET['user']),
 			'activatetoken' => $_GET['token'],
-			'activatetokenexp' => ['$gt' => time()]
+			//	'activatetokenexp' => ['$gt' => time()]
 		]);
 		if (!empty($user->_id)) {
 			$user->activatetoken = null;
