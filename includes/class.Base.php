@@ -73,7 +73,7 @@ class baseInput
     public $tags;
     public $value;
     public $datasize;
-	public $backreadonly=false;
+    public $backreadonly = false;
     public function __toMongo($val)
     {
         return $val;
@@ -130,7 +130,7 @@ class baseInput
             } elseif ($option == 'nfembeded') {
                 $value->addElement($this);
                 $this->nfembeded = $value;
-            }elseif (in_array($option, $ovars)) {
+            } elseif (in_array($option, $ovars)) {
                 $this->{$option} = $value;
             } else {
                 $this->tags[$option] = $value;
@@ -145,14 +145,14 @@ class baseInput
             if ($this->name == '' & $this->field != '') {
                 $this->name = $this->field;
             }
-            $this->name = $this->nfembeded->nameprefix.'['.$this->name.']';
+            $this->name = $this->nfembeded->nameprefix . '[' . $this->name . ']';
         }
 
         if (! empty($this->dataset)) {
             if ($this->name == '' & $this->field != '') {
                 $this->name = $this->field;
             }
-            $this->name = $this->dataset->nameprefix.'['.$this->name.']';
+            $this->name = $this->dataset->nameprefix . '[' . $this->name . ']';
             if (strpos($this->field, '.') !== false) {
                 $data = $this->dataset->info;
                 $keys = explode('.', str_replace(['$', '[', ']'], [$this->dataset->position, '.', ''], $this->field));
@@ -193,30 +193,28 @@ class baseInput
         if ($this->id == '') {
             $this->id = str_replace(['[', ']', '.'], ['_', '', '_'], $this->field);
         }
-
     }
 
     public function is_valid($newval)
     {
-        return $this->pattern != '' ? filter_var($newval, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/'.$this->pattern.'/']]) : true;
+        return $this->pattern != '' ? filter_var($newval, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/' . $this->pattern . '/']]) : true;
     }
 
     protected function writetags(): string
     {
         $result = '';
         foreach ($this->tags as $name => $value) {
-            $result .= ' '.$name.'="'.$value.'"';
+            $result .= ' ' . $name . '="' . $value . '"';
         }
 
         return $result;
-
     }
 
     public function data_validate()
     {
-        if (!empty($this->validate) ) {
-            $rules = explode(' ', $this->validate);            
-        }else {
+        if (!empty($this->validate)) {
+            $rules = explode(' ', $this->validate);
+        } else {
             $rules = [];
         }
         if ($this->required && ! in_array('required', $rules)) {
@@ -230,37 +228,36 @@ class baseInput
                 }
             }
             if (! $encontrado) {
-                $rules[] = 'pattern=('.$this->pattern.')';
+                $rules[] = 'pattern=(' . $this->pattern . ')';
             }
         }
         $rulesstr = trim(implode(' ', $rules));
 
-        return ! empty($rulesstr) ? ' data-validate="'.$rulesstr.'"' : '';
+        return ! empty($rulesstr) ? ' data-validate="' . $rulesstr . '"' : '';
     }
 
     public function inputtags()
     {
-        return
-        ($this->caption ? ' data-label="'.$this->caption.'"' : '').
-        ($this->addclass ? ' class="'.$this->addclass.'"' : '').
-        ($this->required ? ' required="required"' : '').
-        ($this->pattern ? ' data-mask-pattern="'.$this->pattern.'"' : '').
-        ($this->readonly ? ' readonly="readonly"' : '').
-        ($this->disabled ? ' disabled' : '').
-        ($this->prepend ? ' data-prepend="'.$this->prepend.'"' : '').
-        ($this->append ? ' data-append="'.$this->append.'"' : '').
-        ($this->prepend_options ? ' data-prepend-options="'.$this->prepend_options.'"' : '').
-        ($this->append_options ? ' data-append-options="'.$this->append_options.'"' : '').
-        ($this->invalid_feedback != '' ? '<span class="invalid_feedback">'.$this->invalid_feedback.'</span>' : '').
-        ($this->autocomplete ? '" autocomplete="'.$this->autocomplete.'"' : '').
-        ($this->datasize ? ' data-size="'.$this->datasize.'"' : '').
-        ($this->placeholder ? ' placeholder="'.$this->placeholder.'"' : '').
-        $this->data_validate();
+        return ($this->caption ? ' data-label="' . $this->caption . '"' : '') .
+            ($this->addclass ? ' class="' . $this->addclass . '"' : '') .
+            ($this->required ? ' required="required"' : '') .
+            ($this->pattern ? ' data-mask-pattern="' . $this->pattern . '"' : '') .
+            ($this->readonly ? ' readonly="readonly"' : '') .
+            ($this->disabled ? ' disabled' : '') .
+            ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
+            ($this->append ? ' data-append="' . $this->append . '"' : '') .
+            ($this->prepend_options ? ' data-prepend-options="' . $this->prepend_options . '"' : '') .
+            ($this->append_options ? ' data-append-options="' . $this->append_options . '"' : '') .
+            ($this->invalid_feedback != '' ? '<span class="invalid_feedback">' . $this->invalid_feedback . '</span>' : '') .
+            ($this->autocomplete ? '" autocomplete="' . $this->autocomplete . '"' : '') .
+            ($this->datasize ? ' data-size="' . $this->datasize . '"' : '') .
+            ($this->placeholder ? ' placeholder="' . $this->placeholder . '"' : '') .
+            $this->data_validate();
     }
 
     public function labelForInput()
     {
-        return '<label class="label-for-input" for="'.$this->id.'">'.$this->caption.'</label>';
+        return '<label class="label-for-input" for="' . $this->id . '">' . $this->caption . '</label>';
     }
 }
 class baseOptions extends baseInput
@@ -271,7 +268,7 @@ class label extends baseInput
 {
     public function __toString()
     {
-        return '<label'.$this->writetags().' id="'.$this->id.'"'.'>'.htmlspecialchars($this->value).'</label>';
+        return '<label' . $this->writetags() . ' id="' . $this->id . '"' . '>' . htmlspecialchars($this->value) . '</label>';
     }
 }
 class inputHidden extends baseInput
@@ -283,8 +280,8 @@ class inputHidden extends baseInput
 
     public function __toString()
     {
-        return '<input type="hidden"'.' id="'.$this->id.'" name="'.$this->name.'"'.$this->writetags().
-        ' value="'.htmlspecialchars($this->value).'">';
+        return '<input type="hidden"' . ' id="' . $this->id . '" name="' . $this->name . '"' . $this->writetags() .
+            ' value="' . htmlspecialchars($this->value) . '">';
     }
 }
 
@@ -326,7 +323,7 @@ class inputText extends baseInput
         } elseif (empty($this->pattern)) {
             $this->validate = ' text';
         } else {
-            $this->validate .= ' pattern=('.$this->pattern.')';
+            $this->validate .= ' pattern=(' . $this->pattern . ')';
         }
     }
 
@@ -335,20 +332,20 @@ class inputText extends baseInput
         global $config;
 
         return
-        '<div class="form-group">'
-            .'<input name="'.$this->name.'" id="'.$this->id.'"'.
-            'data-role="input'.($this->mask || $this->mask_pattern ? ',input-mask' : '').'"'.
-            ' value="'.htmlspecialchars($this->value ?? '').'"'.
-            ' type="'.$this->type.'"'.
-            $this->inputtags().
-            ($this->uppercase ? ' uppercase="true"' : '').
-            ($this->lowercase ? ' lowercase="true"' : '').
-            ($this->autotrim ? ' autotrim="true"' : '').
-            ($this->mask ? ' data-mask="'.$this->mask.'"' : '').
-            ($this->mask_pattern ? ' data-mask-pattern="'.$this->mask_pattern.'"' : '').
-            ($this->pattern ? ' pattern="'.$this->pattern.'"' : '').$this->writetags().
-            '">'.
-        '</div>';
+            '<div class="form-group">'
+            . '<input name="' . $this->name . '" id="' . $this->id . '"' .
+            'data-role="input' . ($this->mask || $this->mask_pattern ? ',input-mask' : '') . '"' .
+            ' value="' . htmlspecialchars($this->value ?? '') . '"' .
+            ' type="' . $this->type . '"' .
+            $this->inputtags() .
+            ($this->uppercase ? ' uppercase="true"' : '') .
+            ($this->lowercase ? ' lowercase="true"' : '') .
+            ($this->autotrim ? ' autotrim="true"' : '') .
+            ($this->mask ? ' data-mask="' . $this->mask . '"' : '') .
+            ($this->mask_pattern ? ' data-mask-pattern="' . $this->mask_pattern . '"' : '') .
+            ($this->pattern ? ' pattern="' . $this->pattern . '"' : '') . $this->writetags() .
+            '">' .
+            '</div>';
     }
 
     public function is_valid($newval)
@@ -390,12 +387,12 @@ class inputNumber extends baseInput
         }
 
         return '<div class="form-group">
-        <input type="number" data-role="input" id="'.$this->id.'" name="'.$this->name.'" value="'.$this->value.'"'.
-            $this->inputtags().
-            ($this->max ? ' max="'.$this->max.'"' : '').
-            ($this->min ? ' min="'.$this->min.'"' : '').
-            ($this->step ? ' step="'.$this->step.'"' : '').
-        '></div>';
+        <input type="number" data-role="input" id="' . $this->id . '" name="' . $this->name . '" value="' . $this->value . '"' .
+            $this->inputtags() .
+            ($this->max ? ' max="' . $this->max . '"' : '') .
+            ($this->min ? ' min="' . $this->min . '"' : '') .
+            ($this->step ? ' step="' . $this->step . '"' : '') .
+            '></div>';
     }
 
     public function is_valid($newval)
@@ -477,17 +474,17 @@ class inputColor extends baseInput
 
     public function __toString()
     {
-        return '<input type="color" data-role="input" id="'.$this->id.
-            '" name="'.$this->name.
-            '"'.$this->inputtags().' value="'.$this->value.'">';
+        return '<input type="color" data-role="input" id="' . $this->id .
+            '" name="' . $this->name .
+            '"' . $this->inputtags() . ' value="' . $this->value . '">';
     }
-}// */
+} // */
 
 class inputDate extends baseInput
 {
     private $format = 'Y-m-d';
     public $timezone;
-    public $storeagetype=self::ST_MONGODATE;
+    public $storeagetype = self::ST_MONGODATE;
     const ST_MONGODATE = 'st_mongodate';
     const ST_STRING = 'st_string';
     public function __toString()
@@ -499,9 +496,9 @@ class inputDate extends baseInput
         // $this->validate="pattern='d{1,2}\/\d{1,2}\/\d{2,4}'";
         return
             '<div class="form-group">
-           <input type="date" name="'.$this->name.'" id="'.$this->id.'" data-role="input" value="'.$this->__toPHP($this->value).'" '.
-                   $this->inputtags().
-                '></div>';
+           <input type="date" name="' . $this->name . '" id="' . $this->id . '" data-role="input" value="' . $this->__toPHP($this->value) . '" ' .
+            $this->inputtags() .
+            '></div>';
     }
 
     public function is_valid($date)
@@ -511,9 +508,9 @@ class inputDate extends baseInput
     }
 
     public function __toMongo($val)
-    {   
-        if ($this->timezone==null){
-            $this->timezone=new DateTimeZone('UTC');
+    {
+        if ($this->timezone == null) {
+            $this->timezone = new DateTimeZone('UTC');
         }
 
         if (! empty($val)) {
@@ -521,20 +518,20 @@ class inputDate extends baseInput
                 return $val;
             } elseif ($this->storeagetype == self::ST_MONGODATE) {
                 $orig_date = DateTime::createFromFormat($this->format, $val, $this->timezone);
-                $orig_date = $orig_date->getTimestamp();                
+                $orig_date = $orig_date->getTimestamp();
                 $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
                 return $utcdatetime;
             }
-        }else {
+        } else {
             return null;
         }
     }
 
     public function __toPHP($val)
     {
-        if ($this->storeagetype==self::ST_STRING){
+        if ($this->storeagetype == self::ST_STRING) {
             return $val;
-        }elseif ($this->storeagetype==self::ST_MONGODATE) {
+        } elseif ($this->storeagetype == self::ST_MONGODATE) {
             if ($val instanceof MongoDB\BSON\UTCDateTime) {
                 $datetime = $val->toDateTime();
                 $date = $datetime->format($this->format);
@@ -543,7 +540,6 @@ class inputDate extends baseInput
             }
             return $date;
         }
-
     }
 }
 class inputTime extends baseInput
@@ -558,9 +554,9 @@ class inputTime extends baseInput
 
         return
             '<div class="form-group">
-            <input type="time" name="'.$this->name.'" id="'.$this->id.'" data-role="input" value="'.$this->__toPHP($this->value).'" '.
-                 $this->inputtags().
-                '></div>';
+            <input type="time" name="' . $this->name . '" id="' . $this->id . '" data-role="input" value="' . $this->__toPHP($this->value) . '" ' .
+            $this->inputtags() .
+            '></div>';
     }
 
     public function __toPHP($val)
@@ -586,63 +582,63 @@ class inputTime extends baseInput
     public function is_valid($date)
     {
         //todo: implement validation logic
-        return preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $date);        
+        return preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $date);
     }
 }
 class inputDateTime extends baseInput
 {
     public $timezone = null;
-	public const ST_MONGODATE='st_mongodate';
-	public const ST_STRING='st_string';
-	public $storagetype=self::ST_MONGODATE;
-	
+    public const ST_MONGODATE = 'st_mongodate';
+    public const ST_STRING = 'st_string';
+    public $storagetype = self::ST_MONGODATE;
+
     public function __toString()
     {
         global $nframework;
         $this->validate = 'string';
         // $nframework->csss['099dtime']='//cdn.nlared.com/jquery-datetimepicker/build/jquery.datetimepicker.min.css';
         return
-        '<input name="'.$this->name.'" id="'.$this->id.'" class="form-control" type="datetime-local" data-role="input"'.
-           ($this->required ? ' required="required"' : '').
-           ($this->readonly ? ' readonly="readonly"' : '').
-           ($this->prepend ? ' data-prepend="'.$this->prepend.'"' : '').
-           ($this->disabled ? ' disabled' : '').
-           ' data-validate="'.$this->data_validate().'"'.
-        $this->addtags.' value="'.$this->__toPHP($this->value)
-        .'" data-clear-button="false"  autocomplete="off"/>';
+            '<input name="' . $this->name . '" id="' . $this->id . '" class="form-control" type="datetime-local" data-role="input"' .
+            ($this->required ? ' required="required"' : '') .
+            ($this->readonly ? ' readonly="readonly"' : '') .
+            ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
+            ($this->disabled ? ' disabled' : '') .
+            ' data-validate="' . $this->data_validate() . '"' .
+            $this->addtags . ' value="' . $this->__toPHP($this->value)
+            . '" data-clear-button="false"  autocomplete="off"/>';
     }
 
     public function __toMongo($val)
     {
-        if($this->timezone==null){
-            $this->timezone=new DateTimeZone('UTC');
+        if ($this->timezone == null) {
+            $this->timezone = new DateTimeZone('UTC');
         }
 
         if (! empty($val)) {
-	        if($this->storagetype==self::ST_STRING){
-            	return $val;
-            }else{
+            if ($this->storagetype == self::ST_STRING) {
+                return $val;
+            } else {
                 $orig_date = DateTime::createFromFormat('Y-m-d\TH:i', $val, $this->timezone);
-	            $orig_date = $orig_date->getTimestamp();
-	            $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
+                $orig_date = $orig_date->getTimestamp();
+                $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
                 return $utcdatetime;
             }
-        }else {
+        } else {
             return null;
-        }        
+        }
     }
 
     public function __toPHP($val)
     {
-        if($this->storagetype==self::ST_STRING){
+        if ($this->storagetype == self::ST_STRING) {
             return $val;
-        }elseif ($this->storagetype==self::ST_MONGODATE) {
+        } elseif ($this->storagetype == self::ST_MONGODATE) {
             if ($val instanceof MongoDB\BSON\UTCDateTime) {
                 $datetime = $val->toDateTime();
                 $date = $datetime->format('Y-m-d\TH:i');
             } else {
                 $date = $val;
-            }    
+            }
             return $date;
         }
     }
@@ -664,17 +660,17 @@ class inputMCE extends baseInput
 
     public function __toString()
     {
-        global $nframework,$javas;
+        global $nframework, $javas;
         /*
     	'a11ychecker','advcode', 'editimage', 'powerpaste', 'tinymcespellchecker', 'tinydrive'
     	*/
-		
-		if(empty($this->content_css)){
-			$this->content_css=array_values((array)$nframework->csss);
-		}
+
+        if (empty($this->content_css)) {
+            $this->content_css = array_values((array)$nframework->csss);
+        }
         $nframework->jss['025'] = 'https://cdn.jsdelivr.net/npm/hugerte@1/hugerte.min.js';
         // $nframework->jss['905']='https://cdn.nlared.com/hugerte/nf.js';
-        $nframework->jss['905'] = 'https://cdn.nlared.com/hugerte/metro/plugin.js?n='.date('ymdHis');
+        $nframework->jss['905'] = 'https://cdn.nlared.com/hugerte/metro/plugin.js?n=' . date('ymdHis');
         /*if(!$nframework->onces['MCE']){
             $javas->addjs("
 hugerte.PluginManager.add('myPlugin', function(editor, url) {
@@ -705,21 +701,21 @@ hugerte.PluginManager.add('myPlugin', function(editor, url) {
         // toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | myButton',
         // code
         $javas->addjs("hugerte.init({
-	selector:'textarea#".$this->id."',
+	selector:'textarea#" . $this->id . "',
 	plugins: 'accordion advlist anchor autolink autosave charmap code codesample directionality emoticons fullscreen help image insertdatetime link lists media nonbreaking pagebreak preview quickbars save searchreplace table template visualblocks visualchars wordcount',
-	image_list: '/nframework/tinymceimgs.php?_id=".$this->id."',
-	convert_urls: false,".
-    ($nframework->lang != 'en-US' ?
-    "language_url: '//cdn.nlared.com/hugerte/langs/".$nframework->lang_.".js',
-	language: '".$nframework->lang_."',
-	" : '')."
-	content_css: ".json_encode($this->content_css).",
+	image_list: '/nframework/tinymceimgs.php?_id=" . $this->id . "',
+	convert_urls: false," .
+            ($nframework->lang != 'en-US' ?
+                "language_url: '//cdn.nlared.com/hugerte/langs/" . $nframework->lang_ . ".js',
+	language: '" . $nframework->lang_ . "',
+	" : '') . "
+	content_css: " . json_encode($this->content_css) . ",
 	relative_urls: false,
-	//document_base_url: '//".$_SERVER['HTTP_HOST'].$this->baseurl."',
-    image_uploadtab: ".($this->upload ? 'true' : 'false').",
-    images_upload_url: '/nframework/tinymceupload.php?_id=".$this->id."',
-	images_upload_base_path: '".$this->baseurl."',
-	extended_valid_elements: '".$this->extended_valid_elements."',
+	//document_base_url: '//" . $_SERVER['HTTP_HOST'] . $this->baseurl . "',
+    image_uploadtab: " . ($this->upload ? 'true' : 'false') . ",
+    images_upload_url: '/nframework/tinymceupload.php?_id=" . $this->id . "',
+	images_upload_base_path: '" . $this->baseurl . "',
+	extended_valid_elements: '" . $this->extended_valid_elements . "',
 setup: function(editor) {
   editor.on('PreInit', function() {
     editor.parser.addNodeFilter('iframe', function(nodes) {
@@ -730,7 +726,7 @@ setup: function(editor) {
   });
 }
 });");
-/*
+        /*
 	setup: function (editor) {
     	editor.on('init', function () {
     		const head = editor.dom.select('head')[0];
@@ -749,15 +745,15 @@ setup: function(editor) {
             'baseurl' => $this->baseurl,
         ];
 
-        return ($this->caption != '' ? '<label for="'.$this->id.'">'.$this->caption.'</label>' : '').
-        '<textarea name="'.$this->name.'" id="'.$this->id
-            .'"'.
-            ($this->required ? ' required="required"' : '').
-            ($this->readonly ? ' readonly="readonly"' : '').
-            ($this->disabled ? ' disabled' : '').
-                ($this->placeholder ? ' placeholder="'.$this->placeholder.'"' : '').
-            $this->addtags.' data-role="tinyMCE">'.$this->value.
-        '</textarea>';
+        return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') .
+            '<textarea name="' . $this->name . '" id="' . $this->id
+            . '"' .
+            ($this->required ? ' required="required"' : '') .
+            ($this->readonly ? ' readonly="readonly"' : '') .
+            ($this->disabled ? ' disabled' : '') .
+            ($this->placeholder ? ' placeholder="' . $this->placeholder . '"' : '') .
+            $this->addtags . ' data-role="tinyMCE">' . $this->value .
+            '</textarea>';
     }
 }
 class textArea extends baseInput
@@ -769,13 +765,13 @@ class textArea extends baseInput
     public function __toString()
     {
         return '
-        	<textarea data-role="textarea" name="'.$this->name.'" id="'.$this->id.'"'.
-            $this->inputtags().
-            ($this->spellcheck ? ' spellcheck="true"' : '').
-            ($this->uppercase ? ' uppercase="true"' : '').
-            ($this->charscounter != '' ? ' data-chars-counter="'.$this->charscounter.'"' : '').
-            ($this->charscountertemplate != '' ? ' data-chars-counter-template="'.$this->charscountertemplate.'"' : '').
-        '>'.htmlentities($this->value).'</textarea>';
+        	<textarea data-role="textarea" name="' . $this->name . '" id="' . $this->id . '"' .
+            $this->inputtags() .
+            ($this->spellcheck ? ' spellcheck="true"' : '') .
+            ($this->uppercase ? ' uppercase="true"' : '') .
+            ($this->charscounter != '' ? ' data-chars-counter="' . $this->charscounter . '"' : '') .
+            ($this->charscountertemplate != '' ? ' data-chars-counter-template="' . $this->charscountertemplate . '"' : '') .
+            '>' . htmlentities($this->value) . '</textarea>';
     }
 }
 class AutoformList extends baseInput
@@ -791,15 +787,15 @@ class inputRadios extends baseOptions
         $contas = 0;
         $result = '';
         foreach ($this->options as $value => $text) {
-            $result .= '<input type="radio" name="'.$this->name.'" id="'.$this->id.'_'.$contas.'" value="'.$value
-            .'" data-role="radio" data-caption="'.$text.'"'.
-               ' labelid="'.$this->id.'" data-ovalidate="'.$this->data_validate().'"'.
-               ($this->onchange ? ' data-on-change="'.$this->onchange.'"' : '').
-            ($this->value == $value ? ' checked ' : ' ').'/>';//&nbsp;<label for="'.$this->id.'_'.$contas.'">'.$text.'</label>';
+            $result .= '<input type="radio" name="' . $this->name . '" id="' . $this->id . '_' . $contas . '" value="' . $value
+                . '" data-role="radio" data-caption="' . $text . '"' .
+                ' labelid="' . $this->id . '" data-ovalidate="' . $this->data_validate() . '"' .
+                ($this->onchange ? ' data-on-change="' . $this->onchange . '"' : '') .
+                ($this->value == $value ? ' checked ' : ' ') . '/>'; //&nbsp;<label for="'.$this->id.'_'.$contas.'">'.$text.'</label>';
             $contas++;
         }
 
-        return ($this->caption != '' ? '<label id="'.$this->id.'">'.$this->caption.'</label>' : '').$result;
+        return ($this->caption != '' ? '<label id="' . $this->id . '">' . $this->caption . '</label>' : '') . $result;
     }
 }
 
@@ -811,9 +807,9 @@ function nflistoptions($options, $selected = []): string
     }
     foreach ($options as $value => $text) {
         if (is_array($text)) {
-            $result .= '<optgroup label="'.$value.'">'.nflistoptions($text, $selected).'</optgroup>';
+            $result .= '<optgroup label="' . $value . '">' . nflistoptions($text, $selected) . '</optgroup>';
         } else {
-            $result .= '<option value="'.$value.'"'.(in_array($value, $selected) ? ' selected>' : '>').$text.'</option>';
+            $result .= '<option value="' . $value . '"' . (in_array($value, $selected) ? ' selected>' : '>') . $text . '</option>';
             // $result.='<option value="' . $value . '"' . ($value == $selected ? ' selected>' : '>') . $text . '</option>';
         }
     }
@@ -864,14 +860,14 @@ class Select extends baseOptions
         // onfocus=\"Autoformonfocus(this)\" onblur=\"Autoformonblur(this)\">\n";
         // $_SESSION['ANTIXSS'][$this->name]=[FILTER_VALIDATE_SELE];
         return
-            '<select name="'.$this->name.($this->multiple ? '[]" multiple="multiple"' : '"').
-            ' id="'.$this->id.'"'.' data-role="'.$this->role.'" '.
-             $this->inputtags().
-             ($this->prepend ? ' data-prepend="'.$this->prepend.'"' : '').
-            ($this->canadd ? ' canadd="canadd"' : '').
-            ($this->onChange ? ' onChange="'.$this->onChange.'"' : '').
-            (! $this->datafilter ? ' data-filter="false"' : '').
-            ' data-filter="true" data-filter-placeholder="'.$this->placeholder.'">'.$result.'</select>';
+            '<select name="' . $this->name . ($this->multiple ? '[]" multiple="multiple"' : '"') .
+            ' id="' . $this->id . '"' . ' data-role="' . $this->role . '" ' .
+            $this->inputtags() .
+            ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
+            ($this->canadd ? ' canadd="canadd"' : '') .
+            ($this->onChange ? ' onChange="' . $this->onChange . '"' : '') .
+            (! $this->datafilter ? ' data-filter="false"' : '') .
+            ' data-filter="true" data-filter-placeholder="' . $this->placeholder . '">' . $result . '</select>';
     }
 
     public function is_valid($newval)
@@ -895,21 +891,21 @@ function nflistoptionsIcons($options, $selected = [])
     foreach ($options as $key => $value) {
         if (is_array($value) && isset($value['group'])) {
             // Si es un grupo de opciones
-            $result .= '<optgroup label="'.htmlspecialchars($value['group']).'">';
+            $result .= '<optgroup label="' . htmlspecialchars($value['group']) . '">';
             foreach ($value['options'] as $optionValue => $optionText) {
                 if (is_array($optionText)) {
-                    $result .= '<option value="'.htmlspecialchars($optionValue).'" data-template="'.htmlspecialchars($optionText['icon']).'"'.(in_array($optionValue, $selected) ? ' selected>' : '>').htmlspecialchars($optionText['datashow']).'</option>';
+                    $result .= '<option value="' . htmlspecialchars($optionValue) . '" data-template="' . htmlspecialchars($optionText['icon']) . '"' . (in_array($optionValue, $selected) ? ' selected>' : '>') . htmlspecialchars($optionText['datashow']) . '</option>';
                 } else {
-                    $result .= '<option value="'.htmlspecialchars($optionValue).'"'.(in_array($optionValue, $selected) ? ' selected>' : '>').htmlspecialchars($optionText).'</option>';
+                    $result .= '<option value="' . htmlspecialchars($optionValue) . '"' . (in_array($optionValue, $selected) ? ' selected>' : '>') . htmlspecialchars($optionText) . '</option>';
                 }
             }
             $result .= '</optgroup>';
         } else {
             // Si no es un grupo de opciones
             if (is_array($value)) {
-                $result .= '<option value="'.htmlspecialchars($key).'" data-template="'.htmlspecialchars($value['icon']).'"'.(in_array($key, $selected) ? ' selected>' : '>').htmlspecialchars($value['datashow']).'</option>';
+                $result .= '<option value="' . htmlspecialchars($key) . '" data-template="' . htmlspecialchars($value['icon']) . '"' . (in_array($key, $selected) ? ' selected>' : '>') . htmlspecialchars($value['datashow']) . '</option>';
             } else {
-                $result .= '<option value="'.htmlspecialchars($key).'"'.(in_array($key, $selected) ? ' selected>' : '>').htmlspecialchars($value).'</option>';
+                $result .= '<option value="' . htmlspecialchars($key) . '"' . (in_array($key, $selected) ? ' selected>' : '>') . htmlspecialchars($value) . '</option>';
             }
         }
     }
@@ -951,22 +947,20 @@ class SelectIcon extends baseOptions
 
         // onfocus=\"Autoformonfocus(this)\" onblur=\"Autoformonblur(this)\">\n";
         // $_SESSION['ANTIXSS'][$this->name]=[FILTER_VALIDATE_SELE];
-        return
-            ($this->caption != '' ? '<label for="'.$this->id.'">'.$this->caption.'</label>' : '').
-            ($this->infobox != '' ? '&nbsp;<span class="mif-question nfinfoicon fg-red" content="'.htmlentities($this->infobox, ENT_QUOTES).'"></span>' : '')
-            .'<select name="'.$this->name.($this->multiple ? '[]" multiple="multiple"' : '"').
-            ' id="'.$this->id.'"'.$this->writetags().
-            ' data-role="'.$this->role.'"'.
-            ($this->canadd ? ' canadd="canadd"' : '').
-            ($this->disabled ? ' disabled="disabled"' : '').
-            ($this->required ? ' required="required"' : '').
-            (! $this->datafilter ? ' data-filter="false"' : '').
-            ($this->placeholder ? ' data-filter-placeholder="'.$this->placeholder.'"' : '').
-                        ($this->validate ? 'data-validate="'.$this->validate.'"' : '').
-            ($this->multiple ? ' multiple' : '').
-            ($this->addclass ? ' class="'.$this->addclass.'"' : '').'>'.$result.'</select>'.
-            ($this->invalid_feedback != '' ? '<span class="invalid_feedback">'.$this->invalid_feedback.'</span>' : '');
-
+        return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') .
+            ($this->infobox != '' ? '&nbsp;<span class="mif-question nfinfoicon fg-red" content="' . htmlentities($this->infobox, ENT_QUOTES) . '"></span>' : '')
+            . '<select name="' . $this->name . ($this->multiple ? '[]" multiple="multiple"' : '"') .
+            ' id="' . $this->id . '"' . $this->writetags() .
+            ' data-role="' . $this->role . '"' .
+            ($this->canadd ? ' canadd="canadd"' : '') .
+            ($this->disabled ? ' disabled="disabled"' : '') .
+            ($this->required ? ' required="required"' : '') .
+            (! $this->datafilter ? ' data-filter="false"' : '') .
+            ($this->placeholder ? ' data-filter-placeholder="' . $this->placeholder . '"' : '') .
+            ($this->validate ? 'data-validate="' . $this->validate . '"' : '') .
+            ($this->multiple ? ' multiple' : '') .
+            ($this->addclass ? ' class="' . $this->addclass . '"' : '') . '>' . $result . '</select>' .
+            ($this->invalid_feedback != '' ? '<span class="invalid_feedback">' . $this->invalid_feedback . '</span>' : '');
     }
 
     public function is_valid($newval)
@@ -983,7 +977,7 @@ class SelectIcon extends baseOptions
 class inputCheckBox extends baseInput
 {
     public $type;
-	public $role;
+    public $role;
     public function __toString()
     {
         global $config;
@@ -992,19 +986,20 @@ class inputCheckBox extends baseInput
         }
         $_SESSION['ANTIXSS'][$this->id] = [FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE];
 
-        return '<input name="'.$this->name.'" id="'.$this->id
-                .'" type="checkbox" data-role="'.$this->role.'" data-caption="'.$this->caption.'"'.
-                ($this->value != '' ? ' checked' : '').
-                ($this->disabled != '' ? ' disabled' : '').
-                $this->addtags.'>';
+        return '<input name="' . $this->name . '" id="' . $this->id
+            . '" type="checkbox" data-role="' . $this->role . '" data-caption="' . $this->caption . '"' .
+            ($this->value != '' ? ' checked' : '') .
+            ($this->disabled != '' ? ' disabled' : '') .
+            $this->addtags . '>';
     }
 
     public function __toMongo($val)
     {
         return $val == 'on' ? true : false;
     }
-    public function __toPHP($val){
-    	return $val?'on':'';
+    public function __toPHP($val)
+    {
+        return $val ? 'on' : '';
     }
 }
 class inputCheckBoxs extends Select
@@ -1023,17 +1018,17 @@ class inputCheckBoxs extends Select
             $this->type = 'checkbox';
         }
         foreach ($this->options as $value => $text) {
-            $result .= ($this->horizontal ? '<br>' : '').'<input type="checkbox" data-role="checkbox" id="'.$this->id.'_'.$value.'" name="'.
-                    $this->name."[$value]\"".
-                    ($tempcheck[$value] === true ? ' checked' : '').
-                    " data-caption=\"$text\" data-caption-position=\"".$this->captionposition.'">'.
-                    ($this->nometro ? '<label for="'.$this->id.'_'.$value.'">'.$text.'</label>' : '');
+            $result .= ($this->horizontal ? '<br>' : '') . '<input type="checkbox" data-role="checkbox" id="' . $this->id . '_' . $value . '" name="' .
+                $this->name . "[$value]\"" .
+                ($tempcheck[$value] === true ? ' checked' : '') .
+                " data-caption=\"$text\" data-caption-position=\"" . $this->captionposition . '">' .
+                ($this->nometro ? '<label for="' . $this->id . '_' . $value . '">' . $text . '</label>' : '');
             // $fields.=str_replace('%field%', $result, $this->format['fields'][2]);
-            $_SESSION['ANTIXSS'][$this->id.'_'.$value] = [FILTER_VALIDATE_BOOLEAN];
+            $_SESSION['ANTIXSS'][$this->id . '_' . $value] = [FILTER_VALIDATE_BOOLEAN];
         }
 
         // $result = str_replace('%fields%', $fields, $this->format['fields'][1]);
-        return ($this->caption != '' ? '<label for="'.$this->id.'">'.$this->caption.'</label>' : '').$result;
+        return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') . $result;
     }
 
     public function __toMongo($vals)
@@ -1063,12 +1058,12 @@ class inputfile extends baseInput
     public $limit_time_end = '';
     public function __toString()
     {
-        global $javas,$nframework;
+        global $javas, $nframework;
         if (! isset($_SESSION['uploads4'])) {
             $_SESSION['uploads4'] = [];
         }
-        if($this->mode=='drop'){
-            $this->drop=true;
+        if ($this->mode == 'drop') {
+            $this->drop = true;
         }
 
 
@@ -1080,13 +1075,13 @@ class inputfile extends baseInput
             'delete' => $this->delete,
             'download' => $this->download,
             'preview' => $this->preview,
-            'extension' => $nframework->api_path.'/uploadfile_ext_path.php',
+            'extension' => $nframework->api_path . '/uploadfile_ext_path.php',
             'extensioninfo' => ['path' => $this->path],
             'onupload' => 'onupload',
             'ondelete' => 'ondelete',
             'mode' => $this->mode,
             'onlist' => 'onlist',
-            'countlimit' =>0,
+            'countlimit' => 0,
             //  'sizelimit'=>$this->sizelimit,
             'limit_time_start' => ($this->limit_time_start == '' ? time() : $this->limit_time_start),
             'limit_time_end' => ($this->limit_time_end == '' ? strtotime('+30 minutes') : $this->limit_time_end),
@@ -1097,28 +1092,28 @@ class inputfile extends baseInput
 	$.ajax({
 			url: \'/nframework/uploadfile.php\',
 			method:"POST",
-			data: "mid='.$this->id.'", 
+			data: "mid=' . $this->id . '", 
 			dataType: \'json\',
 			success: function(data) {
-				nffileupload_'.$this->id.'(data);
+				nffileupload_' . $this->id . '(data);
 				
 			}
 		});	
-	function nffileupload_'.$this->id.'(data){
-		'.$this->onDone.'
+	function nffileupload_' . $this->id . '(data){
+		' . $this->onDone . '
 	}
-	$("#'.$this->id.'_progress").hide();
+	$("#' . $this->id . '_progress").hide();
 	
-	$("#'.$this->id.'").fileupload({
+	$("#' . $this->id . '").fileupload({
       url:  \'/nframework/uploadfile.php\',
       dataType: "json",
       maxNumberOfFiles: 1,
       done: function (e, data) {
-          	nffileupload_'.$this->id.'(data.result);
+          	nffileupload_' . $this->id . '(data.result);
       },
       progressall: function (e, data) {
         	var progress = parseInt(data.loaded / data.total * 100, 10);		
-	        var pg=$("#'.$this->id.'_progress");
+	        var pg=$("#' . $this->id . '_progress");
 	        if (progress==100||progress==0){
 	        	pg.hide();
 			}else{
@@ -1133,19 +1128,17 @@ class inputfile extends baseInput
       .parent().addClass($.support.fileInput ? undefined : "disabled");
 ', 'ready');
 
-        return ($this->caption != '' ? '<label for="'.$this->id.'">'.$this->caption.'</label>' : '').'<p>'.
-        '<input type="file" id="'.$this->id.'" name="'.$this->id.'"'.
-        ($this->disabled ? ' disabled' : '').
-        ($this->prepend ? ' data-prepend="'.$this->prepend.'"' : '').
-        ($this->capture ? ' capture="'.$this->capture.'"' : '').
-        ($this->mode=='drop' ? ' data-mode="drop" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : 
-        ($this->mode=='button' ? ' data-mode="button" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : '').
-        ($this->accept ? ' accept="'.$this->accept.'"' : '').'
+        return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') . '<p>' .
+            '<input type="file" id="' . $this->id . '" name="' . $this->id . '"' .
+            ($this->disabled ? ' disabled' : '') .
+            ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
+            ($this->capture ? ' capture="' . $this->capture . '"' : '') .
+            ($this->mode == 'drop' ? ' data-mode="drop" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : ($this->mode == 'button' ? ' data-mode="button" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : '')) .
+            ($this->accept ? ' accept="' . $this->accept . '"' : '') . '
 data-sequential-uploads="true" placeholder="Arrastra hasta aqui para subir archivos"
 data-role="file" data-button-title="<span class=\'mif-folder\'></span>"
-data-form-data=\'{"mid":"'.$this->id.'"}\'/>
-		<div data-role="progress" id="'.$this->id.'_progress" data-type="buffer" data-value="0" data-buffer="100" data-small="true"></div>		';
-
+data-form-data=\'{"mid":"' . $this->id . '"}\'/>
+		<div data-role="progress" id="' . $this->id . '_progress" data-type="buffer" data-value="0" data-buffer="100" data-small="true"></div>		';
     }
 }
 
@@ -1166,7 +1159,7 @@ class inputFiles extends baseInput
     public $countlimit;
     public $limit_time_start;
     public $limit_time_end;
-    public $onDone=<<<js
+    public $onDone = <<<js
 	html +='<div style="overflow-x:auto;overflow-y: auto;//height: 250px;">';
 	html += '<table border="1"><thead><tr><th>Nombre</th><th>Descargar</th><th>Ver</th><th>Eliminar</th></tr></thead><tbody>';
 	jQuery.each(data.files, function(index, file) {
@@ -1184,7 +1177,7 @@ js;
     public $capture;
     public function __toString()
     {
-        global $nframework,$javas;
+        global $nframework, $javas;
 
         $nframework->addjqueryui();
         $nframework->addfileupload();
@@ -1209,27 +1202,27 @@ js;
     $.ajax({
 			url: \'/nframework/uploadfile.php\',
 			method:"POST",
-			data: "mid='.$this->id.'", 
+			data: "mid=' . $this->id . '", 
 			dataType: \'json\',
 			success: function(data) {
-				nffileupload_'.$this->id.'(data);
+				nffileupload_' . $this->id . '(data);
 				
 			}
 		});	
-	function nffileupload_'.$this->id.'(data){
-		'.$this->onDone.'
+	function nffileupload_' . $this->id . '(data){
+		' . $this->onDone . '
 	}
-	$("#'.$this->id.'_progress").hide();
+	$("#' . $this->id . '_progress").hide();
 	
-	$("#'.$this->id.'").fileupload({
+	$("#' . $this->id . '").fileupload({
       url:  \'/nframework/uploadfile.php\',
       dataType: "json",
       done: function (e, data) {
-          	nffileupload_'.$this->id.'(data.result);
+          	nffileupload_' . $this->id . '(data.result);
       },
       progressall: function (e, data) {
         	var progress = parseInt(data.loaded / data.total * 100, 10);		
-	        var pg=$("#'.$this->id.'_progress");
+	        var pg=$("#' . $this->id . '_progress");
 	        if (progress==100||progress==0){
 	        	pg.hide();
 			}else{
@@ -1244,17 +1237,17 @@ js;
       .parent().addClass($.support.fileInput ? undefined : "disabled");
 ', 'ready');
 
-        return ($this->caption != '' ? '<label for="'.$this->id.'">'.$this->caption.'</label>' : '').'<p>'.
-            '<input type="file" id="'.$this->id.'" name="'.$this->id.'"'.
-            ($this->disabled ? ' disabled' : '').
-            ($this->prepend ? ' data-prepend="'.$this->prepend.'"' : '').
-            ($this->capture ? ' capture="'.$this->capture.'"' : '').
-            ($this->drop ? ' data-mode="drop" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : '').
-            ($this->accept ? ' accept="'.$this->accept.'"' : '').'
+        return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') . '<p>' .
+            '<input type="file" id="' . $this->id . '" name="' . $this->id . '"' .
+            ($this->disabled ? ' disabled' : '') .
+            ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
+            ($this->capture ? ' capture="' . $this->capture . '"' : '') .
+            ($this->drop ? ' data-mode="drop" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : '') .
+            ($this->accept ? ' accept="' . $this->accept . '"' : '') . '
 data-sequential-uploads="true" placeholder="Arrastra hasta aqui para subir archivos"
 data-role="file" data-button-title="<span class=\'mif-folder\'></span>"
-data-form-data=\'{"mid":"'.$this->id.'"}\'/><div id="' . $this->id . '_list"></div>
-		<div data-role="progress" id="'.$this->id.'_progress" data-type="buffer" data-value="0" data-buffer="100" data-small="true"></div>		';
+data-form-data=\'{"mid":"' . $this->id . '"}\'/><div id="' . $this->id . '_list"></div>
+		<div data-role="progress" id="' . $this->id . '_progress" data-type="buffer" data-value="0" data-buffer="100" data-small="true"></div>		';
     }
 }
 
@@ -1277,12 +1270,12 @@ class mapmarker extends baseInput
     public $startpoint = [
         'lng' => -100.96047970,
         'lat' => 25.43328030,
-        
+
     ];
 
     public function __toString()
     {
-        global $nframework,$javas;
+        global $nframework, $javas;
         $nframework->csss['005rte'] = 'https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin="';
         $nframework->jss['100leaflet'] = 'https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin="';
 
@@ -1316,28 +1309,28 @@ class mapmarker extends baseInput
 
         $javas->addjs("
 		var startPoint = [$lat,$lng];
-		maps['".$this->id."_map'] = L.map('".$this->id."_map', {editable: true}).setView(startPoint, 16),
+		maps['" . $this->id . "_map'] = L.map('" . $this->id . "_map', {editable: true}).setView(startPoint, 16),
     	tilelayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {maxZoom: 20, attribution: 'Data \u00a9 <a href=\"https://www.openstreetmap.org/copyright\"> OpenStreetMap Contributors </a> Tiles \u00a9 HOT'})
-		.addTo(maps['".$this->id."_map']);
+		.addTo(maps['" . $this->id . "_map']);
 		
-		mapsmarker['".$this->id."_mapmarker'] = new L.marker([$lat,$lng], { draggable:'true'});
-    	mapsmarker['".$this->id."_mapmarker'].on('dragend', function(event){
+		mapsmarker['" . $this->id . "_mapmarker'] = new L.marker([$lat,$lng], { draggable:'true'});
+    	mapsmarker['" . $this->id . "_mapmarker'].on('dragend', function(event){
             var marker = event.target;
             var position = marker.getLatLng();
-            maps['".$this->id."_map'].flyTo(position);
-            $('#".$this->id."_lat').val(position.lat);
-            $('#".$this->id."_lng').val(position.lng);
-            ".(! empty($this->onchange) ? $this->onchange : '')."
+            maps['" . $this->id . "_map'].flyTo(position);
+            $('#" . $this->id . "_lat').val(position.lat);
+            $('#" . $this->id . "_lng').val(position.lng);
+            " . (! empty($this->onchange) ? $this->onchange : '') . "
             marker.setLatLng(position,{draggable:'true'}).bindPopup(position).update();
     	});
-		maps['".$this->id."_map'].addLayer(mapsmarker['".$this->id."_mapmarker']);
+		maps['" . $this->id . "_map'].addLayer(mapsmarker['" . $this->id . "_mapmarker']);
 		");
 
-        return '<div id="'.$this->id.'_map" style="height:'.$this->height.'px;"></div>
-		<div class="grid'.($this->hiddedata ? ' no-visible' : '').'">
+        return '<div id="' . $this->id . '_map" style="height:' . $this->height . 'px;"></div>
+		<div class="grid' . ($this->hiddedata ? ' no-visible' : '') . '">
 			<div class="row">
-				<div class="cell-6"><input name="'.$this->name.'[lat]" id="'.$this->id.'_lat" type="text" value="'.$lat.'" ></div>
-				<div class="cell-6"><input name="'.$this->name.'[lng]" id="'.$this->id.'_lng" type="text" value="'.$lng.'" ></div>
+				<div class="cell-6"><input name="' . $this->name . '[lat]" id="' . $this->id . '_lat" type="text" value="' . $lat . '" ></div>
+				<div class="cell-6"><input name="' . $this->name . '[lng]" id="' . $this->id . '_lng" type="text" value="' . $lng . '" ></div>
 			</div>
 		</div>
 		';
@@ -1357,7 +1350,7 @@ class example extends Base
 
     public function __toString()
     {
-        return '<div class="example" data-text="'.$this->title.'">'.$this->content.'</div>';
+        return '<div class="example" data-text="' . $this->title . '">' . $this->content . '</div>';
     }
 }
 
@@ -1372,7 +1365,7 @@ class datasetpdo
     public $autosave;
     public $position;
     public $fieldprefix;
-    private $exists=false;
+    private $exists = false;
 
     public function addElement(&$element)
     {
@@ -1387,7 +1380,7 @@ class datasetpdo
         if ($this->_id != '' && $this->key != '') {
 
             // $this->info =(array) $this->collection->findOne(['_id'=>$this->_id]);
-            $sth = $this->pdo->query('SELECT * FROM '.$this->table.' WHERE '.$this->key.'="'.$this->_id.'"');
+            $sth = $this->pdo->query('SELECT * FROM ' . $this->table . ' WHERE ' . $this->key . '="' . $this->_id . '"');
             $this->info = $sth->fetch(PDO::FETCH_ASSOC);
             if (count($this->info) == 0) {
                 $this->info = ['_id' => $this->_id];
@@ -1404,7 +1397,7 @@ class datasetpdo
         foreach ($this->elements as $element) {
             $element->value = $_POST[$this->nameprefix][$element->field];
             if ($element->disabled != false && ! $element->is_valid($_POST[$this->nameprefix][$element->field])) {
-                $errores .= 'Error en:'.$element->field.'<br/>';
+                $errores .= 'Error en:' . $element->field . '<br/>';
             }
         }
         if (empty($errores)) {
@@ -1412,18 +1405,17 @@ class datasetpdo
                 foreach ($this->elements as $element) {
                     $changes[$element->field] = $_POST[$this->nameprefix][$element->field];
                 }
-                $sql = 'INSERT INTO '.$this->table
-                .' ('.implode(',', array_keys($changes)).') values("'.implode('","', $changes).'")';
+                $sql = 'INSERT INTO ' . $this->table
+                    . ' (' . implode(',', array_keys($changes)) . ') values("' . implode('","', $changes) . '")';
             } else {
                 foreach ($this->elements as $element) {
                     if ($element->field == $this->key) {
-                        $where = ' where '.$element->field.'="'.$this->_id.'"';
+                        $where = ' where ' . $element->field . '="' . $this->_id . '"';
                     } else {
-                        $sqls[] = $element->field.'="'.$_POST[$this->nameprefix][$element->field].'"';
+                        $sqls[] = $element->field . '="' . $_POST[$this->nameprefix][$element->field] . '"';
                     }
                 }
-                $sql = 'UPDATE '.$this->table.' SET '.implode(',', $sqls).$where;
-
+                $sql = 'UPDATE ' . $this->table . ' SET ' . implode(',', $sqls) . $where;
             }
             //echo $sql;
             $this->pdo->query($sql);
@@ -1488,8 +1480,8 @@ class dataset
         }
         if ($this->_id != '') {
             $this->_id = ($this->simpleid == true ?
-                    trim($this->_id)
-                    : new MongoDB\BSON\ObjectID(trim($this->_id))
+                trim($this->_id)
+                : new MongoDB\BSON\ObjectID(trim($this->_id))
             );
 
             $this->info = (array) $this->collection->findOne(['_id' => $this->_id]);
@@ -1499,7 +1491,6 @@ class dataset
         } else {
             $this->_id = new MongoDB\BSON\ObjectID;
             $this->info = ['_id' => $this->_id];
-
         }
         unset($this->info['']);
     }
@@ -1647,38 +1638,37 @@ class dataset
         }
         foreach ($this->elements as $element) {
             if ($element->disabled != false && ! $element->is_valid($_POST[$this->nameprefix][$element->field])) {
-                $errores .= 'Error en:'.$element->field.'<br/>';
-            }else{
-        		 $element->value = $_POST[$this->nameprefix][$element->field];
+                $errores .= 'Error en:' . $element->field . '<br/>';
+            } else {
+                $element->value = $_POST[$this->nameprefix][$element->field];
             }
         }
         if (empty($errores)) {
             $toset = [];
             $tounset = [];
-            
+
             foreach ($this->elements as $element) {
                 if (empty($element->field)) {
-                    throw new Exception('key vacio:'.json_encode($this->elements));
+                    throw new Exception('key vacio:' . json_encode($this->elements));
                 }
                 if ($element->field == '_id') {
                     $element->value = (string) $this->_id;
                 } else {
-                	if(!$element->backreadonly){
-	                    $results['addata'][] = str_replace('$', $this->position, $this->fieldprefix.$element->field);
-	                    if ($_POST[$this->nameprefix][$element->field] == '') {
-	                        $changes['$unset'][str_replace('$', $this->position, $this->fieldprefix.$element->field)] = 1;
-	                    } else {
-	                        $changes['$set'][str_replace('$', $this->position, $this->fieldprefix.$element->field)] =
-	                        $element->__toMongo($_POST[$this->nameprefix][$element->field]);
-	                        $results['addata'][] = str_replace('$', $this->position, $this->fieldprefix.$element->field);
-	                    }
-	                    if (strpos($element->field, '.') !== false) {
-	                        $punto = true;
-	                    } else {
-	                        $this->info[$element->field] = $element->__toMongo($_POST[$this->nameprefix][$element->field]);
-	                    }
-                		
-                	}
+                    if (!$element->backreadonly) {
+                        $results['addata'][] = str_replace('$', $this->position, $this->fieldprefix . $element->field);
+                        if ($_POST[$this->nameprefix][$element->field] == '') {
+                            $changes['$unset'][str_replace('$', $this->position, $this->fieldprefix . $element->field)] = 1;
+                        } else {
+                            $changes['$set'][str_replace('$', $this->position, $this->fieldprefix . $element->field)] =
+                                $element->__toMongo($_POST[$this->nameprefix][$element->field]);
+                            $results['addata'][] = str_replace('$', $this->position, $this->fieldprefix . $element->field);
+                        }
+                        if (strpos($element->field, '.') !== false) {
+                            $punto = true;
+                        } else {
+                            $this->info[$element->field] = $element->__toMongo($_POST[$this->nameprefix][$element->field]);
+                        }
+                    }
                 }
             }
             if ($this->historic) {
@@ -1763,8 +1753,8 @@ class Icon
     public function __toString()
     {
         return strpos($this->src, '.') === false ?
-            '<span class="icon mif-'.$this->src.'"></span> ' :
-            '<img src="'.$this->src.'" class="icon">';
+            '<span class="icon mif-' . $this->src . '"></span> ' :
+            '<img src="' . $this->src . '" class="icon">';
     }
 }
 
@@ -1785,11 +1775,11 @@ class TreeViewItem
 
     public function __toString()
     {
-        $tmp = (string) $this->icon.$this->caption;
+        $tmp = (string) $this->icon . $this->caption;
         if (count($this->children) > 0) {
-            $tmp .= '<ul>'.implode('', $this->children).'</ul>';
+            $tmp .= '<ul>' . implode('', $this->children) . '</ul>';
         }
-        return '<li class="item" '.$this->addnodetag.' data-icon="'.$this->icon->data().'" data-caption="'.$this->caption.'">'.$tmp.'</li>';
+        return '<li class="item" ' . $this->addnodetag . ' data-icon="' . $this->icon->data() . '" data-caption="' . $this->caption . '">' . $tmp . '</li>';
     }
 }
 class TreeView
@@ -1798,7 +1788,6 @@ class TreeView
     public function __toString()
     {
         return '<ul data-role="treeview"
-			     id="tree_add_leaf_example">'.implode('',$this->children).'</ul>';
-
+			     id="tree_add_leaf_example">' . implode('', $this->children) . '</ul>';
     }
 }
