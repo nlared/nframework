@@ -2,24 +2,25 @@
 
 function booltotag($tag, $val)
 {
-    return ' '.$tag.'="'.($val ? 'true' : 'false').'"';
+    return ' ' . $tag . '="' . ($val ? 'true' : 'false') . '"';
 }
 function strtotag($tag, $val)
 {
-    return ! empty($val) ? ' '.$tag.'="'.$val.'"' : '';
+    return ! empty($val) ? ' ' . $tag . '="' . $val . '"' : '';
 }
 function icontotag($tag, $val)
 {
-    return $tag != '' ? ' '.$tag.'="'.str_replace('"', '\'', $val).'"' : '';
+    return $tag != '' ? ' ' . $tag . '="' . str_replace('"', '\'', $val) . '"' : '';
 }
 
 function mongo_auto_increment($campo)
 {
-    global $m,$config;
+    global $m, $config;
     $result = $m->{$config['sitedb']}->counters->findOneAndUpdate(
         ['_id' => $campo],
         ['$inc' => ['seq' => 1]],
-        ['upsert' => true,
+        [
+            'upsert' => true,
             'projection' => ['seq' => 1],
             'returnDocument' => MongoDB\Operation\FindOneAndUpdate::RETURN_DOCUMENT_AFTER,
         ]
@@ -1506,10 +1507,11 @@ class dataset
     public function refresh()
     {
         if ($this->_id != '') {
-            $this->info = $this->collection->findOne(['_id' => ($this->simpleid == true ?
-                trim($this->_id)
-                : toMongoId(trim($this->_id))
-            ),
+            $this->info = $this->collection->findOne([
+                '_id' => ($this->simpleid == true ?
+                    trim($this->_id)
+                    : toMongoId(trim($this->_id))
+                ),
             ]);
             if (count($this->info) == 0) {
                 $this->info = ['_id' => $this->_id];
@@ -1585,7 +1587,9 @@ class dataset
 
             $this->collection->updateOne(
                 ['_id' => $this->info['_id']],
-                [$operations], $options);
+                [$operations],
+                $options
+            );
 
             // $this->col->update(['_id'=>$this->id],['$unset'=>[$name=>1]]);
         }
