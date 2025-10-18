@@ -140,6 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['code']) && !isset($_GE
 			if (!empty($_SESSION['login_redirect'])) {
 				$redir = $_SESSION['login_redirect'];
 				unset($_SESSION['login_redirect']);
+				if (strpos($redir, '//') !== 0) {
+					$redir .= '?uid=' . encryptSessionId($_SESSION['user'], SESSION_KEY);
+				}
 				header('Location: ' . $redir);
 				exit;
 			}
