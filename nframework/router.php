@@ -113,7 +113,8 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 			exit();
 		}
 		$msgError = 'Datos incorrectos';
-	} elseif (!empty($_GET['login_redirect'])) {
+	}
+	if (!empty($_GET['login_redirect'])) {
 		$_SESSION['login_redirect'] = decryptSessionId($_GET['login_redirect'], SESSION_KEY);
 	}
 	if (!empty($_SESSION['user'])) {
