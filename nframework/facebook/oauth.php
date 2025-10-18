@@ -62,8 +62,8 @@ try {
         $redir = $_SESSION['login_redirect'];
         unset($_SESSION['login_redirect']);
         if (strpos($redir, '//') !== 0) {
-            $redir .= '&sid=' . encryptSessionId(session_id(), SESSION_KEY);
-        }        
+            $redir .= '?uid=' . encryptSessionId($_SESSION['user'], SESSION_KEY);
+        }
         header('Location: ' . $redir);
         exit;
     }
