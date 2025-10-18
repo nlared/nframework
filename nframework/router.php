@@ -131,15 +131,6 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 		exit();
 	}
 
-
-
-	/*
-	if (!empty($_SESSION['nframework']['loginpage'])) {
-		$_SESSION['nframework']['loginerror'] = 'Datos incorrectos';
-		header('location: ' . $_SESSION['nframework']['loginpage']);
-	}*/
-
-
 	$nframework->usecommon = true;
 	$template = $twig->load('login.html');
 	$oauths = [
