@@ -1048,9 +1048,24 @@ class inputfile extends baseInput
     public $accept;
     public $onDone;
     public $capture;
+    public $delete = true;
+    public $download = true;
+    public $preview = true;
+    public $mode = 'input'; // input,drop,button
+    // public $sizelimit=0; // en bytes, 0 sin limite   
+    public $limit_time_start = '';
+    public $limit_time_end = '';
     public function __toString()
     {
         global $javas,$nframework;
+        if (! isset($_SESSION['uploads4'])) {
+            $_SESSION['uploads4'] = [];
+        }
+        if($this->mode=='drop'){
+            $this->drop=true;
+        }
+
+
         $nframework->addjqueryui();
         $nframework->addfileupload();
         $_SESSION['uploads4'][$this->id] = [
@@ -1063,6 +1078,7 @@ class inputfile extends baseInput
             'extensioninfo' => ['path' => $this->path],
             'onupload' => 'onupload',
             'ondelete' => 'ondelete',
+            'mode' => $this->mode,
             'onlist' => 'onlist',
             'countlimit' =>0,
             //  'sizelimit'=>$this->sizelimit,
@@ -1116,7 +1132,8 @@ class inputfile extends baseInput
         ($this->disabled ? ' disabled' : '').
         ($this->prepend ? ' data-prepend="'.$this->prepend.'"' : '').
         ($this->capture ? ' capture="'.$this->capture.'"' : '').
-        ($this->drop ? ' data-mode="drop" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : '').
+        ($this->mode=='drop' ? ' data-mode="drop" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : 
+        ($this->mode=='button' ? ' data-mode="button" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : '').
         ($this->accept ? ' accept="'.$this->accept.'"' : '').'
 data-sequential-uploads="true" placeholder="Arrastra hasta aqui para subir archivos"
 data-role="file" data-button-title="<span class=\'mif-folder\'></span>"
