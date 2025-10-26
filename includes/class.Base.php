@@ -1035,10 +1035,6 @@ class inputfile extends baseInput
         if (! isset($_SESSION['uploads4'])) {
             $_SESSION['uploads4'] = [];
         }
-        if ($this->mode == 'drop') {
-            $this->drop = true;
-        }
-
 
         $nframework->addjqueryui();
         $nframework->addfileupload();
