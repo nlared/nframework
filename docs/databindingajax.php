@@ -73,10 +73,10 @@ if ($nframework->isAjax()) {
 		}
 	}
 } else {
-	$nframework->usecommon = true;	
+	$nframework->usecommon = true;
 ?>
 
-<div class="container p-5">
+	<div class="container p-5">
 		<div class="p-3 mb-3 ">
 			<h4>Ajax Databinding</h4>
 		</div>
@@ -119,7 +119,7 @@ if ($nframework->isAjax()) {
 					<div class="cell-md-2"><button class="button success btn btn-success secureop  w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;Guardar</button></div>
 				</div>
 			</div>
-		</form>
+			</form>
 
 
 			<pre class="stay-on"><code class="language-plaintext">
