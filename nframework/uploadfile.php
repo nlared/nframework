@@ -134,9 +134,7 @@ function handleFileUploadProcess(array $upload): array
 			}
 		}
 	}
-
 	$filename = sanitizeFilename(rawurldecode($ufile['name']));
-
 	if (!isValidFilename($filename)) {
 		unlink($ufile['tmp_name']);
 		return ['error' => 'Nombre de archivo inválido', 'onresult' => []];
@@ -195,11 +193,7 @@ if (!isset($_POST['mid']) || !isset($_SESSION['uploads4'][$_POST['mid']])) {
 }
 
 $upload = $_SESSION['uploads4'][$_POST['mid']];
-try {
-	$uploadResult = handleFileUpload($upload);
-} catch (Exception $e) {
-	$uploadResult = ['error' => $e->getMessage(), 'onresult' => []];
-}
+$uploadResult = handleFileUpload($upload);
 
 $result = [
 	'conf' => $upload,
