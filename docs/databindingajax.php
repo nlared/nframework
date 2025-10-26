@@ -105,6 +105,9 @@ if ($nframework->isAjax()) {
 					<div class="cell"><?= $checkboxs2 ?></div>
 				</div>
 				<div class="row">
+					<div class="cell"><?= $radios1 ?></div>
+				</div>
+				<div class="row">
 					<div class="cell"><?= $textarea ?></div>
 				</div>
 
