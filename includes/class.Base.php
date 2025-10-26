@@ -806,6 +806,63 @@ class AutoformList extends baseInput
 {
     public $options = [];
 }
+class inputCheckBox extends baseOptions
+{
+    public $storeagetype = self::ST_MONGOBOOLEAN;
+    const ST_MONGOBOOLEAN = 'st_mongoboolean';
+    const ST_INTEGER = 'st_integer';
+    const ST_CUSTOM = 'st_custom';
+    const ST_STRING = 'st_string';
+    public $customtrue;
+    public $customfalse;
+    public function __toString()
+    {
+        return '<input type="checkbox" name="' . $this->name . '" id="' . $this->id . '" value="1"' .
+            ' data-role="checkbox" data-caption="' . $this->caption . '"' .
+            ' labelid="' . $this->id . '"' .
+            ' data-ovalidate="' . $this->data_validate() . '"' .
+            ($this->onchange ? ' data-on-change="' . $this->onchange . '"' : '') .
+            ($this->value ? ' checked ' : ' ') . '/>';
+    }
+    public function is_valid($newval)
+    {
+        return filter_var($newval, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== null;
+    }
+    public function __toMongo($val)
+    {
+        if ($this->storeagetype == self::ST_MONGOBOOLEAN) {
+            return filter_var($val, FILTER_VALIDATE_BOOLEAN);
+        } elseif ($this->storeagetype == self::ST_STRING) {
+            return $val ? 'true' : 'false';
+        } elseif ($this->storeagetype == self::ST_INTEGER) {
+            return $val ? 1 : 0;
+        } else if ($this->storeagetype == self::ST_CUSTOM) {
+            if ($val) {
+                return $this->customtrue;;
+            } else {
+                return $this->customfalse;;
+            }
+        } else {
+            return $val;
+        }
+    }
+    public function __toPHP($val)
+    {
+        if ($this->storeagetype == self::ST_MONGOBOOLEAN) {
+            return filter_var($val, FILTER_VALIDATE_BOOLEAN);
+        } elseif ($this->storeagetype == self::ST_STRING) {
+            return $val == 'true' ? true : false;
+        } elseif ($this->storeagetype == self::ST_INTEGER) {
+            return $val == 1 ? true : false;
+        } else if ($this->storeagetype == self::ST_CUSTOM) {
+            return $val == $this->customtrue ? true : false;
+        } else {
+            return $val;
+        }
+    }
+}
+
+
 class inputRadios extends baseOptions
 {
     public $rquired;
@@ -992,28 +1049,6 @@ class SelectIcon extends baseOptions
         // return($this->multiple ? true : filter_var($newval));
         // TODO: PROBAR return !is_array($newval);
         return true;
-    }
-}
-// ######################## AGREGUE PARA PONER ICONOS EN LAS OPCIONES DE LOS SELECT #######################
-// ############################################ E N D #####################################################
-
-class inputCheckBox extends baseInput
-{
-    public $type;
-    public $role;
-    public function __toString()
-    {
-        global $config;
-        if ($this->role == '') {
-            $this->role = 'checkbox';
-        }
-        $_SESSION['ANTIXSS'][$this->id] = [FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE];
-
-        return '<input name="' . $this->name . '" id="' . $this->id
-            . '" type="checkbox" data-role="' . $this->role . '" data-caption="' . $this->caption . '"' .
-            ($this->value != '' ? ' checked' : '') .
-            ($this->disabled != '' ? ' disabled' : '') .
-            $this->addtags . '>';
     }
 
     public function __toMongo($val)
