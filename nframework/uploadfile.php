@@ -150,7 +150,7 @@ function handleFileUploadProcess(array $upload): array
 	$fullPath = rtrim($directorio, '/') . '/' . $filename;
 
 	if (!move_uploaded_file($ufile['tmp_name'], $fullPath)) {
-		return ['error' => 'No se pudo mover el archivo', 'onresult' => []];
+		return ['error' => 'No se pudo mover el archivo ' . $ufile['tmp_name'] . ' a ' . $fullPath, 'onresult' => []];
 	}
 
 	$onresult = [];
