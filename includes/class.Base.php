@@ -324,14 +324,16 @@ class inputText extends baseInput
     public $lowercase;
     public $autotrim;
     public $autocomplete = 'off';
+
     public function __construct($options = [])
     {
         $options['class'] = 'inputText';
-        if (! isset($options['type'])) {
-            $options['type'] = 'text';
-        }
+        $options['type'] ??= 'text';
+
         parent::__construct($options);
-        if ($this->type == 'email') {
+
+        // Set validation based on type
+        if ($this->type === 'email') {
             $this->validate .= ' email';
         } elseif (empty($this->pattern)) {
             $this->validate = ' text';
@@ -340,34 +342,53 @@ class inputText extends baseInput
         }
     }
 
-    public function __toString()
+    public function __toString(): string
     {
-        global $config;
-
-        return
-            '<div class="form-group">'
-            . '<input name="' . $this->name . '" id="' . $this->id . '"' .
-            'data-role="input' . ($this->mask || $this->mask_pattern ? ',input-mask' : '') . '"' .
-            ' value="' . htmlspecialchars($this->value ?? '') . '"' .
-            ' type="' . $this->type . '"' .
-            $this->inputtags() .
-            ($this->uppercase ? ' uppercase="true"' : '') .
-            ($this->lowercase ? ' lowercase="true"' : '') .
-            ($this->autotrim ? ' autotrim="true"' : '') .
-            ($this->mask ? ' data-mask="' . $this->mask . '"' : '') .
-            ($this->mask_pattern ? ' data-mask-pattern="' . $this->mask_pattern . '"' : '') .
-            ($this->pattern ? ' pattern="' . $this->pattern . '"' : '') . $this->writetags() .
-            '">' .
-            '</div>';
+        return <<<HTML
+            <div class="form-group">
+                <input name="{$this->name}" 
+                       id="{$this->id}" 
+                       data-role="input{$this->getMaskRole()}" 
+                       value="{$this->getEscapedValue()}" 
+                       type="{$this->type}" 
+                       {$this->inputtags()}
+                       {$this->getInputAttributes()}
+                       {$this->writetags()}>
+            </div>
+        HTML;
     }
 
-    public function is_valid($newval)
+    public function is_valid($newval): bool
     {
         if (empty($this->pattern)) {
             return is_string($newval);
-        } else {
-            return preg_match($this->pattern, $newval);
         }
+
+        return (bool) preg_match('/' . $this->pattern . '/', $newval);
+    }
+
+    private function getMaskRole(): string
+    {
+        return ($this->mask || $this->mask_pattern) ? ',input-mask' : '';
+    }
+
+    private function getEscapedValue(): string
+    {
+        return htmlspecialchars($this->value ?? '', ENT_QUOTES, 'UTF-8');
+    }
+
+    private function getInputAttributes(): string
+    {
+        $attrs = [];
+
+        if ($this->uppercase) $attrs[] = 'uppercase="true"';
+        if ($this->lowercase) $attrs[] = 'lowercase="true"';
+        if ($this->autotrim) $attrs[] = 'autotrim="true"';
+        if ($this->mask) $attrs[] = 'data-mask="' . htmlspecialchars($this->mask) . '"';
+        if ($this->mask_pattern) $attrs[] = 'data-mask-pattern="' . htmlspecialchars($this->mask_pattern) . '"';
+        if ($this->pattern) $attrs[] = 'pattern="' . htmlspecialchars($this->pattern) . '"';
+
+        return implode(' ', $attrs);
     }
 }
 
