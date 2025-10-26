@@ -25,7 +25,6 @@ function mongo_auto_increment($campo)
             'returnDocument' => MongoDB\Operation\FindOneAndUpdate::RETURN_DOCUMENT_AFTER,
         ]
     );
-
     return $result->seq;
 }
 
@@ -288,29 +287,17 @@ class inputHidden extends baseInput
 class inputText extends baseInput
 {
     public $value;
-
     public $search;
-
     public $mask;
-
     public $mask_pattern;
-
     public $pattern;
-
     public $inputtype;
-
     public $addclass = 'form-control';
-
     public $type;
-
     public $uppercase;
-
     public $lowercase;
-
     public $autotrim;
-
     public $autocomplete = 'off';
-
     public function __construct($options = [])
     {
         $options['class'] = 'inputText';
@@ -647,17 +634,11 @@ class inputDateTime extends baseInput
 class inputMCE extends baseInput
 {
     public $upload = false;
-
     public $mediadir;
-
     public $baseurl;
-
     public $id;
-
     public $extended_valid_elements;
-
     public $content_css;
-
     public function __toString()
     {
         global $nframework, $javas;
@@ -820,15 +801,10 @@ function nflistoptions($options, $selected = []): string
 class Select extends baseOptions
 {
     public $combobox;
-
     public $multiple;
-
     public $invalid_feedback;
-
     public $options = [];
-
     public $canadd;
-
     public $datafilter = true;
 
     public function __toString(): string
@@ -1005,11 +981,8 @@ class inputCheckBox extends baseInput
 class inputCheckBoxs extends Select
 {
     public $captionposition = 'right';
-
     public $horizontal = false;
-
     public $nometro = false;
-
     public function __toString()
     {
         $result = '';
@@ -1258,15 +1231,10 @@ class mapmarker extends baseInput
     //	public $latitude;
     //	public $longitude;
     public $onchange;
-
     public $type;
-
     public $height = 500;
-
     public $value;
-
     public $hiddedata;
-
     public $startpoint = [
         'lng' => -100.96047970,
         'lat' => 25.43328030,

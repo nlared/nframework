@@ -3,13 +3,9 @@
 class User implements ArrayAccess
 {
     public $info;
-
     private $m;
-
     private $db;
-
     public $notifications;
-
     public function __construct($info)
     {
         global $m, $config;
@@ -89,9 +85,6 @@ class User implements ArrayAccess
     public function usermenu()
     {
         global $themecolor, $config, $themeswitcher;
-
-
-
         $addtheme = ' ' . $themecolor;
         if ($this->info['username'] != 'guest' && $this->info['username'] != '') {
             $result = <<<HTML
