@@ -1464,7 +1464,7 @@ class inputAddress extends baseInput
     }
         
 js
-      );
+        );
 
 
         return <<<html
@@ -1984,7 +1984,6 @@ class datasetArray
         return true; // TODO check
     }
 }*/
-
 class Icon
 {
     public $src;
