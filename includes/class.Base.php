@@ -1056,46 +1056,45 @@ class inputfile extends baseInput
             'limit_time_end' => ($this->limit_time_end == '' ? strtotime('+30 minutes') : $this->limit_time_end),
         ];
 
-        $javas->addjs('
-	
-	$.ajax({
-			url: \'/nframework/uploadfile.php\',
-			method:"POST",
-			data: "mid=' . $this->id . '", 
-			dataType: \'json\',
-			success: function(data) {
-				nffileupload_' . $this->id . '(data);
-				
-			}
-		});	
-	function nffileupload_' . $this->id . '(data){
-		' . $this->onDone . '
-	}
-	$("#' . $this->id . '_progress").hide();
-	
-	$("#' . $this->id . '").fileupload({
-      url:  \'/nframework/uploadfile.php\',
-      dataType: "json",
-      maxNumberOfFiles: 1,
-      done: function (e, data) {
-          	nffileupload_' . $this->id . '(data.result);
-      },
-      progressall: function (e, data) {
-        	var progress = parseInt(data.loaded / data.total * 100, 10);		
-	        var pg=$("#' . $this->id . '_progress");
-	        if (progress==100||progress==0){
-	        	pg.hide();
-			}else{
-	        	pg.show();
-	        	pg.attr("data-value",progress);
-	        
-	      	}
-      }
-	}).bind("fileuploadcompleted",function(e,data){
-          console.log("eventFinished");
+        $javas->addjs(
+            <<<JS
+        $.ajax({
+            url: '/nframework/uploadfile.php',
+            method: "POST",
+            data: "mid={$this->id}",
+            dataType: 'json',
+            success: function(data) {
+                nffileupload_{$this->id}(data);
+            }
+        });
+        function nffileupload_{$this->id}(data){
+            {$this->onDone}
+        }
+        $("#{$this->id}_progress").hide();
+        $("#{$this->id}").fileupload({
+          url: '/nframework/uploadfile.php',
+          dataType: "json",
+          maxNumberOfFiles: 1,
+          done: function (e, data) {
+                nffileupload_{$this->id}(data.result);
+          },
+          progressall: function (e, data) {
+                var progress = parseInt(data.loaded / data.total * 100, 10);
+                var pg = $("#{$this->id}_progress");
+                if (progress==100||progress==0){
+                    pg.hide();
+                } else {
+                    pg.show();
+                    pg.attr("data-value", progress);
+                }
+          }
+        }).bind("fileuploadcompleted", function(e, data){
+              console.log("eventFinished");
         }).prop("disabled", !$.support.fileInput)
-      .parent().addClass($.support.fileInput ? undefined : "disabled");
-', 'ready');
+          .parent().addClass($.support.fileInput ? undefined : "disabled");
+        JS,
+            'ready'
+        );
 
         return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') . '<p>' .
             '<input type="file" id="' . $this->id . '" name="' . $this->id . '"' .
@@ -1167,44 +1166,46 @@ js;
             'limit_time_start' => ($this->limit_time_start == '' ? time() : $this->limit_time_start),
             'limit_time_end' => ($this->limit_time_end == '' ? strtotime('+30 minutes') : $this->limit_time_end),
         ];
-        $javas->addjs('
-    $.ajax({
-			url: \'/nframework/uploadfile.php\',
-			method:"POST",
-			data: "mid=' . $this->id . '", 
-			dataType: \'json\',
-			success: function(data) {
-				nffileupload_' . $this->id . '(data);
-				
-			}
-		});	
-	function nffileupload_' . $this->id . '(data){
-		' . $this->onDone . '
-	}
-	$("#' . $this->id . '_progress").hide();
-	
-	$("#' . $this->id . '").fileupload({
-      url:  \'/nframework/uploadfile.php\',
-      dataType: "json",
-      done: function (e, data) {
-          	nffileupload_' . $this->id . '(data.result);
-      },
-      progressall: function (e, data) {
-        	var progress = parseInt(data.loaded / data.total * 100, 10);		
-	        var pg=$("#' . $this->id . '_progress");
-	        if (progress==100||progress==0){
-	        	pg.hide();
-			}else{
-	        	pg.show();
-	        	pg.attr("data-value",progress);
-	        
-	      	}
-      }
-	}).bind("fileuploadcompleted",function(e,data){
+        $javas->addjs(
+            <<<JS
+        $.ajax({
+        url: '/nframework/uploadfile.php',
+        method: "POST",
+        data: "mid={$this->id}",
+        dataType: 'json',
+        success: function(data) {
+            nffileupload_{$this->id}(data);
+        }
+        });
+        function nffileupload_{$this->id}(data){
+        {$this->onDone}
+        }
+        $("#{$this->id}_progress").hide();
+
+        $("#{$this->id}").fileupload({
+          url:  '/nframework/uploadfile.php',
+          dataType: "json",
+          done: function (e, data) {
+            nffileupload_{$this->id}(data.result);
+          },
+          progressall: function (e, data) {
+            var progress = parseInt(data.loaded / data.total * 100, 10);
+            var pg=$("#{$this->id}_progress");
+            if (progress==100||progress==0){
+            pg.hide();
+            }else{
+            pg.show();
+            pg.attr("data-value",progress);
+
+            }
+          }
+        }).bind("fileuploadcompleted",function(e,data){
           console.log("eventFinished");
         }).prop("disabled", !$.support.fileInput)
-      .parent().addClass($.support.fileInput ? undefined : "disabled");
-', 'ready');
+          .parent().addClass($.support.fileInput ? undefined : "disabled");
+    JS,
+            'ready'
+        );
 
         return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') . '<p>' .
             '<input type="file" id="' . $this->id . '" name="' . $this->id . '"' .
