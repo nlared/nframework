@@ -16,3 +16,14 @@ function onlist($upload)
 	}
 	return $ret;
 }
+function ondownload($filename, $upload)
+{
+	return $upload['extensioninfo']['path'];
+}
+function oncountcheck($upload)
+{
+	if (file_exists($upload['extensioninfo']['path'])) {
+		return 1;
+	}
+	return 0;
+}
