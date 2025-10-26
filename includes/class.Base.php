@@ -1095,144 +1095,43 @@ class inputCheckBoxs extends Select
         return $tomongo;
     }
 }
-class inputfile extends baseInput
+
+abstract class BaseFileInput extends baseInput
 {
-    public $id;
-    public $path;
     public $dir;
-    public $drop;
-    public $accept;
-    public $onDone;
-    public $capture;
-    public $delete = true;
     public $download = true;
     public $preview = true;
-    public $mode = 'input'; // input,drop,button
-    // public $sizelimit=0; // en bytes, 0 sin limite   
+    public $delete = true;
+    public $disabled;
+    public $create_dir;
+    public $accept;
+    public $capture;
     public $limit_time_start = '';
     public $limit_time_end = '';
-    public function __toString()
+    public $extension;
+    public $extensioninfo = [];
+    public $onupload;
+    public $ondelete;
+    public $oncountcheck;
+    public $onlist;
+
+    protected function initializeFileUpload(): void
     {
-        global $javas, $nframework;
-        if (! isset($_SESSION['uploads4'])) {
+        global $nframework;
+
+        if (!isset($_SESSION['uploads4'])) {
             $_SESSION['uploads4'] = [];
         }
 
         $nframework->addjqueryui();
         $nframework->addfileupload();
-        $_SESSION['uploads4'][$this->id] = [
-            'dir' => dirname($this->path),
-            'formname' => $this->id,
-            'delete' => $this->delete,
-            'download' => $this->download,
-            'preview' => $this->preview,
-            'extension' => $nframework->api_path . '/uploadfile_ext_path.php',
-            'extensioninfo' => ['path' => $this->path],
-            'onupload' => 'onupload',
-            'ondelete' => 'ondelete',
-            'mode' => $this->mode,
-            'onlist' => 'onlist',
-            'countlimit' => 0,
-            //  'sizelimit'=>$this->sizelimit,
-            'limit_time_start' => ($this->limit_time_start == '' ? time() : $this->limit_time_start),
-            'limit_time_end' => ($this->limit_time_end == '' ? strtotime('+30 minutes') : $this->limit_time_end),
-        ];
-
-        $javas->addjs(
-            <<<JS
-        $.ajax({
-            url: '/nframework/uploadfile.php',
-            method: "POST",
-            data: "mid={$this->id}",
-            dataType: 'json',
-            success: function(data) {
-                nffileupload_{$this->id}(data);
-            }
-        });
-        function nffileupload_{$this->id}(data){
-            {$this->onDone}
-        }
-        $("#{$this->id}_progress").hide();
-        $("#{$this->id}").fileupload({
-          url: '/nframework/uploadfile.php',
-          dataType: "json",
-          maxNumberOfFiles: 1,
-          done: function (e, data) {
-                nffileupload_{$this->id}(data.result);
-          },
-          progressall: function (e, data) {
-                var progress = parseInt(data.loaded / data.total * 100, 10);
-                var pg = $("#{$this->id}_progress");
-                if (progress==100||progress==0){
-                    pg.hide();
-                } else {
-                    pg.show();
-                    pg.attr("data-value", progress);
-                }
-          }
-        }).bind("fileuploadcompleted", function(e, data){
-              console.log("eventFinished");
-        }).prop("disabled", !$.support.fileInput)
-          .parent().addClass($.support.fileInput ? undefined : "disabled");
-        JS,
-            'ready'
-        );
-
-        return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') . '<p>' .
-            '<input type="file" id="' . $this->id . '" name="' . $this->id . '"' .
-            ($this->disabled ? ' disabled' : '') .
-            ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
-            ($this->capture ? ' capture="' . $this->capture . '"' : '') .
-            ($this->mode == 'drop' ? ' data-mode="drop" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : ($this->mode == 'button' ? ' data-mode="button" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : '')) .
-            ($this->accept ? ' accept="' . $this->accept . '"' : '') . '
-data-sequential-uploads="true" placeholder="Arrastra hasta aqui para subir archivos"
-data-role="file" data-button-title="<span class=\'mif-folder\'></span>"
-data-form-data=\'{"mid":"' . $this->id . '"}\'/>
-		<div data-role="progress" id="' . $this->id . '_progress" data-type="buffer" data-value="0" data-buffer="100" data-small="true"></div>		';
     }
-}
 
-class inputFiles extends baseInput
-{
-    public $dir;
-    public $download;
-    public $preview;
-    public $delete;
-    public $disabled;
-    public $accept;
-    public $drop = true;
-    public $ondelete;
-    public $onupload;
-    public $onlist;
-    public $extension;
-    public $extensioninfo = [];
-    public $countlimit;
-    public $limit_time_start;
-    public $limit_time_end;
-    public $onDone = <<<js
-	html +='<div style="overflow-x:auto;overflow-y: auto;//height: 250px;">';
-	html += '<table border="1"><thead><tr><th>Nombre</th><th>Descargar</th><th>Ver</th><th>Eliminar</th></tr></thead><tbody>';
-	jQuery.each(data.files, function(index, file) {
-		html += '<tr>';
-		html += '<td>' + file.name + '</td>';
-		html += '<td>' + (data.download ===true ? '<a href="javascript:nfFileDownload(\'' + id + '\',\'' + file.name + '\')"><span class="mif-download">Descargar</span></a>' : 'Sin permiso') + '</td>';
-		html += '<td>' + (data.preview === true ? '<a href="javascript:nfFilePreview(\'' + id + '\',\'' + file.name + '\')"><span class="mif-eye">Ver</span></a>' : 'Sin permiso') + '</td>';
-		html += '<td>' + (data.delete ===true  ? '<a href="javascript:if(confirm(\'Are you sure you want to delete?\')){nfFileDeleteTable(\'' + id + '\',\'' + file.name + '\')}"><span class="mif-cross"></span> Eliminar</a><br>':'Sin permiso<br>') + '</td>';
-		html += '</tr>';
-	});
-	html += '</tbody></table></div>'
-	$("#" + id + "_list").append(html);
-
-js;
-    public $capture;
-    public function __toString()
+    protected function getSessionConfig(): array
     {
-        global $nframework, $javas;
+        global $nframework;
 
-        $nframework->addjqueryui();
-        $nframework->addfileupload();
-        // if($this->id=='')$this->id='veamos';
-        $_SESSION['uploads4'][$this->id] = [
+        return [
             'dir' => $this->dir,
             'formname' => $this->id,
             'delete' => $this->delete,
@@ -1240,71 +1139,199 @@ js;
             'preview' => $this->preview,
             'extension' => $this->extension,
             'extensioninfo' => $this->extensioninfo,
-            'onupload' => $this->onupload,
-            'ondelete' => $this->ondelete,
-            'onlist' => $this->onlist,
-            'countlimit' => intval($this->countlimit),
-            'sizelimit' => $this->sizelimit,
-            'limit_time_start' => ($this->limit_time_start == '' ? time() : $this->limit_time_start),
-            'limit_time_end' => ($this->limit_time_end == '' ? strtotime('+30 minutes') : $this->limit_time_end),
+            'onupload' => $this->onupload ?: 'onupload',
+            'ondelete' => $this->ondelete ?: 'ondelete',
+            'create_dir' => $this->create_dir,
+            'onlist' => $this->onlist ?: 'onlist',
+            'oncountcheck' => $this->oncountcheck ?: 'oncountcheck',
+            'limit_time_start' => $this->limit_time_start ?: time(),
+            'limit_time_end' => $this->limit_time_end ?: strtotime('+30 minutes'),
         ];
-        $javas->addjs(
-            <<<JS
-        $.ajax({
-        url: '/nframework/uploadfile.php',
-        method: "POST",
-        data: "mid={$this->id}",
-        dataType: 'json',
-        success: function(data) {
-            nffileupload_{$this->id}(data);
-        }
-        });
-        function nffileupload_{$this->id}(data){
-        {$this->onDone}
-        }
-        $("#{$this->id}_progress").hide();
+    }
 
-        $("#{$this->id}").fileupload({
-          url:  '/nframework/uploadfile.php',
-          dataType: "json",
-          done: function (e, data) {
-            nffileupload_{$this->id}(data.result);
-          },
-          progressall: function (e, data) {
-            var progress = parseInt(data.loaded / data.total * 100, 10);
-            var pg=$("#{$this->id}_progress");
-            if (progress==100||progress==0){
-            pg.hide();
-            }else{
-            pg.show();
-            pg.attr("data-value",progress);
+    protected function addBaseJavaScript(): void
+    {
+        global $javas;
 
-            }
-          }
-        }).bind("fileuploadcompleted",function(e,data){
-          console.log("eventFinished");
-        }).prop("disabled", !$.support.fileInput)
-          .parent().addClass($.support.fileInput ? undefined : "disabled");
-    JS,
-            'ready'
-        );
+        $javas->addjs(<<<JS
+            $.ajax({
+                url: '/nframework/uploadfile.php',
+                method: "POST",
+                data: "mid={$this->id}",
+                dataType: 'json',
+                success: function(data) {
+                    nffileupload_{$this->id}(data);
+                }
+            });
+            
+            $("#{$this->id}_progress").hide();
+            $("#{$this->id}").fileupload({
+                url: '/nframework/uploadfile.php',
+                dataType: "json",
+                done: function (e, data) {
+                    nffileupload_{$this->id}(data.result);
+                },
+                progressall: function (e, data) {
+                    var progress = parseInt(data.loaded / data.total * 100, 10);
+                    var pg = $("#{$this->id}_progress");
+                    if (progress === 100 || progress === 0) {
+                        pg.hide();
+                    } else {
+                        pg.show();
+                        pg.attr("data-value", progress);
+                    }
+                }
+            }).bind("fileuploadcompleted", function(e, data) {
+                console.log("eventFinished");
+            }).prop("disabled", !$.support.fileInput)
+              .parent().addClass($.support.fileInput ? undefined : "disabled");
+        JS, 'ready');
+    }
 
-        return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') . '<p>' .
-            '<input type="file" id="' . $this->id . '" name="' . $this->id . '"' .
-            ($this->disabled ? ' disabled' : '') .
-            ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
-            ($this->capture ? ' capture="' . $this->capture . '"' : '') .
-            ($this->drop ? ' data-mode="drop" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>" ' : '') .
-            ($this->accept ? ' accept="' . $this->accept . '"' : '') . '
-data-sequential-uploads="true" placeholder="Arrastra hasta aqui para subir archivos"
-data-role="file" data-button-title="<span class=\'mif-folder\'></span>"
-data-form-data=\'{"mid":"' . $this->id . '"}\'/><div id="' . $this->id . '_list"></div>
-		<div data-role="progress" id="' . $this->id . '_progress" data-type="buffer" data-value="0" data-buffer="100" data-small="true"></div>		';
+    protected function getCaptureAttr(): string
+    {
+        return $this->capture ? ' capture="' . $this->capture . '"' : '';
+    }
+
+    protected function getAcceptAttr(): string
+    {
+        return $this->accept ? ' accept="' . $this->accept . '"' : '';
     }
 }
 
+class inputFile extends BaseFileInput
+{
+    public $path;
+    public $drop;
+    public $onDone;
+    public $mode = 'input'; // input,drop,button
 
-class inpudAddress extends baseInput
+    public function __toString()
+    {
+        global $javas, $nframework;
+
+        $this->initializeFileUpload();
+
+        // Prepare session data with path-specific config
+        $_SESSION['uploads4'][$this->id] = array_merge($this->getSessionConfig(), [
+            'dir' => dirname($this->path),
+            'extension' => $nframework->api_path . '/uploadfile_ext_path.php',
+            'extensioninfo' => ['path' => $this->path],
+            'onupload' => 'onupload',
+            'ondelete' => 'ondelete',
+            'onlist' => 'onlist',
+            'ondownload' => 'ondownload',
+            'oncountcheck' => 'oncountcheck',
+            'mode' => $this->mode,
+            'countlimit' => 0,
+        ]);
+
+        // Add JavaScript
+        $javas->addjs(<<<JS
+            function nffileupload_{$this->id}(data) {
+                {$this->onDone}
+            }
+        JS, 'ready');
+
+        $this->addBaseJavaScript();
+
+        // Build mode attributes
+        $modeAttrs = '';
+        if ($this->mode === 'drop' || $this->mode === 'button') {
+            $modeAttrs = ' data-mode="' . $this->mode . '" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>"';
+        }
+
+        return <<<HTML
+            {$this->getLabelHtml()}
+            <p>
+                <input type="file" id="{$this->id}" name="{$this->id}"
+                    {$this->getDisabledAttr()}
+                    {$this->getPrependAttr()}
+                    {$this->getCaptureAttr()}
+                    {$modeAttrs}
+                    {$this->getAcceptAttr()}
+                    data-sequential-uploads="true" 
+                    placeholder="Arrastra hasta aqui para subir archivos"
+                    data-role="file" 
+                    data-button-title="<span class='mif-folder'></span>"
+                    data-form-data='{"mid":"{$this->id}"}' />
+                <div data-role="progress" id="{$this->id}_progress" data-type="buffer" data-value="0" data-buffer="100" data-small="true"></div>
+            </p>
+        HTML;
+    }
+}
+
+class inputFiles extends BaseFileInput
+{
+    public $sizelimit = 0;
+    public $drop;
+    public $countlimit;
+
+    // Use nowdoc for better performance and readability
+    public $onDone = <<<'JS'
+        html += '<div style="overflow-x:auto;overflow-y: auto;height: 250px;">';
+        html += '<table border="1"><thead><tr><th>Nombre</th><th>Descargar</th><th>Ver</th><th>Eliminar</th></tr></thead><tbody>';
+        jQuery.each(data.files, function(index, file) {
+            html += '<tr>';
+            html += '<td>' + file.name + '</td>';
+            html += '<td>' + (data.download === true ? '<a href="javascript:nfFileDownload(\'' + id + '\',\'' + file.name + '\')"><span class="mif-download">Descargar</span></a>' : 'Sin permiso') + '</td>';
+            html += '<td>' + (data.preview === true ? '<a href="javascript:nfFilePreview(\'' + id + '\',\'' + file.name + '\')"><span class="mif-eye">Ver</span></a>' : 'Sin permiso') + '</td>';
+            html += '<td>' + (data.delete === true ? '<a href="javascript:if(confirm(\'Are you sure you want to delete?\')){nfFileDeleteTable(\'' + id + '\',\'' + file.name + '\')}"><span class="mif-cross"></span> Eliminar</a><br>' : 'Sin permiso<br>') + '</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+        $("#" + id + "_list").html(html);
+    JS;
+
+    public function __toString()
+    {
+        global $javas;
+
+        $this->initializeFileUpload();
+
+        // Prepare session configuration
+        $_SESSION['uploads4'][$this->id] = array_merge($this->getSessionConfig(), [
+            'countlimit' => (int)$this->countlimit,
+            'sizelimit' => $this->sizelimit,
+        ]);
+
+        // Add JavaScript
+        $javas->addjs(<<<JS
+            function nffileupload_{$this->id}(data) {
+                var id = '{$this->id}';
+                var html = '';
+                {$this->onDone}
+            }
+        JS, 'ready');
+
+        $this->addBaseJavaScript();
+
+        return <<<HTML
+            {$this->getLabelHtml()}
+            <p>
+                <input type="file" id="{$this->id}" name="{$this->id}"
+                    {$this->getDisabledAttr()}
+                    {$this->getPrependAttr()}
+                    {$this->getCaptureAttr()}
+                    {$this->getDropAttr()}
+                    {$this->getAcceptAttr()}
+                    data-sequential-uploads="true" 
+                    placeholder="Arrastra hasta aqui para subir archivos"
+                    data-role="file" 
+                    data-button-title="<span class='mif-folder'></span>"
+                    data-form-data='{"mid":"{$this->id}"}' />
+                <div id="{$this->id}_list"></div>
+                <div data-role="progress" id="{$this->id}_progress" data-type="buffer" data-value="0" data-buffer="100" data-small="true"></div>
+            </p>
+        HTML;
+    }
+
+    private function getDropAttr(): string
+    {
+        return $this->drop ? ' data-mode="drop" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>"' : '';
+    }
+}
+class inputAddress extends baseInput
 {
     public $country;
     public $state;
