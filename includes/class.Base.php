@@ -254,9 +254,35 @@ class baseInput
             $this->data_validate();
     }
 
-    public function labelForInput()
+    public function getLabelHtml(): string
     {
-        return '<label class="label-for-input" for="' . $this->id . '">' . $this->caption . '</label>';
+        return $this->caption ? '<label class="label-for-input" for="' . $this->id . '">' . $this->caption . '</label>' : '';
+    }
+
+    public function getDisabledAttr(): string
+    {
+        return $this->disabled ? ' disabled' : '';
+    }
+
+    public function getPrependAttr(): string
+    {
+        return $this->prepend ? ' data-prepend="' . $this->prepend . '"' : '';
+    }
+    public function getAppendAttr(): string
+    {
+        return $this->append ? ' data-append="' . $this->append . '"' : '';
+    }
+    public function getReadonlyAttr(): string
+    {
+        return $this->readonly ? ' readonly="readonly"' : '';
+    }
+    public function getRequiredAttr(): string
+    {
+        return $this->required ? ' required="required"' : '';
+    }
+    public function getPatternAttr(): string
+    {
+        return $this->pattern ? ' data-mask-pattern="' . $this->pattern . '"' : '';
     }
 }
 class baseOptions extends baseInput
