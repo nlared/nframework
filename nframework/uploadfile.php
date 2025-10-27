@@ -101,6 +101,9 @@ function handleFileDelete(array $upload): array
 	if (file_exists($fullPath) && unlink($fullPath)) {
 		$onresult = [];
 		if (!empty($upload['ondelete'])) {
+			if (!is_callable($upload['ondelete'])) {
+				return ['error' => 'ondelete no es una función válida', 'onresult' => []];
+			}
 			$onresult[] = call_user_func($upload['ondelete'], $fullPath, $upload);
 		}
 		return ['error' => '', 'onresult' => $onresult];
@@ -121,6 +124,9 @@ function handleFileUploadProcess(array $upload): array
 	// Check file count limit
 	if ($upload['countlimit'] > 0) {
 		if (!empty($upload['oncountcheck'])) {
+			if (!is_callable($upload['oncountcheck'])) {
+				return ['error' => 'oncountcheck no es una función válida', 'onresult' => []];
+			}
 			$canUpload = call_user_func($upload['oncountcheck'], $upload);
 			if (!$canUpload) {
 				unlink($ufile['tmp_name']);
@@ -155,6 +161,9 @@ function handleFileUploadProcess(array $upload): array
 
 	$onresult = [];
 	if (!empty($upload['onupload'])) {
+		if (!is_callable($upload['onupload'])) {
+			return ['error' => 'onupload no es una función válida', 'onresult' => []];
+		}
 		$onresult[] = call_user_func($upload['onupload'], $fullPath, $upload);
 	}
 
@@ -164,6 +173,9 @@ function handleFileUploadProcess(array $upload): array
 function getFileList(array $upload): array
 {
 	if (!empty($upload['onlist'])) {
+		if (!is_callable($upload['onlist'])) {
+			return ['error' => 'onlist no es una función válida', 'onresult' => []];
+		}
 		return call_user_func($upload['onlist'], $upload);
 	}
 
