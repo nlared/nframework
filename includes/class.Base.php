@@ -967,7 +967,6 @@ function nflistoptionsIcons($options, $selected = [])
     }
 
     $result = '';
-
     foreach ($options as $key => $value) {
         if (is_array($value) && isset($value['group'])) {
             // Si es un grupo de opciones
