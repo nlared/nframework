@@ -49,7 +49,12 @@ class User implements ArrayAccess
 
     public function can($verb)
     {
-        return $this->info['permissions'][$verb] == 'on';
+        $val = isset($this->info['permissions']) && array_key_exists($verb, $this->info['permissions'])
+            ? $this->info['permissions'][$verb]
+            : false;
+        // Support common boolean representations (true/false, 1/0, "true"/"false", "on"/"off")
+        $filtered = filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        return $filtered === null ? (bool) $val : $filtered;
     }
 
     public function in($verb)
