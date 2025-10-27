@@ -49,7 +49,7 @@ class User implements ArrayAccess
 
     public function can($verb)
     {
-        $val = isset($this->info['permissions']) && array_key_exists($verb, $this->info['permissions'])
+        $val = isset($this->info['permissions']) && array_key_exists($verb, (array)$this->info['permissions'])
             ? $this->info['permissions'][$verb]
             : false;
         // Support common boolean representations (true/false, 1/0, "true"/"false", "on"/"off")
