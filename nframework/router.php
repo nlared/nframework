@@ -781,6 +781,79 @@ $router->addRoute('/images/resize/[s:id]/[i:w]/[i:h]/[s:file]', function (string
 
 		header('Content-Length: ' . filesize($dst));
 		header('Content-Type: image/png');
+		header('Vary: Accept');
+		header('Cache-Control: max-age=60');
+		header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 60) . ' GMT');
+		header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lasttimedst) . ' GMT');
+		header('ETag: "' . md5($toetag) . '"');
+		echo file_get_contents($dst); //*/
+	}
+}, 'GET');
+$router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (string $route, array $p) {
+	global $nframework;
+	if (isset($_SESSION['imagesresize'][$p['id']])) {
+		$conf = $_SESSION['imagesresize'][$p['id']];
+		$filename = $p['file'];
+		$pos = strrpos($filename, '.');
+		$name = substr($filename, 0, $pos);
+		$ext = substr($filename, $pos);
+		$dst = $conf['dst'] . '/' . $name . '_' . $p['w'] . 'x' . $p['h'] . '.webp';
+		$src = $conf['src'] . '/' . $name . '.png';
+		//echo "$name  $ext $dst";
+		if (!file_exists($dst)) {
+			if (!file_exists($conf['dst'])) {
+				mkdir($conf['dst'], 0777, true);
+			}
+			$actualizar = true;
+		} else {
+			$lasttimedst = filemtime($dst);
+			$lasttimesrc = filemtime($src);
+			if ($lasttimedst < $lasttimesrc) {
+				$actualizar = true;
+			}
+		}
+		if ($actualizar) {
+			$manager = new ImageManager(array('driver' => 'gd'));
+			if (!file_exists($src)) {
+				$src = $conf['default'];
+			}
+			$img = $manager->make($src);
+			$img->fit($p['w'], $p['h'], function ($constraint) {
+				$constraint->aspectRatio();
+				//$constraint->upsize();
+			});
+			$img->encode('webp');
+			$img->save($dst);
+			$lasttimedst = filemtime($dst);
+		}
+
+		$toetag = $dst . $lasttimedst;
+		$nframework->lastmodified = $lasttimedst;
+		$nframework->etag = md5($toetag);
+
+		$nframework->expiretime = time() + (60);
+
+
+		if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
+			$id = trim($_SERVER['HTTP_IF_NONE_MATCH']);
+			if (substr($id, 0, 2) == "W/") {
+				$id = substr($id, 2);
+			}
+			$id = str_replace('"', '', $id);
+			if ($id == $toetag) {
+				header('ncache: 304');
+				http_response_code(304);
+				die();
+			}
+		}
+
+		header('Content-Length: ' . filesize($dst));
+		header('Content-Type: image/webp');
+		header('Vary: Accept');
+		header('Cache-Control: max-age=60');
+		header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 60) . ' GMT');
+		header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lasttimedst) . ' GMT');
+		header('ETag: "' . md5($toetag) . '"');
 		echo file_get_contents($dst); //*/
 	}
 }, 'GET');
