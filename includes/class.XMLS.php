@@ -1,47 +1,42 @@
-<?
+<?php
+
 class XMLS implements ArrayAccess
 {
-    public $tagName;
-    public $className;
-    public $attributes = [];
-    public $addattributes;
-    public $containervar = '';
-    public $_sequence;
+    public string $tagName = '';
+    public string $className = '';
+    public array $attributes = [];
+    public string $addattributes = '';
+    public string $containervar = '';
+    public array $_sequence = [];
 
-    public function __construct($ops = [])
+    public function __construct(array $ops = [])
     {
-        $this->className = get_class($this);
-        foreach ($ops as $op => $val) {
-            if (property_exists($this, $op)) {
-                $this->{$op} = $val;
+        $this->className = static::class;
+
+        foreach ($ops as $property => $value) {
+            if (property_exists($this, $property)) {
+                $this->{$property} = $value;
             }
         }
+
         if (!empty($this->containervar)) {
             $this->{$this->containervar} = [];
         }
     }
-    function encodeespecial($strvalor)
+
+    private function encodeSpecial(string $value): string
     {
-        /*    $strvalor = str_replace("&", "&amp;", $strvalor);
-	    $strvalor = str_replace("\"", "&quot;", $strvalor);
-	    $strvalor = str_replace("<", "&lt;", $strvalor);
-	    $strvalor = str_replace(">", "&gt;", $strvalor);
-	    $strvalor = str_replace("`", "&apos;", $strvalor);
-	    $strvalor = str_replace("\r\n", " ", $strvalor);
-	    $strvalor = str_replace("\n", " ", $strvalor);
-	    $strvalor = str_replace("\t", " ", $strvalor);
-	    $strvalor = trim($strvalor);//*/
-        return $strvalor;
+        // Use htmlspecialchars for proper XML escaping
+        return htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 
-
-
-    public function __toString()
+    public function __toString(): string
     {
         $attributes = [];
         $elements = [];
         $data = get_object_vars($this);
-        $specialvars = [
+
+        $specialVars = [
             'attributes',
             'className',
             'tagName',
@@ -49,92 +44,135 @@ class XMLS implements ArrayAccess
             'containervar',
             '_sequence'
         ];
-        foreach ($data as $n => $v) {
-            if (!in_array($n, $specialvars)) {
-                if (in_array($n, $this->attributes)) {
-                    if ($this->{$n} != '') {
-                        $attributes[] = $n . '="' . $this->encodeespecial($this->{$n}) . '"';
-                    }
-                } else {
-                    if ($this->{$n} != '') {
-                        if (empty($this->_sequence)) {
-                            $elements[] = (is_array($this->{$n}) ? implode("\n", $this->{$n}) : $this->{$n});
+
+        foreach ($data as $name => $value) {
+            if (in_array($name, $specialVars)) {
+                continue;
+            }
+
+            if (in_array($name, $this->attributes)) {
+                if ($value !== '' && $value !== null) {
+                    $attributes[] = $name . '="' . $this->encodeSpecial((string)$value) . '"';
+                }
+            } else {
+                if ($value !== '' && $value !== null) {
+                    $elementValue = is_array($value) ? implode("\n", $value) : (string)$value;
+
+                    if (empty($this->_sequence)) {
+                        $elements[] = $elementValue;
+                    } else {
+                        $sequenceIndex = array_search($name, $this->_sequence, true);
+                        if ($sequenceIndex !== false) {
+                            $elements[$sequenceIndex] = $elementValue;
                         } else {
-                            $elements[array_search($n, $this->_sequence)] = (is_array($this->{$n}) ? implode("\n", $this->{$n}) : $this->{$n});
+                            $elements[] = $elementValue;
                         }
                     }
                 }
             }
         }
+
         ksort($elements, SORT_NUMERIC);
 
+        $attributeString = '';
+        if (!empty($this->addattributes)) {
+            $attributeString .= ' ' . $this->addattributes;
+        }
+        if (!empty($attributes)) {
+            $attributeString .= ' ' . implode(' ', $attributes);
+        }
 
-        return '<' . $this->tagName . ($this->addattributes != '' ? ' ' . $this->addattributes : '') .
-            (count($attributes) > 0 ? ' ' . implode(' ', $attributes) : '') .
-            (count($elements) > 0 ? '>
-' . implode("\n", $elements) . '
-</' . $this->tagName . '>' : '/>');
+        if (empty($elements)) {
+            return "<{$this->tagName}{$attributeString}/>";
+        }
+
+        return "<{$this->tagName}{$attributeString}>\n" .
+            implode("\n", $elements) .
+            "\n</{$this->tagName}>";
     }
 
-    public function Deserialize($xml, $nstrans = [], $classtrans = [])
+    public function deserialize(DOMElement $xml, array $namespaceTranslations = [], array $classTranslations = []): void
     {
         $this->tagName = $xml->tagName;
-        foreach ($xml->attributes as $so) {
-            $this->{$so->name} = $so->value;
+
+        // Set attributes
+        foreach ($xml->attributes as $attribute) {
+            $this->{$attribute->name} = $attribute->value;
         }
-        foreach ($xml->childNodes as $so) {
-            if ($so->localName != '') {
-                $clase = '\\' . str_replace(':', '\\', $so->nodeName);
 
-                foreach ($nstrans as $nso => $nsn) {
-                    if (strpos($clase, $nso) == 0) {
-                        $clase = str_replace($nso, $nsn, $clase);
-                    }
+        // Process child nodes
+        foreach ($xml->childNodes as $node) {
+            if (!($node instanceof DOMElement) || empty($node->localName)) {
+                continue;
+            }
+
+            $className = '\\' . str_replace(':', '\\', $node->nodeName);
+
+            // Apply namespace translations
+            foreach ($namespaceTranslations as $from => $to) {
+                if (str_starts_with($className, $from)) {
+                    $className = str_replace($from, $to, $className);
+                    break;
+                }
+            }
+
+            // Apply class translations
+            $className = $classTranslations[$className] ?? $className;
+
+            if (class_exists($className)) {
+                $object = new $className();
+                if (method_exists($object, 'deserialize')) {
+                    $object->deserialize($node, $namespaceTranslations, $classTranslations);
                 }
 
-                if (array_key_exists($clase, $classtrans)) {
-                    $clase = $classtrans[$clase];
-                }
-                if (class_exists($clase, true)) {
-                    //print_r($classtranslacions);
-                    //echo "<br>$clase<br>";
-                    $objeto = new $clase;
-                    $objeto->Deserialize($so, $nstrans, $classtrans);
-                    if (is_array($this->{$so->localName})) {
-                        $this->{$so->localName}[] = $objeto;
-                    } else {
-                        $this->{$so->localName} = $objeto;
-                    }
+                $propertyName = $node->localName;
+                if (isset($this->{$propertyName}) && is_array($this->{$propertyName})) {
+                    $this->{$propertyName}[] = $object;
                 } else {
-                    echo "$clase no existe<br>";
+                    $this->{$propertyName} = $object;
                 }
+            } else {
+                error_log("Class $className does not exist");
             }
         }
     }
 
-
-
-    public function offsetSet($offset, $valor): void
+    // ArrayAccess implementation
+    public function offsetSet($offset, $value): void
     {
-        if (is_null($offset)) {
-            $this->{$this->containervar}[] = $valor;
+        if (empty($this->containervar)) {
+            throw new RuntimeException('Container variable not set');
+        }
+
+        if ($offset === null) {
+            $this->{$this->containervar}[] = $value;
         } else {
-            $this->{$this->containervar}[$offset] = $valor;
+            $this->{$this->containervar}[$offset] = $value;
         }
     }
 
     public function offsetExists($offset): bool
     {
+        if (empty($this->containervar)) {
+            return false;
+        }
+
         return isset($this->{$this->containervar}[$offset]);
     }
 
     public function offsetUnset($offset): void
     {
-        unset($this->{$this->containervar}[$offset]);
+        if (!empty($this->containervar) && isset($this->{$this->containervar}[$offset])) {
+            unset($this->{$this->containervar}[$offset]);
+        }
     }
 
     public function offsetGet($offset): mixed
     {
-        return isset($this->{$this->containervar}[$offset]) ? $this->{$this->containervar}[$offset] : null;
+        if (empty($this->containervar)) {
+            return null;
+        }
+
+        return $this->{$this->containervar}[$offset] ?? null;
     }
 }
