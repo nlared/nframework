@@ -28,6 +28,7 @@ if (php_sapi_name() != 'cli') {
 require __DIR__.'/vendor/autoload.php';
 require __DIR__.'/functions.php';
 
+use FontLib\Table\Type\head;
 use MongoDB\Client;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\BSON\ObjectId;
