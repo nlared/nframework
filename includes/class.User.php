@@ -94,12 +94,12 @@ class User implements ArrayAccess
         if ($this->info['username'] != 'guest' && $this->info['username'] != '') {
             $result = <<<HTML
                 <a href="#" class="app-bar-item">
-                    <img src="/images/resize/users/32/32/{$this->info['_id']}.png" alt="user picture" class="avatar">
+                    <img src="/images/pngtowebp/users/32/32/{$this->info['_id']}.webp" alt="user picture" class="avatar">
                     <span class="ml-2 app-bar-name">{$this->info['username']}</span>
                 </a>
                 <div class="d-menu context drop-down place-right" data-role="dropdown" id="logindrop">
                     <div class="p-3 bg-white fg-black text-center" style="width:300px">
-                        <img src="/images/resize/users/120/120/{$this->info['_id']}.png" alt="user picture" class="avatar">
+                        <img src="/images/pngtowebp/users/120/120/{$this->info['_id']}.webp" alt="user picture" class="avatar">
                         <div class="h4 mb-0">{$this->info['username']}</div>
                         <div>{$this->title}</div>
                     </div>
