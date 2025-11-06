@@ -1269,7 +1269,7 @@ class inputFiles extends BaseFileInput
     // Use nowdoc for better performance and readability
     public $onDone = <<<'JS'
         html += '<div style="overflow-x:auto;overflow-y: auto;height: 250px;">';
-        html += '<table border="1"><thead><tr><th>Nombre</th><th>Descargar</th><th>Ver</th><th>Eliminar</th></tr></thead><tbody>';
+        html += '<table class="table"><thead><tr><th>Nombre</th><th>Descargar</th><th>Ver</th><th>Eliminar</th></tr></thead><tbody>';
         jQuery.each(data.files, function(index, file) {
             html += '<tr>';
             html += '<td>' + file.name + '</td>';
