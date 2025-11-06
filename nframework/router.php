@@ -762,7 +762,7 @@ $router->addRoute('/images/resize/[s:id]/[i:w]/[i:h]/[s:file]', function (string
 		$nframework->lastmodified = $lasttimedst;
 		$nframework->etag = md5($toetag);
 
-		//$nframework->expiretime=time() + (60 * 60 * 24);
+		$nframework->expiretime = time() + 60;
 
 
 		if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {

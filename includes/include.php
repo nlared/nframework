@@ -659,10 +659,9 @@ function nfshutdown()
     if (isset($nframework->lastmodified)) {
         header('Last-Modified: '.gmdate('D, d M Y H:i:s', $nframework->lastmodified).' GMT');
     }
-    if (isset($nframework->expiretime)) {
-        header('Cache-Control:public, max-age='.($nframework->expiretime - time()));
+    if (isset($nframework->expiretime)) {        
         header('Expires: '.date('D, d M Y H:i:s', $nframework->expiretime).' GMT');
-        //	header('test: test');
+        header('Cache-Control: max-age='.($nframework->expiretime - time()).', public');        
         header('Pragma: cache');
     } else {
         //	header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
