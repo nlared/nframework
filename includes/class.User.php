@@ -84,7 +84,7 @@ class User implements ArrayAccess
 
     public function gravatar($width = '', $height = '')
     {
-        return '/images/resize/users/32/32/' . $this->info['_id'] . '.png';
+        return '/images/pngtowebp/users/32/32/' . $this->info['_id'] . '.webp';
     }
 
     public function usermenu()
