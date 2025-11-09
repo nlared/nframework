@@ -2,11 +2,11 @@
 
 class XMLS implements ArrayAccess
 {
-    public string $tagName = '';
-    public string $className = '';
+    public $tagName = '';
+    public $className = '';
     public array $attributes = [];
-    public string $addattributes = '';
-    public string $containervar = '';
+    public $addattributes = '';
+    public $containervar = '';
     public array $_sequence = [];
 
     public function __construct(array $ops = [])
