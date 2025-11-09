@@ -8,6 +8,8 @@ class bgprocess
     public $pid;
     public $logfile;
     public $id;
+    public $onChange;
+    public $onComplete;
 
     public function __construct($options)
     {
