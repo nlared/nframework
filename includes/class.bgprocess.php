@@ -33,8 +33,6 @@ class bgprocess
         $_SESSION['pids'][$this->id]['pid'] = $this->pid;        
     }
 
-
-
     public function status()
     {
         $process = BackgroundProcess::createFromPID($this->pid);
