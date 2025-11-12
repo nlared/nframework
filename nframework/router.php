@@ -383,7 +383,7 @@ $router->addRoute('/account/reset', function (string $route, array $p) {
 	]);
 }, ['GET', 'POST']);
 $router->addRoute('/account/activate/', function (string $route, array $p) {
-	global $twig, $config, $nframework;
+	global $twig, $config, $nframework, $javas;
 	$nframework->usecommon = true;
 	if (!empty($_GET['token'])) {
 
@@ -402,7 +402,33 @@ $router->addRoute('/account/activate/', function (string $route, array $p) {
 			header('location: /');
 			exit();
 		} else {
-			$msgError = 'Token invalid';
+			if (!empty($_GET['user'])) {
+				$user = new User([
+					'_id' => toMongoId($_GET['user']),
+				]);
+				if (!empty($user->_id) && empty($user->activatetoken)) {
+					$msgError = 'La cuenta ya está activada';
+					$javas->addjs(
+						<<<addjs
+let timeLeft = 10;
+        const timerElement = document.getElementById('timer');
+
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                window.location.href = "/"; // Change to your target URL
+            }
+        }, 1000);
+addjs
+					);
+				} else {
+					$msgError = 'Token inválido o caducado';
+				}
+			} else {
+				$msgError = 'Token inválido o caducado';
+			}
 		}
 	} else {
 		$msgError = 'No token provided';
