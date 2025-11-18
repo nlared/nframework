@@ -7,12 +7,12 @@ if (! empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PR
 
 //TODO: HTTP_CF_IPCOUNTRY
 if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-   $ipList = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-   $ip=$ipList[0]; // First IP is usually the client
+    $ipList = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+    $ip = $ipList[0]; // First IP is usually the client
 } elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
-   $ip= $_SERVER['HTTP_X_REAL_IP'];
+    $ip = $_SERVER['HTTP_X_REAL_IP'];
 } else {
-   $ip=$_SERVER['REMOTE_ADDR'];
+    $ip = $_SERVER['REMOTE_ADDR'];
 }
 
 
@@ -25,8 +25,8 @@ if (php_sapi_name() != 'cli') {
         exit;
     }*/
 }
-require __DIR__.'/vendor/autoload.php';
-require __DIR__.'/functions.php';
+require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/functions.php';
 
 use FontLib\Table\Type\head;
 use MongoDB\Client;
@@ -49,7 +49,7 @@ class class_config implements ArrayAccess
 
     public function __construct()
     {
-        require __DIR__.'/config.php';
+        require __DIR__ . '/config.php';
         $this->contenedor = (array) $config;
 
         $this->contenedor['images']['config']['logo'] = (empty($this->contenedor['image']) ? 'https://www.nlared.com/img/nlaredlogo5.png' : $this->contenedor['image']);
@@ -62,7 +62,7 @@ class class_config implements ArrayAccess
         }
     }
 
-    public function loadfromdb():void
+    public function loadfromdb(): void
     {
         global $m;
         $dbconf = $m->{$this->contenedor['sitedb']}->configs->findOne(['_id' => 'site']);
@@ -124,7 +124,7 @@ class class_nframework
     public array $languages;
     public $shutdown;
 
- 
+
 
     // public String $language;
     private array $config;
@@ -152,12 +152,11 @@ class class_nframework
     {
         $this->shutdown = true;
         $this->include_path = __DIR__;
-        $this->api_path = $_SERVER['DOCUMENT_ROOT'].'/nframework';
+        $this->api_path = $_SERVER['DOCUMENT_ROOT'] . '/nframework';
         if (! empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
             if ($_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
                 $this->https = true;
             }
-
         } else {
             if (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') {
                 $this->https = true;
@@ -167,7 +166,8 @@ class class_nframework
         if (
             isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
             ! empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest'
+        ) {
             $this->isAjax = true;
             //	$this->usecommon=false;
         } else {
@@ -190,11 +190,11 @@ class class_nframework
             $this->csss['050'] = 'https://cdn.metroui.org.ua/current/metro.css';
             $this->csss['051'] = 'https://cdn.metroui.org.ua/current/icons.css';
             $this->csss['200'] = '/nframework/templates/panda/css.css';
-           
-            
+
+
             $this->jss['050'] = 'https://cdn.metroui.org.ua/current/metro.js';
-            $this->jss['100'] = 'https://cdn.nlared.com/nframework/6.0.1/nframework.min.js?dev='.date('ymdhis');
-            
+            $this->jss['100'] = 'https://cdn.nlared.com/nframework/6.0.1/nframework.min.js?dev=' . date('ymdhis');
+
             /*
                 $this->csss['050']='https://cdn.nlared.com/metrodev/metro.css';
                 $this->csss['051']='https://cdn.nlared.com/metrodev/icons.css';
@@ -208,14 +208,12 @@ class class_nframework
     {
         $this->jss['049'] = 'https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/10.32.0/js/jquery.fileupload.min.js';
         $this->csss['049'] = 'https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/10.32.0/css/jquery.fileupload.min.css';
-
     }
 
     public function addjqueryui()
     {
         $this->jss['002'] = 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.0/jquery-ui.min.js';
         $this->csss['000'] = 'https://ajax.googleapis.com/ajax/libs/jqueryui/1.14.0/themes/smoothness/jquery-ui.min.css';
-
     }
 
     public function getAuthorizationHeader(): string
@@ -237,7 +235,7 @@ class class_nframework
 
         return $headers;
     }
-    
+
     public function counters(string $v): int
     {
         if (! array_key_exists($v, $this->counters)) {
@@ -251,7 +249,7 @@ class class_nframework
 
     public function  themeSwitcher(): ThemeSwitcher
     {
-        return new ThemeSwitcher();        
+        return new ThemeSwitcher();
     }
 
     public function isAjax(): bool
@@ -282,21 +280,20 @@ class class_nframework
             $_SESSION['nf']['browser']['language'] = $languages[Locale::lookup(array_keys($languages), $_SERVER['HTTP_ACCEPT_LANGUAGE'], true, 'en-US')];
         }
         $_SESSION['nf']['Anti-CSRF'] = uniqid();
-
     }
 
     public function excelOut($spreadsheet, $filename)
     {
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="'.$filename.'.xlsx"');
+        header('Content-Disposition: attachment; filename="' . $filename . '.xlsx"');
         $writer->save('php://output');
-
     }
 
     public function excelOutPdf($spreadsheet, $filename, $converter = 'Dompdf', $disposition = 'inline') // attachment
-    {header('Content-Type: application/pdf');
-        header('Content-Disposition: '.$disposition.'; filename="'.$filename.'.pdf"');
+    {
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: ' . $disposition . '; filename="' . $filename . '.pdf"');
         if ($converter == 'Dompdf') {
             $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Dompdf');
             $writer->save('php://output');
@@ -304,38 +301,37 @@ class class_nframework
         if ($converter == 'unoconv') {
             $tmpfname = tempnam(sys_get_temp_dir(), 'xlsxpdf');
             $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
-            $writer->save($tmpfname.'.xlsx'); // This line will force the file to download
-            shell_exec('unoconv -f pdf '.$tmpfname.'.xlsx');
-            $size = filesize($tmpfname.'.pdf');
+            $writer->save($tmpfname . '.xlsx'); // This line will force the file to download
+            shell_exec('unoconv -f pdf ' . $tmpfname . '.xlsx');
+            $size = filesize($tmpfname . '.pdf');
             header("Content-length: $size");
-            readfile($tmpfname.'.pdf');
-            unlink($tmpfname.'.xlsx');
-            unlink($tmpfname.'.pdf');
+            readfile($tmpfname . '.pdf');
+            unlink($tmpfname . '.xlsx');
+            unlink($tmpfname . '.pdf');
         }
-
     }
 
     public function wordOut($word, $filename)
     {
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="'.$filename.'.xlsx"');
+        header('Content-Disposition: attachment; filename="' . $filename . '.xlsx"');
         $word->save('php://output');
     }
 
     public function wordOutPdf($word, $filename)
     {
         header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="'.$filename.'.pdf"');
+        header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
         $tmpfname = tempnam(sys_get_temp_dir(), 'xlsxpdf');
-        $word->saveAs($tmpfname.'.docx');
+        $word->saveAs($tmpfname . '.docx');
         header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="'.$filename.'.pdf"');
-        shell_exec('unoconv -f pdf '.$tmpfname.'.docx');
-        $size = filesize($tmpfname.'.pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
+        shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
+        $size = filesize($tmpfname . '.pdf');
         header("Content-length: $size");
-        readfile($tmpfname.'.pdf');
-        unlink($tmpfname.'.docx');
-        unlink($tmpfname.'.pdf');
+        readfile($tmpfname . '.pdf');
+        unlink($tmpfname . '.docx');
+        unlink($tmpfname . '.pdf');
     }
 
     public function language()
@@ -349,20 +345,19 @@ try {
     $m = new MongoDB\Client($config['mongo_connection_string']);
 
     $config->loadfromdb();
-
 } catch (Exception $e) {
     echo 'Excepción capturada: ',  $e->getMessage(), "\n";
     phpinfo();
 }
 
-if(isset($config['security_user_agents_blacklist'])){
-	$userAgent =strtolower( $_SERVER['HTTP_USER_AGENT']);
-	foreach ($config['security_user_agents_blacklist'] as $bot) {
-	    if (str_contains($userAgent, $bot) !== false) {
-	    	header("HTTP/1.1 403 Forbidden");
-	    	exit("Access denied.");
-	    }
-	}
+if (isset($config['security_user_agents_blacklist'])) {
+    $userAgent = strtolower($_SERVER['HTTP_USER_AGENT']);
+    foreach ($config['security_user_agents_blacklist'] as $bot) {
+        if (str_contains($userAgent, $bot) !== false) {
+            header("HTTP/1.1 403 Forbidden");
+            exit("Access denied.");
+        }
+    }
 }
 /*
 if(isset($config['security_ip_ranges_blacklist'])){	
@@ -372,35 +367,35 @@ if(isset($config['security_ip_ranges_blacklist'])){
         }
     }
 }*/
-if(isset($config['security_ip_blacklist'])){	
-    foreach($config['security_ip_blacklist'] as $tmp){    
-        if($ip==$tmp['ip'] ){    
-            if(!empty($tmp['end'])){
-                if(time()<$tmp['end']->toDateTime()->getTimestamp()){
+if (isset($config['security_ip_blacklist'])) {
+    foreach ($config['security_ip_blacklist'] as $tmp) {
+        if ($ip == $tmp['ip']) {
+            if (!empty($tmp['end'])) {
+                if (time() < $tmp['end']->toDateTime()->getTimestamp()) {
                     http_response_code(403);
-                    exit("Access denied." .  $tmp['end']->toDateTime()->format('Y-m-d H:i:s') );        
-                }   else {
+                    exit("Access denied." .  $tmp['end']->toDateTime()->format('Y-m-d H:i:s'));
+                } else {
                     // remove expired
-                    $m->{$config['sitedb']}->configs->updateOne(['_id'=>'site'],['$pull'=>['security_ip_blacklist'=>['ip'=>$tmp['ip']]]]);
+                    $m->{$config['sitedb']}->configs->updateOne(['_id' => 'site'], ['$pull' => ['security_ip_blacklist' => ['ip' => $tmp['ip']]]]);
                 }
-            }else{
+            } else {
                 http_response_code(403);
                 exit("Access denied.");
             }
         }
     }
 }
-if(isset($config['security_host_blacklist'])){	
-    foreach($config['security_host_blacklist'] as $tmp){    
-        if($_SERVER['HTTP_HOST']==$tmp['host']){    
+if (isset($config['security_host_blacklist'])) {
+    foreach ($config['security_host_blacklist'] as $tmp) {
+        if ($_SERVER['HTTP_HOST'] == $tmp['host']) {
             http_response_code(403);
             exit("Access denied.");
         }
     }
 }
-if(isset($config['security_path_blacklist'])){	
-    foreach($config['security_path_blacklist'] as $tmp){    
-        if($_SERVER['REQUEST_URI']==$tmp['path']){    
+if (isset($config['security_path_blacklist'])) {
+    foreach ($config['security_path_blacklist'] as $tmp) {
+        if ($_SERVER['REQUEST_URI'] == $tmp['path']) {
             http_response_code(403);
             exit("Access denied.");
         }
@@ -464,7 +459,7 @@ define('E_FATAL', E_ERROR | E_USER_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ER
 
 function nferrorhandler(int $errno, string $errstr, string $errfile, int $errline, array $errcontext = []): bool
 {
-    global $developermode,$m,$nframework,$config;
+    global $developermode, $m, $nframework, $config;
     if (! $developermode) {
         if ($errno ^ E_NOTICE && $errno ^ E_WARNING) {
 
@@ -520,8 +515,8 @@ function nframework_autoload($class_name): bool
     $ipaths = get_include_path();
     $iarray = array_merge([(string) __DIR__], explode(PATH_SEPARATOR, $ipaths));
     foreach ($iarray as $ipath) {
-        if (file_exists($ipath.'/class.'.$class_name.'.php')) {
-            require_once $ipath.'/class.'.$class_name.'.php';
+        if (file_exists($ipath . '/class.' . $class_name . '.php')) {
+            require_once $ipath . '/class.' . $class_name . '.php';
 
             return true;
         }
@@ -564,7 +559,7 @@ foreach ($_SESSION['_gc_tracker'] as $key => $timestamp) {
 $nframework->lang = (empty($_SESSION['nf']['browser']['language']) ? 'en-US' : $_SESSION['nf']['browser']['language']);
 $nframework->lang_ = str_replace('-', '_', $nframework->lang);
 $nframework->langshort = substr($nframework->lang, 0, 2);
-require $nframework->include_path.'/i18n/'.$nframework->lang.'.php';
+require $nframework->include_path . '/i18n/' . $nframework->lang . '.php';
 $nframework->language = $nframework->languages[$nframework->lang];
 if (! empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^[a-f\d]{24}$/i', $_SESSION['user'])) {
     $user = new User(['_id' => new MongoDB\BSON\ObjectID($_SESSION['user'])]);
@@ -578,7 +573,7 @@ if (! empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^
         exit();
     } else {
 
-        if (empty($user->sessions) || ! in_array(session_id(),(array) $user->sessions)) {
+        if (empty($user->sessions) || ! in_array(session_id(), (array) $user->sessions)) {
             $tmp = (array)$user->sessions;
             $tmp[] = session_id();
             $user->sessions = array_values(array_unique($tmp));
@@ -598,7 +593,7 @@ if (! empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^
 
 
 $javas = new Javas;
-$themeswitcher=new ThemeSwitcher();
+$themeswitcher = new ThemeSwitcher();
 
 function speak($text)
 {
@@ -617,14 +612,14 @@ function notify($title = 'nlared.com', $text = '', $options = [])
 }
 function nfshutdown()
 {
-    global $nframework,$noobfuscate,$buffer,$developermode,$javas,$result,$config;
+    global $nframework, $noobfuscate, $buffer, $developermode, $javas, $result, $config;
     $last_error = error_get_last();
     if (! empty($last_error) && ($last_error['type'] === E_ERROR || $last_error['type'] === E_USER_ERROR)) {
         nferrorhandler(E_ERROR, $last_error['message'], $last_error['file'], $last_error['line']);
         if ($developermode) {
             if (php_sapi_name() == 'cli') {
                 foreach ($nframework->errores as $row) {
-                    $result .= '|'.implode('|', $row).'|';
+                    $result .= '|' . implode('|', $row) . '|';
                 }
 
                 return $result;
@@ -634,7 +629,7 @@ function nfshutdown()
                 $datatable->data = $nframework->errores;
                 echo '<link rel="stylesheet" href="https://cdn.metroui.org.ua/v4.3.5/css/metro-all.min.css"/>
 <link rel="stylesheet" href="//cdn.nlared.com/datatables.net-responsive-dt/css/responsive.dataTables.min.css"/>
-<div class="container"><h4>Developer mode active</h4>'.$datatable.'</div>';
+<div class="container"><h4>Developer mode active</h4>' . $datatable . '</div>';
             }
         }
     }
@@ -646,22 +641,22 @@ function nfshutdown()
             $packer = new Tholu\Packer\Packer(implode(";\n", $nframework->javas), 'Normal', true, false, true);
             $packed_js = $packer->pack();
             $javasstr .= '
-	<script>'.$packed_js.'</script>';
+	<script>' . $packed_js . '</script>';
         } else {
             $javasstr .= '
-	<script>'.implode(";\n", $nframework->javas).'</script>';
+	<script>' . implode(";\n", $nframework->javas) . '</script>';
         }
     }
     if (isset($nframework->etag)) {
-        header('ETag: "'.$nframework->etag.'"');
+        header('ETag: "' . $nframework->etag . '"');
     }
 
     if (isset($nframework->lastmodified)) {
-        header('Last-Modified: '.gmdate('D, d M Y H:i:s', $nframework->lastmodified).' GMT');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $nframework->lastmodified) . ' GMT');
     }
-    if (isset($nframework->expiretime)) {        
-        header('Expires: '.date('D, d M Y H:i:s', $nframework->expiretime).' GMT');
-        header('Cache-Control: max-age='.($nframework->expiretime - time()).', public');        
+    if (isset($nframework->expiretime)) {
+        header('Expires: ' . date('D, d M Y H:i:s', $nframework->expiretime) . ' GMT');
+        header('Cache-Control: max-age=' . ($nframework->expiretime - time()) . ', public');
         header('Pragma: cache');
     } else {
         //	header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
@@ -689,12 +684,12 @@ function nfshutdown()
             $jss = '';
             foreach ($nframework->csss as $css) {
                 $csss .= '
-	<link rel="stylesheet" href="'.$css.'"/>';
+	<link rel="stylesheet" href="' . $css . '"/>';
             }
             ksort($nframework->jss);
             foreach ($nframework->jss as $js) {
                 $jss .= '
-	<script src="'.$js.'"></script>';
+	<script src="' . $js . '"></script>';
             }
             $tmpkeyworsd2 = [];
             /*$tmpkeywords[]=array_merge(
@@ -711,58 +706,57 @@ function nfshutdown()
             header('X-XSS-Protection: 1;mode=block');
             header('Content-Type:text/html; charset=utf-8');
             echo '<!DOCTYPE html>
-<html lang="'.$nframework->lang.'"'.$nframework->html_addtag.'>
+<html lang="' . $nframework->lang . '"' . $nframework->html_addtag . '>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="utf-8" />
     <meta name="metro4:jquery" content="true">
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-<meta name="google-site-verification" content="'.$config['google-site-verification'].'" />
-<meta name="Title" content="'.$nframework->title.' '.$metas['title'].'" />
-<meta name="Author" content="'.$config['author'].'" />
-<meta name="Subject" content="'.$metas['title'].'" />
-<meta name="Description" content="'.$metas['description'].'" />
-<meta name="Keywords" lang="en" content="'.implode(',', $tmpkeyworsd2).'" />
+<meta name="google-site-verification" content="' . $config['google-site-verification'] . '" />
+<meta name="Title" content="' . $nframework->title . ' ' . $metas['title'] . '" />
+<meta name="Author" content="' . $config['author'] . '" />
+<meta name="Subject" content="' . $metas['title'] . '" />
+<meta name="Description" content="' . $metas['description'] . '" />
+<meta name="Keywords" lang="en" content="' . implode(',', $tmpkeyworsd2) . '" />
 <link rel="manifest" href="/nf.webmanifest" />
 <meta name="theme-color" content="#005696" />
 <meta name="metro4:init" content="true" />
-<meta name="metro4:locale" content="'.$nframework->lang.'" />
+<meta name="metro4:locale" content="' . $nframework->lang . '" />
 <meta name="metro4:week_start" content="1" />
-<meta property="og:url" content="'.$metas['url'].'" />
+<meta property="og:url" content="' . $metas['url'] . '" />
 <meta property="og:type" content="article" />
-<meta property="og:title" content="'.$nframework->title.' '.$metas['title'].'" />
-<meta property="og:description" content="'.$metas['description'].'" />
-<meta property="og:image" content="'.$nframework->image.'" />
+<meta property="og:title" content="' . $nframework->title . ' ' . $metas['title'] . '" />
+<meta property="og:description" content="' . $metas['description'] . '" />
+<meta property="og:image" content="' . $nframework->image . '" />
 <meta property="twitter:card" content="/images/config/1200/628/logo.png" />
-<meta property="twitter:url" content="'.$config['url'].'" />
-<meta property="twitter:title" content="'.$nframework->title.' '.$metas['title'].'" />
-<meta property="twitter:description" content="'.$metas['description'].'" />
+<meta property="twitter:url" content="' . $config['url'] . '" />
+<meta property="twitter:title" content="' . $nframework->title . ' ' . $metas['title'] . '" />
+<meta property="twitter:description" content="' . $metas['description'] . '" />
 <meta property="twitter:image" content="/images/config///logo.png" />
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="application-name" content="'.$nframework->title.'">
-<meta name="apple-mobile-web-app-title" content="'.$nframework->title.'">
+<meta name="application-name" content="' . $nframework->title . '">
+<meta name="apple-mobile-web-app-title" content="' . $nframework->title . '">
 <meta name="msapplication-starturl" content="/">
 <link rel="apple-touch-icon" sizes="57x57" href="/images/config/57/logo.png" />
 <link rel="apple-touch-icon" sizes="144x144" href="/images/config/144/logo.png" />
-<title>'.$nframework->title.' '.$metas['title'].'</title>
-    '.$csss.'
+<title>' . $nframework->title . ' ' . $metas['title'] . '</title>
+    ' . $csss . '
   </head>
-  <body'.$nframework->body_addtag.'>
+  <body' . $nframework->body_addtag . '>
   <dialog id="dialogLoading">
 		<center>
 			<span class="mif-spinner2 ani-spin"></span>
 			<div autofocus id="#dialogCancel" class="button">Cancelar</div>
 		</center>
 	</dialog>'
-  .$buffer.implode('', $nframework->docend).$jss.$javas.$javasstr.'
+                . $buffer . implode('', $nframework->docend) . $jss . $javas . $javasstr . '
 	
 </body>
 </html>';
-
         } else {
-            echo $buffer.$javasstr;
+            echo $buffer . $javasstr;
         }
     }
 }
@@ -772,7 +766,7 @@ if (php_sapi_name() != 'cli' && empty($nfshutdowndisable)) {
 }
 function nfjavaobfuscate($mbuffer): string
 {
-    global $nframework,$buffer;
+    global $nframework, $buffer;
     if ($_SESSION['nf']['browser']['platform'] == 'Android') {
         $mbuffer = str_replace('href="javascript:', 'href="#" onclick="javascript:', $mbuffer);
     }
@@ -794,7 +788,7 @@ function mongoToArray($obj)
 {
     $m = (array) $obj;
     foreach ($m as $k => $val) {
-        if ( $val instanceof \MongoDB\Model\BSONArray) {
+        if ($val instanceof \MongoDB\Model\BSONArray) {
             $m[$k] = mongoToArray($val);
         }
     }
@@ -805,11 +799,11 @@ function mongoToArray($obj)
 function csrfValidate()
 {
     return $_POST['CSRFToken'] ==
-    hash('sha256', $_SESSION['nf']['Anti-CSRF'].$_SERVER['HTTP_USER_AGENT'].$_SERVER['REQUEST_URI']);
+        hash('sha256', $_SESSION['nf']['Anti-CSRF'] . $_SERVER['HTTP_USER_AGENT'] . $_SERVER['REQUEST_URI']);
 }
 function csrfToken($action): string
 {
-    return hash('sha256', $_SESSION['nf']['Anti-CSRF'].$_SERVER['HTTP_USER_AGENT'].$action);
+    return hash('sha256', $_SESSION['nf']['Anti-CSRF'] . $_SERVER['HTTP_USER_AGENT'] . $action);
 }
 function secureform(
     string $action = '',
