@@ -2,6 +2,7 @@
     "rules": [
         {
             "name": "PetalBot",
+            "enabled": false,
             "query": {
                 "field": "user_agent",
                 "pattern": "PetalBot",
@@ -11,11 +12,102 @@
         },
         {
             "name": "bingbot",
+            "enabled": false,
             "query": {
                 "field": "user_agent",
                 "pattern": "bingbot",
                 "action": "block",
                 "description": "Blocks requests from bingbot user agent"
+            }
+        },
+        {
+            "name": "GPTBot",
+            "enabled": false,
+            "query": {
+                "field": "user_agent",
+                "pattern": "GPTBot",
+                "action": "block",
+                "description": "Blocks requests from GPTBot user agent"
+            }
+        },
+        {
+            "name": "Yandex",
+            "enabled": false,
+            "query": {
+                "field": "user_agent",
+                "pattern": "Yandex",
+                "action": "block",
+                "description": "Blocks requests from Yandex user agent"
+            }
+        },
+        {
+            "name": "meta-externalagent",
+            "enabled": false,
+            "query": {
+                "field": "user_agent",
+                "pattern": "meta-externalagent",
+                "action": "block",
+                "description": "Blocks requests from meta-externalagent user agent"
+            }
+        },
+        {
+            "name": "Googlebot",
+            "enabled": false,
+            "query": {
+                "field": "user_agent",
+                "pattern": "Googlebot",
+                "action": "block",
+                "description": "Blocks requests from Googlebot user agent"
+            }
+        },
+        {
+            "name": "AhrefsBot",
+            "enabled": false,
+            "query": {
+                "field": "user_agent",
+                "pattern": "AhrefsBot",
+                "action": "block",
+                "description": "Blocks requests from AhrefsBot user agent"
+            }
+        },
+        {
+            "name": "YandexBot",
+            "enabled": false,
+            "query": {
+                "field": "user_agent",
+                "pattern": "YandexBot",
+                "action": "block",
+                "description": "Blocks requests from YandexBot user agent"
+            }
+        },
+        {
+            "name": "Bingbot",
+            "enabled": false,
+            "query": {
+                "field": "user_agent",
+                "pattern": "Bingbot",
+                "action": "block",
+                "description": "Blocks requests from Bingbot user agent"
+            }
+        },
+        {
+            "name": "Block All Bots",
+            "enabled": true,
+            "query": {
+                "field": "user_agent",
+                "pattern": "(PetalBot|Googlebot|Bingbot|AhrefsBot|YandexBot|Yandex|meta-externalagent|GPTBot)",
+                "action": "block",
+                "description": "Blocks requests from multiple known bots"
+            }
+        },
+        {
+            "name": "Block Common Malicious URIs",
+            "enabled": true,
+            "query": {
+                "field": "request_uri",
+                "pattern": "(wp-includes/|xmlrpc\\.php|wlwmanifest\\.xml|\\.env|\\.git|config\\.inc\\.php|adminer\\.php|phpmyadmin/|pma/|mysql/|setup\\.php|install\\.php|vendor/|\\.htaccess|\\.bash_history|shellshock|cmd\\.exe|etc/passwd)",
+                "action": "block",
+                "description": "Blocks requests to common malicious URIs"
             }
         }
     ]
