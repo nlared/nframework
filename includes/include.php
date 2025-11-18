@@ -407,31 +407,31 @@ if (! empty($config['timezone'])) {
 }
 
 $m->{$config['sitedb']}->nfuristats->insertOne([
-    'created_at'=>new MongoDB\BSON\UTCDateTime(time() * 1000), // use PHP DateTime; the MongoDB driver will convert it to BSON UTC datetime
-    'ip'=>$ip,
-    'host'=>$_SERVER['HTTP_HOST'],
-    'path'=>$_SERVER['REQUEST_URI'],
-    'agent'=>$_SERVER['HTTP_USER_AGENT'],
+    'created_at' => new MongoDB\BSON\UTCDateTime(time() * 1000), // use PHP DateTime; the MongoDB driver will convert it to BSON UTC datetime
+    'ip' => $ip,
+    'host' => $_SERVER['HTTP_HOST'],
+    'path' => $_SERVER['REQUEST_URI'],
+    'agent' => $_SERVER['HTTP_USER_AGENT'],
 ]);
 
-$rules=[['host'=>['$exists'=>false]]];
-foreach($m->{$config['sitedb']}->nfsecurityrules->find() as $rule){
-    if(!empty($rule->rule) && !empty($rule->enabled)  && $rule->enabled===true){
-        $rules[]=fixSingleQuery(json_decode($rule->rule,true));
+$rules = [['host' => ['$exists' => false]]];
+foreach ($m->{$config['sitedb']}->nfsecurityrules->find() as $rule) {
+    if (!empty($rule->rule) && !empty($rule->enabled)  && $rule->enabled === true) {
+        $rules[] = fixSingleQuery(json_decode($rule->rule, true));
     }
 }
 $attempts = $m->{$config['sitedb']}->nfuristats->count([
-    'ip'=>$ip,
-    'created_at'=>['$gt'=> new MongoDB\BSON\UTCDateTime((time() - (isset($config['windowSeconds'])?$config['windowSeconds']:900)) * 1000)], // use DateTime for comparison; driver converts to BSON UTC datetime
-    '$or'=>$rules,
+    'ip' => $ip,
+    'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - (isset($config['windowSeconds']) ? $config['windowSeconds'] : 900)) * 1000)], // use DateTime for comparison; driver converts to BSON UTC datetime
+    '$or' => $rules,
 ]);
 
-if($attempts>10){
-    $doc=[
-        'ip'=>$ip,
-        'end'=>new MongoDB\BSON\UTCDateTime((time() + (isset($config['windowSeconds'])?$config['windowSeconds']:900)) * 1000)
+if ($attempts > 10) {
+    $doc = [
+        'ip' => $ip,
+        'end' => new MongoDB\BSON\UTCDateTime((time() + (isset($config['windowSeconds']) ? $config['windowSeconds'] : 900)) * 1000)
     ];
-    $m->{$config['sitedb']}->configs->updateOne(['_id'=>'site'],['$addToSet'=>['security_ip_blacklist'=>$doc]]);
+    $m->{$config['sitedb']}->configs->updateOne(['_id' => 'site'], ['$addToSet' => ['security_ip_blacklist' => $doc]]);
     http_response_code(403);
     exit("Access denied.");
 }
