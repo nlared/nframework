@@ -814,20 +814,21 @@ function secureform(
     string $class = ''
 ): string {
     global $nframework;
+    $lng = $nframework->language;
     //	$csrftoken = csrfToken($arg['action']);
     if (empty($id)) {
-        $id = 'secureform'.($nframework->counters('secureform'));
+        $id = 'secureform' . ($nframework->counters('secureform'));
     }
-    if($action==''){
-    	$action='javascript:" data-on-submit="nAjaxOnSubmit';
+    if ($action == '') {
+        $action = 'javascript:" data-on-submit="nAjaxOnSubmit';
     }
     $addEnctype = $files ? ' enctype="multipart/form-data"' : '';
 
-    return '<form method="POST" id="'.$id.'" data-role="validator" action="'.$action.'"'.
-$addEnctype.' data-interactive-check="true" 
+    return '<form method="POST" id="' . $id . '" data-role="validator" action="' . $action . '"' .
+        $addEnctype . ' data-interactive-check="true" 
 data-on-error-form="
 var log = arguments[0];
-var msg=\'Error de captura<br>\';
+var msg=\'' . $lng['error_capture'] . '<br>\';
 console.log(log);
 $.each(log, function(){
 	var label=$(\'label[for=\\\'\'+this.input.id+\'\\\']\').text();
@@ -837,26 +838,26 @@ $.each(log, function(){
 		console.log(value);
 		switch(value){
 			case \'pattern\':
-				msg+=\'-No cumple el patron:\'+minput.pattern+\'<br>\';
+				msg+=\'-' . $lng['pattern'] . '\'+minput.pattern+\'<br>\';
 				break;
 			case \'required\':
-				msg+=\'-Es requerido<br>\';
+				msg+=\'-' . $lng['required'] . '<br>\';
 				break;
 		}
 	};
 	msg+=\'<br>\';
 });
 toast(msg,null,5000);
-"'.($onbeforesubmit == '' ? '' : ' data-on-before-submit="'.$onbeforesubmit.'"').
-($onvalidateform == '' ? '' : ' data-on-validate-form="'.$onvalidateform.'"').' class="'.$class.'">
+"' . ($onbeforesubmit == '' ? '' : ' data-on-before-submit="' . $onbeforesubmit . '"') .
+        ($onvalidateform == '' ? '' : ' data-on-validate-form="' . $onvalidateform . '"') . ' class="' . $class . '">
 <input type="hidden" name="op" value="">
-<input type="hidden" name="CSRFToken" value="'.csrfToken($action).'">';
+<input type="hidden" name="CSRFToken" value="' . csrfToken($action) . '">';
     // $nframework['secureformcounter']++;
 }
 
 function _setNotification(array $users, $content)
 {
-    global $m,$config;
+    global $m, $config;
     foreach ($users as $_user) {
         $_user = trim((string) $_user);
         if ($_user != null) {
