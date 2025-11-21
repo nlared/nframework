@@ -62,7 +62,7 @@ document.getElementById("canvaspad_{$this->id}_clear").addEventListener("click",
     		
 document.getElementById("canvaspad_{$this->id}_save").addEventListener("click", () => {
   if (signaturePad["{$this->id}"].isEmpty()) {
-    alert("Please sign before sending.");
+    alert("{$nframework->language['signature_empty']}");
     return;
   }
 
@@ -77,10 +77,11 @@ document.getElementById("canvaspad_{$this->id}_save").addEventListener("click", 
   })
   .then(response => response.text())
   .then(result => {
-    alert("Upload successful: " + result);
+    alert("{$nframework->language['upload_success']}");
+
   })
   .catch(error => {
-    console.error("Upload failed:", error);
+    console.error("{$nframework->language['error']}", error);
     alert("Upload failed.");
   });
 });    		
@@ -89,8 +90,8 @@ addjs,
     );
 
     return '<canvas id="canvaspad_' . $this->id . '" class="signature-pad" style="left: 0;top: 0;width:400px; height:200px;"></canvas><br>
-		<div class="button flat" id="canvaspad_' . $this->id . '_clear"><span class="mif-clear"></span> ' . $nframework->language['buttons']['clear'] . '</div>
-		<div class="button flat" id="canvaspad_' . $this->id . '_save"><span class="mif-sign-pen"></span> ' . $nframework->language['buttons']['save'] . '</div>
+		<div class="button" id="canvaspad_' . $this->id . '_clear"><span class="mif-clear"></span> ' . $nframework->language['buttons']['clear'] . '</div>
+		<div class="button" id="canvaspad_' . $this->id . '_save"><span class="mif-sign-pen"></span> ' . $nframework->language['buttons']['save'] . '</div>
 		';
   }
 }
