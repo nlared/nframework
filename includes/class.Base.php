@@ -1207,7 +1207,6 @@ class inputFile extends BaseFileInput
 {
     public $path;
     public $onDone;
-    public $mode = 'input'; // input,drop,button
     public function __toString()
     {
         global $javas, $nframework;
