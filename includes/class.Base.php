@@ -1236,6 +1236,9 @@ class inputFile extends BaseFileInput
             function nffiledelete_{$this->id}(params) {
                 {$this->onDelete}
             }
+            
+        JS, 'ready');
+        $javas->addjs(<<<JS
             function {$this->id}_delete() {
                 var posting = jQuery.post('/nframework/uploadfile.php', {
                     'delete': true,
@@ -1245,7 +1248,7 @@ class inputFile extends BaseFileInput
                     nffiledelete_{$this->id}(data);
                 }, "json");
             }
-        JS, 'ready');
+        JS, '');
 
         $this->addBaseJavaScript();
 
