@@ -630,6 +630,8 @@ function notify($title = 'nlared.com', $text = '', $options = [])
 	toast('$text');
 ", 'ready');
 }
+
+
 function nfshutdown()
 {
     global $nframework, $noobfuscate, $buffer, $developermode, $javas, $result, $config;
