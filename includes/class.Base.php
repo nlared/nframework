@@ -1114,8 +1114,8 @@ abstract class BaseFileInput extends baseInput
     public $ondelete;
     public $oncountcheck;
     public $onlist;
-    public $dropIcon = '<span class="mif-cloud-upload"></span>';
-    public $clearButtonIcon = '<span class="mif-cross"></span>';
+    public $dropIcon = '<span class=\\"mif-cloud-upload\\"></span>';
+    public $clearButtonIcon = '<span class=\\"mif-cross\\"></span>';
     public $caption;
 
 
