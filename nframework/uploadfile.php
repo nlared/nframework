@@ -102,6 +102,7 @@ function handleFileDelete(array $upload): array
 			return ['error' => 'ondelete no es una función válida', 'onresult' => []];
 		}
 		$onresult[] = call_user_func($upload['ondelete'], $fullPath, $upload);
+		return ['error' => '', 'onresult' => $onresult];
 	} else {
 		if (file_exists($fullPath) && unlink($fullPath)) {
 			$onresult = [];
