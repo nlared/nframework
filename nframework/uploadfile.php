@@ -97,16 +97,16 @@ function handleFileDelete(array $upload): array
 	}
 
 	$fullPath = rtrim($upload['dir'], '/') . '/' . $filename;
-
-	if (file_exists($fullPath) && unlink($fullPath)) {
-		$onresult = [];
-		if (!empty($upload['ondelete'])) {
-			if (!is_callable($upload['ondelete'])) {
-				return ['error' => 'ondelete no es una función válida', 'onresult' => []];
-			}
-			$onresult[] = call_user_func($upload['ondelete'], $fullPath, $upload);
+	if (!empty($upload['ondelete'])) {
+		if (!is_callable($upload['ondelete'])) {
+			return ['error' => 'ondelete no es una función válida', 'onresult' => []];
 		}
-		return ['error' => '', 'onresult' => $onresult];
+		$onresult[] = call_user_func($upload['ondelete'], $fullPath, $upload);
+	} else {
+		if (file_exists($fullPath) && unlink($fullPath)) {
+			$onresult = [];
+			return ['error' => '', 'onresult' => $onresult];
+		}
 	}
 
 	return ['error' => 'No se pudo eliminar el archivo', 'onresult' => []];
