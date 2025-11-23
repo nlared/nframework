@@ -1105,6 +1105,7 @@ abstract class BaseFileInput extends baseInput
     public $create_dir;
     public $accept;
     public $capture;
+    public $mode = 'input'; // input,drop,button
     public $limit_time_start = '';
     public $limit_time_end = '';
     public $extension;
@@ -1113,6 +1114,10 @@ abstract class BaseFileInput extends baseInput
     public $ondelete;
     public $oncountcheck;
     public $onlist;
+    public $dropIcon = '<span class="mif-cloud-upload"></span>';
+    public $clearButtonIcon = '<span class="mif-cross"></span>';
+    public $caption;
+
 
     protected function initializeFileUpload(): void
     {
@@ -1201,14 +1206,11 @@ abstract class BaseFileInput extends baseInput
 class inputFile extends BaseFileInput
 {
     public $path;
-    public $drop;
     public $onDone;
-    public $mode = 'input'; // input,drop,button
-
     public function __toString()
     {
         global $javas, $nframework;
-
+        $lng = $nframework->language;
         $this->initializeFileUpload();
 
         // Prepare session data with path-specific config
@@ -1221,7 +1223,6 @@ class inputFile extends BaseFileInput
             'onlist' => 'onlist',
             'ondownload' => 'ondownload',
             'oncountcheck' => 'oncountcheck',
-            'mode' => $this->mode,
             'countlimit' => 0,
         ]);
 
@@ -1248,10 +1249,15 @@ class inputFile extends BaseFileInput
                     {$this->getPrependAttr()}
                     {$this->getCaptureAttr()}
                     {$modeAttrs}
-                    {$this->getAcceptAttr()}
+                    {$this->getAcceptAttr()}                    
                     data-sequential-uploads="true" 
-                    placeholder="Arrastra hasta aqui para subir archivos"
+                    placeholder="{$lng['Drag files here to upload']}"
+                    data-drop-title="{$this->dropIcon} <strong>{$lng['Select files']}</strong>"
+                    data-drop-icon="{$this->dropIcon}"
+                    data-clear-button="true"
+                    data-clear-button-icon="{$this->clearButtonIcon}"
                     data-role="file" 
+                    data-mode="{$this->mode}"
                     data-button-title="<span class='mif-folder'></span>"
                     data-form-data='{"mid":"{$this->id}"}' />
                 <div data-role="progress" id="{$this->id}_progress" data-type="buffer" data-value="0" data-buffer="100" data-small="true"></div>
@@ -1263,9 +1269,7 @@ class inputFile extends BaseFileInput
 class inputFiles extends BaseFileInput
 {
     public $sizelimit = 0;
-    public $drop;
     public $countlimit;
-
     // Use nowdoc for better performance and readability
     public $onDone = <<<'JS'
         html += '<div style="overflow-x:auto;overflow-y: auto;height: 250px;">';
@@ -1284,8 +1288,8 @@ class inputFiles extends BaseFileInput
 
     public function __toString()
     {
-        global $javas;
-
+        global $javas, $nframework;
+        $lng = $nframework->language;
         $this->initializeFileUpload();
 
         // Prepare session configuration
@@ -1315,8 +1319,12 @@ class inputFiles extends BaseFileInput
                     {$this->getDropAttr()}
                     {$this->getAcceptAttr()}
                     data-sequential-uploads="true" 
-                    placeholder="Arrastra hasta aqui para subir archivos"
+                    placeholder="{$lng['Drag files here to upload']}"
+                    data-drop-icon="{$this->dropIcon}"
+                    data-clear-button="true"
+                    data-clear-button-icon="{$this->clearButtonIcon}"
                     data-role="file" 
+                    data-mode="{$this->mode}"
                     data-button-title="<span class='mif-folder'></span>"
                     data-form-data='{"mid":"{$this->id}"}' />
                 <div id="{$this->id}_list"></div>
@@ -1344,7 +1352,7 @@ class inputAddress extends baseInput
     public $external_number;
     public $internal_number;
     public $inputtags = [];
-    public $map_height = 500;
+    public $map;
     public function __toMongo($val)
     {
         return $val;
