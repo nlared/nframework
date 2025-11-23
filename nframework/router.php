@@ -856,8 +856,7 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 		$toetag = $dst . $lasttimedst;
 		$nframework->lastmodified = $lasttimedst;
 		$nframework->etag = md5($toetag);
-
-		$nframework->expiretime = time() + (60);
+		//	$nframework->expiretime = time() + (60);
 
 
 		if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
@@ -866,27 +865,19 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 				$id = substr($id, 2);
 			}
 			$id = str_replace('"', '', $id);
-			if ($id == $toetag) {
-				header('ncache: 304');
-				http_response_code(304);
-				die();
-			}
+			$match = ($id == $toetag);
+		} else {
+			$match = false;
 		}
-
+		$ifModifiedSince = $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '';
+		$notModifiedByDate = ($ifModifiedSince !== '' && $ifModifiedSince === $lasttimedst);
+		if ($match || $notModifiedByDate) {
+			// Unchanged → return 304 without body
+			http_response_code(304);
+			exit();
+		}
 		header('Content-Length: ' . filesize($dst));
 		header('Content-Type: image/webp');
-		header('Vary: Accept');
-
-		/*header('Cache-Control: max-age=60');
-		header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 60) . ' GMT');*/
-
-		header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
-		header("Pragma: no-cache"); // HTTP 1.0
-		header("Expires: 0");
-
-		header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lasttimedst) . ' GMT');
-		header('ETag: "' . md5($toetag) . '"');
-
 		echo file_get_contents($dst); //*/
 	}
 }, 'GET');
