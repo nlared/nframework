@@ -858,7 +858,8 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 		$nframework->etag = md5($toetag);
 		//	$nframework->expiretime = time() + (60);
 
-
+		$nframework->testcache();
+		/*
 		if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
 			$id = trim($_SERVER['HTTP_IF_NONE_MATCH']);
 			if (substr($id, 0, 2) == "W/") {
@@ -875,7 +876,7 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 			// Unchanged → return 304 without body
 			http_response_code(304);
 			exit();
-		}
+		}*/
 		header('Content-Length: ' . filesize($dst));
 		header('Content-Type: image/webp');
 		echo file_get_contents($dst); //*/
