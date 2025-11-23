@@ -3,7 +3,7 @@ function onupload($filename, $upload)
 {
 	rename($filename, $upload['extensioninfo']['path']);
 }
-function ondelete($filename, $upload)
+function ondelete($filename, $upload): void
 {
 	unlink($upload['extensioninfo']['path']);
 }
