@@ -1,17 +1,23 @@
 <?php
 
+/** @package  */
 class Signature_pad extends baseInput
 {
-  public $minWidth = 0.5;
-  public $maxWidth = 2.5;
-  public $throttle = 16;
-  public $minDistance = 5;
-  public $backgroundColor = 'rgba(0,0,0,0)';
-  public $penColor = 'black';
-  public $velocityFilterWeight = 0.7;
-  public $canvasContextOptions = '';
-  public $name;
-  public $path;
+  public $minWidth = 0.5; // Minimum width of the pen
+  public $maxWidth = 2.5; // Maximum width of the pen
+  public $throttle = 16; // Throttle time in ms
+  public $minDistance = 5; // Minimum distance between points
+  public $backgroundColor = 'rgba(0,0,0,0)'; // Background color of the canvas
+  public $penColor = 'black'; // Color of the pen
+  public $velocityFilterWeight = 0.7; // Weight for velocity filter
+  public $canvasContextOptions = ''; // Additional options for canvas context
+  public $name; // Name attribute for the input
+  public $path; // Path to save the signature image
+  public $onSuccess = ''; // JavaScript code to execute on success
+  public $onError = ''; // JavaScript code to execute on error
+  public $onEmptyAlert = '';// Alert when trying to save an empty signature
+
+  /** @return string  */
   public function __toString(): string
   {
     global $nframework, $javas;
@@ -47,8 +53,13 @@ class Signature_pad extends baseInput
       }
     }
 
+    $onError = (empty($this->onError) ? 'alert("' . $nframework->language['upload_error'] . '");' : $this->onError);
+    $onSuccess = (empty($this->onSuccess) ? 'alert("' . $nframework->language['upload_success'] . '");' : $this->onSuccess);
+    $onEmptyAlert = (empty($this->onEmptyAlert) ? 'alert("' . $nframework->language['signature_empty'] . '");' : $this->onEmptyAlert);
+
     $javas->addjs('
 		signaturePad["' . $this->id . '"] = new SignaturePad(document.getElementById("canvaspad_' . $this->id . '"),' . json_encode($data) . ' );');
+
     $javas->addjs(
       <<<addjs
 canvaspad_{$this->id}.width = canvaspad_{$this->id}.offsetWidth * ratio;
@@ -62,7 +73,7 @@ document.getElementById("canvaspad_{$this->id}_clear").addEventListener("click",
     		
 document.getElementById("canvaspad_{$this->id}_save").addEventListener("click", () => {
   if (signaturePad["{$this->id}"].isEmpty()) {
-    alert("{$nframework->language['signature_empty']}");
+    {$onEmptyAlert}
     return;
   }
 
@@ -77,12 +88,10 @@ document.getElementById("canvaspad_{$this->id}_save").addEventListener("click", 
   })
   .then(response => response.text())
   .then(result => {
-    alert("{$nframework->language['upload_success']}");
-
+    {$onSuccess}
   })
-  .catch(error => {
-    console.error("{$nframework->language['error']}", error);
-    alert("Upload failed.");
+  .catch(error => {        
+    {$onError}
   });
 });    		
 addjs,

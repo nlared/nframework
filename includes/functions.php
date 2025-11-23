@@ -1,5 +1,7 @@
 <?php
 
+use Google\Service\Datastream\MongodbCollection;
+
 function assignArrayByPath(&$arr, $path, $value, $separator = '.')
 {
     $keys = explode($separator, $path);
@@ -480,4 +482,27 @@ function nfurlencode($rb)
     $rb = str_replace("n~", "&ntilde;", $rb);
     $rb = str_replace("Ãš", "&Uacute;", $rb);
     return $rb;
+}
+function mongoDateToReadable($mongoDate)
+{
+    if ($mongoDate instanceof MongoDB\BSON\UTCDateTime) {
+        $dateTime = $mongoDate->toDateTime();
+        return $dateTime->format('Y-m-d H:i:s');
+    }
+    return null;
+}
+function readableToMongoDate($dateString)
+{
+    $dateTime = new DateTime($dateString);
+    $milliseconds = ($dateTime->getTimestamp() * 1000) + (int)($dateTime->format('v'));
+    return new MongoDB\BSON\UTCDateTime($milliseconds);
+}
+function updateCollectionStringIdToObjectId(Collection $collection, string $fieldName)
+{
+    $collection->updateMany(
+        [$fieldName => ['$type' => 'string']],
+        [
+            ['$set' => [$fieldName => ['$toObjectId' => '$' . $fieldName]]]
+        ]
+    );
 }

@@ -257,4 +257,5 @@ $nframework->languages['en-US'] = [
     'signature_empty' => 'Please sign before sending.',
     'upload_success' => 'Upload successful.',
     'error' => 'Error',
+    
 ];  // End of translations
