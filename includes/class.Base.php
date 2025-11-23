@@ -1207,6 +1207,7 @@ class inputFile extends BaseFileInput
 {
     public $path;
     public $onDone;
+    public $mode = 'input'; // input,drop,button
     public function __toString()
     {
         global $javas, $nframework;
@@ -1236,10 +1237,10 @@ class inputFile extends BaseFileInput
         $this->addBaseJavaScript();
 
         // Build mode attributes
-        $modeAttrs = '';
+        /*$modeAttrs = '';
         if ($this->mode === 'drop' || $this->mode === 'button') {
             $modeAttrs = ' data-mode="' . $this->mode . '" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>"';
-        }
+        }*/
         if ($this->placeholder == '') {
             $this->placeholder = $lng['Drag file here to upload'];
         }
