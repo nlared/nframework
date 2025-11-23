@@ -1248,7 +1248,7 @@ class inputFile extends BaseFileInput
                     nffiledelete_{$this->id}(data);
                 }, "json");
             }
-        JS, '');
+        JS, 'general');
 
         $this->addBaseJavaScript();
 
