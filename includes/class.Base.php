@@ -1319,6 +1319,7 @@ class inputFiles extends BaseFileInput
                 var html = '';
                 {$this->onDone}
             }
+            
         JS, 'ready');
 
         $this->addBaseJavaScript();
