@@ -1239,10 +1239,10 @@ class inputFile extends BaseFileInput
             function {$this->id}_delete() {
                 var posting = jQuery.post('/nframework/uploadfile.php', {
                     'delete': true,
-                    'mid': mid                
+                    'mid': '{$this->id}'                
                 },
                 function(data) {
-                    nffiledelete_{$this->id}();
+                    nffiledelete_{$this->id}(data);
                 }, "json");
             }
         JS, 'ready');
