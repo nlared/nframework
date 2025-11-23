@@ -1250,8 +1250,7 @@ class inputFile extends BaseFileInput
                 <input type="file" id="{$this->id}" name="{$this->id}"
                     {$this->getDisabledAttr()}
                     {$this->getPrependAttr()}
-                    {$this->getCaptureAttr()}
-                    {$modeAttrs}
+                    {$this->getCaptureAttr()}                    
                     {$this->getAcceptAttr()}                    
                     data-sequential-uploads="true" 
                     placeholder="{$this->placeholder}"                    
