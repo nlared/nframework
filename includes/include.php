@@ -333,6 +333,26 @@ class class_nframework
         unlink($tmpfname . '.docx');
         unlink($tmpfname . '.pdf');
     }
+    function testcache()    
+    {
+        if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
+            $id = trim($_SERVER['HTTP_IF_NONE_MATCH']);
+            if (substr($id, 0, 2) == "W/") {
+                $id = substr($id, 2);
+            }
+            $id = str_replace('"', '', $id);
+            $match = ($id == $this->etag);
+        } else {
+            $match = false;
+        }
+        $ifModifiedSince = $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '';
+        $notModifiedByDate = ($ifModifiedSince !== '' && $ifModifiedSince === $this->lastmodified);
+        if ($match || $notModifiedByDate) {
+            // Unchanged → return 304 without body
+            http_response_code(304);
+            exit();
+        }    
+    }
 
     public function language()
     {
