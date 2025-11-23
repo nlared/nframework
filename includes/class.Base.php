@@ -1188,17 +1188,8 @@ abstract class BaseFileInput extends baseInput
             }).bind("fileuploadcompleted", function(e, data) {
                 console.log("eventFinished");
             }).prop("disabled", !$.support.fileInput)
-              .parent().addClass($.support.fileInput ? undefined : "disabled");
+              .parent().addClass($.support.fileInput ? undefined : "disabled");           
             
-            function {$this->id}_delete() {
-                var posting = jQuery.post('/nframework/uploadfile.php', {
-                    'delete': true,
-                    'mid': mid                
-                },
-                function(data) {
-                    nffiledelete_{$this->id}();
-                }, "json");
-            }
               
         JS, 'ready');
     }
@@ -1244,6 +1235,15 @@ class inputFile extends BaseFileInput
             }
             function nffiledelete_{$this->id}(params) {
                 {$this->onDelete}
+            }
+            function {$this->id}_delete() {
+                var posting = jQuery.post('/nframework/uploadfile.php', {
+                    'delete': true,
+                    'mid': mid                
+                },
+                function(data) {
+                    nffiledelete_{$this->id}();
+                }, "json");
             }
         JS, 'ready');
 
