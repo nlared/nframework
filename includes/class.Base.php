@@ -1114,8 +1114,8 @@ abstract class BaseFileInput extends baseInput
     public $ondelete;
     public $oncountcheck;
     public $onlist;
-    public $dropIcon = '<span class=\\"mif-cloud-upload\\"></span>';
-    public $clearButtonIcon = '<span class=\\"mif-cross\\"></span>';
+    public $dropIcon = '<span class=\'mif-cloud-upload\'></span>';
+    public $clearButtonIcon = '<span class=\'mif-cross\'></span>';
     public $caption;
 
 
@@ -1240,7 +1240,9 @@ class inputFile extends BaseFileInput
         if ($this->mode === 'drop' || $this->mode === 'button') {
             $modeAttrs = ' data-mode="' . $this->mode . '" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>"';
         }
-
+        if ($this->placeholder == '') {
+            $this->placeholder = $lng['Drag file here to upload'];
+        }
         return <<<HTML
             {$this->getLabelHtml()}
             <p>
@@ -1251,8 +1253,7 @@ class inputFile extends BaseFileInput
                     {$modeAttrs}
                     {$this->getAcceptAttr()}                    
                     data-sequential-uploads="true" 
-                    placeholder="{$lng['Drag files here to upload']}"
-                    data-drop-title="{$this->dropIcon} <strong>{$lng['Select files']}</strong>"
+                    placeholder="{$this->placeholder}"                    
                     data-drop-icon="{$this->dropIcon}"
                     data-clear-button="true"
                     data-clear-button-icon="{$this->clearButtonIcon}"
