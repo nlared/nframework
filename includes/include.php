@@ -333,7 +333,7 @@ class class_nframework
         unlink($tmpfname . '.docx');
         unlink($tmpfname . '.pdf');
     }
-    function testcache()    
+    function testcache()
     {
         if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
             $id = trim($_SERVER['HTTP_IF_NONE_MATCH']);
@@ -351,7 +351,7 @@ class class_nframework
             // Unchanged → return 304 without body
             http_response_code(304);
             exit();
-        }    
+        }
     }
 
     public function language()
