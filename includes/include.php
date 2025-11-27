@@ -24,6 +24,10 @@ if (php_sapi_name() != 'cli') {
         header('Location: ' . $location);
         exit;
     }*/
+    if (empty($_SERVER['HTTP_USER_AGENT'])) {
+        http_response_code(403);
+        exit("Access denied.");
+    }
 }
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/functions.php';
