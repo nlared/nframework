@@ -47,8 +47,7 @@ if ($nframework->isAjax()) {
 ?>
 	<div class="container p-5">
 		<div class="box shadow-large">
-			<div class="box-title">Usuarios</div>
-			<a href="user.php" class="button"><span class="mif-user-plus"></span>&nbsp;Nuevo</a>
+			<div class="box-title"><?= $nframework->language['Error Log'] ?></div>
 			<?= $datatable; ?>
 		</div>
 	</div>
