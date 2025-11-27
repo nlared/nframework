@@ -629,7 +629,7 @@ $router->addRoute('/.well-known/acme-challenge/[s:filename]', function ($route, 
 
 
 $router->addRoute('/images/config/[i:size]/logo.png', function (string $route, array $p) {
-	global $m, $config;
+	global $m, $config, $nframework;
 	$logo = $_SERVER['DOCUMENT_ROOT'] . '/img/nf/logo.png';
 	$dir = 'img/nf/config/';
 	$dst = $dir . '/logo_' . $p['size'] . '.png';
@@ -645,6 +645,11 @@ $router->addRoute('/images/config/[i:size]/logo.png', function (string $route, a
 		});
 		$img->save($dst);
 	}
+	$toetag = $dst . filemtime($dst);
+	$lasttimedst = filemtime($dst);
+	$nframework->lastmodified = $lasttimedst;
+	$nframework->etag = md5($toetag);
+	$nframework->testcache();
 	header('Content-Length: ' . filesize($dst));
 	header('Content-Type: image/png');
 	echo file_get_contents($dst);
@@ -693,8 +698,9 @@ $router->addRoute('/images/frompdf/[s:id]/info.json', function (string $route, a
 }, 'GET');
 
 $router->addRoute('/images/[s:id]/[i:w]/[i:h]/preview.png', function (string $route, array $p) {
+
+	global $nframework;
 	$upload = $_SESSION['uploads4'][$p['id']];
-	$filename = $upload['extensioninfo']['path'];
 	$extension = pathinfo($filename, PATHINFO_EXTENSION);
 
 	$dst = sys_get_temp_dir() . '/' . uniqid('pdftopng', true);
@@ -732,6 +738,13 @@ $router->addRoute('/images/config/[i:w]/[i:h]/logo.png', function (string $route
 		});
 		$img->save($dst);
 	}
+	$toetag = $dst . filemtime($dst);
+	$lasttimedst = filemtime($dst);
+
+	$nframework->lastmodified = $lasttimedst;
+	$nframework->etag = md5($toetag);
+	$nframework->testcache();
+
 	header('Content-Length: ' . filesize($dst));
 	header('Content-Type: image/png');
 	echo file_get_contents($dst);
@@ -779,32 +792,12 @@ $router->addRoute('/images/resize/[s:id]/[i:w]/[i:h]/[s:file]', function (string
 		$toetag = $dst . $lasttimedst;
 		$nframework->lastmodified = $lasttimedst;
 		$nframework->etag = md5($toetag);
-
-		$nframework->expiretime = time() + 60;
-
-
-		if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
-			$id = trim($_SERVER['HTTP_IF_NONE_MATCH']);
-			if (substr($id, 0, 2) == "W/") {
-				$id = substr($id, 2);
-			}
-			$id = str_replace('"', '', $id);
-			if ($id == $toetag) {
-				header('ncache: 304');
-				http_response_code(304);
-
-				die();
-			}
-		}
+		//	$nframework->expiretime = time() + (60);
+		$nframework->testcache();
 
 		header('Content-Length: ' . filesize($dst));
 		header('Content-Type: image/png');
-		header('Vary: Accept');
-		header('Cache-Control: max-age=60');
-		header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 60) . ' GMT');
-		header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lasttimedst) . ' GMT');
-		header('ETag: "' . md5($toetag) . '"');
-		echo file_get_contents($dst); //*/
+		echo file_get_contents($dst);
 	}
 }, 'GET');
 $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (string $route, array $p) {
@@ -851,24 +844,6 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 		//	$nframework->expiretime = time() + (60);
 
 		$nframework->testcache();
-		/*
-		if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
-			$id = trim($_SERVER['HTTP_IF_NONE_MATCH']);
-			if (substr($id, 0, 2) == "W/") {
-				$id = substr($id, 2);
-			}
-			$id = str_replace('"', '', $id);
-			$match = ($id == $toetag);
-		} else {
-			$match = false;
-		}
-		$ifModifiedSince = $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '';
-		$notModifiedByDate = ($ifModifiedSince !== '' && $ifModifiedSince === $lasttimedst);
-		if ($match || $notModifiedByDate) {
-			// Unchanged → return 304 without body
-			http_response_code(304);
-			exit();
-		}*/
 		header('Content-Length: ' . filesize($dst));
 		header('Content-Type: image/webp');
 		echo file_get_contents($dst); //*/
