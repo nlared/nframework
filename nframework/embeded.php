@@ -22,35 +22,40 @@ function getParentPositions(array $nodes, string $startId): array
 
 use Twig\Environment;
 use Twig\Extension\StringLoaderExtension;
-$loader = new \Twig\Loader\FilesystemLoader(__DIR__.'/templates');
+
+$loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates');
 $twig = new \Twig\Environment($loader, [
-    'cache' => false,//__DIR__.'/../compilation_cache',
+    'cache' => false, //__DIR__.'/../compilation_cache',
     'debug' => true,
 ]);
 $twig->addExtension(new StringLoaderExtension());
-$id=$_GET['_id'];
-$info=$_SESSION['nfembeded'][$id];
-$result['debug']=$info;
+if (empty($_SESSION['nfembeded']) || empty($_GET['_id']) || empty($_SESSION['nfembeded'][$_GET['_id']])) {
+    die('Invalid embeded ID');
+}
+$id = $_GET['_id'];
+$info = $_SESSION['nfembeded'][$id];
+$result['debug'] = $info;
 
 
-$dataset=new dataset([
-    'collection'=>$m->{$info['database']}->{$info['collection']},
-    '_id'=>$info['_id'],
-    'simpleid'=>$info['simpleid'],
-    'historic'=>$info['historic'],
-    'nameprefix'=>$info['nameprefix']
+$dataset = new dataset(
+    [
+        'collection' => $m->{$info['database']}->{$info['collection']},
+        '_id' => $info['_id'],
+        'simpleid' => $info['simpleid'],
+        'historic' => $info['historic'],
+        'nameprefix' => $info['nameprefix']
     ]
 );
 
 
-$field=$info['field'];
-$parents = getParentPositions($_SESSION['nfembeded'],$id);
-$result['parents']=$parents;
+$field = $info['field'];
+$parents = getParentPositions($_SESSION['nfembeded'], $id);
+$result['parents'] = $parents;
 //$result['ss']=$_SESSION['nfembeded'];
-if(!empty($parents)){
-	foreach ($parents as $value) {
-    	$field = preg_replace('/\$/', $value, $field, 1);
-	}
+if (!empty($parents)) {
+    foreach ($parents as $value) {
+        $field = preg_replace('/\$/', $value, $field, 1);
+    }
 }
 
 
