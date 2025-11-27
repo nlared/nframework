@@ -40,6 +40,100 @@ function return_bytes($val)
 }
 
 
+function checkGhostscript()
+{
+	// Try multiple common names: gs, gswin64c, gswin32c (Windows)
+	$candidates = ['gs --version', 'gswin64c --version', 'gswin32c --version'];
+	foreach ($candidates as $cmd) {
+		$output = @shell_exec("$cmd 2>&1");
+		if ($output) {
+			ok("Ghostscript detectado: $cmd → " . trim($output));
+			return true;
+		}
+	}
+	warn("No se detectó Ghostscript en PATH (gs/gswin64c/gswin32c). Imagick no podrá leer PDFs sin Ghostscript.");
+	return false;
+}
+
+function detectPolicyBlock()
+{
+	// Common policy.xml paths
+	$paths = [
+		'/etc/ImageMagick-6/policy.xml',
+		'/etc/ImageMagick/policy.xml',
+		'/usr/local/etc/ImageMagick/policy.xml',
+		// On some distros or IM7: /etc/ImageMagick-7/policy.xml
+		'/etc/ImageMagick-7/policy.xml',
+	];
+	$found = false;
+	foreach ($paths as $path) {
+		if (file_exists($path)) {
+			$found = true;
+			$xml = @file_get_contents($path);
+			out("🔎 policy.xml: $path");
+			if ($xml === false) {
+				warn("No se pudo leer policy.xml (permiso denegado).");
+				continue;
+			}
+			// Look for domain=coder and pattern=PDF with rights="none"
+			if (preg_match('/<policy\s+domain="coder"\s+rights="none"\s+pattern="PDF"\s*\/>/', $xml)) {
+				fail("policy.xml bloquea el manejo de PDFs (rights=\"none\").");
+				out("👉 Cambia a: <policy domain=\"coder\" rights=\"read|write\" pattern=\"PDF\" /> y reinicia el servicio (apache/php-fpm).");
+				return true; // blocked
+			} else {
+				ok("No se encontró regla de bloqueo explícito para PDF en policy.xml.");
+			}
+		}
+	}
+	if (!$found) {
+		warn("No se encontró policy.xml en rutas comunes. Si hay bloqueo, vendrá de otra ubicación de configuración.");
+	}
+	return false; // not blocked or not found
+}
+
+function tryReadWrite($pdfPath, $outputDir)
+{
+	$outputFile = rtrim($outputDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'probe_page0.png';
+	try {
+		$imagick = new Imagick();
+		// DPI razonable para pruebas
+		$imagick->setResolution(150, 150);
+		// Importante: especificar la primera página [0]
+		$imagick->readImage($pdfPath . '[0]');
+		$width = $imagick->getImageWidth();
+		$height = $imagick->getImageHeight();
+		ok("Lectura de PDF OK. Tamaño página 1: {$width}x{$height}px");
+
+		// Opcional: formato/compresión antes de guardar
+		$imagick->setImageFormat('png');
+		$imagick->setImageCompressionQuality(90);
+		if ($imagick->writeImage($outputFile)) {
+			ok("Escritura OK: $outputFile");
+		} else {
+			fail("Imagick no pudo escribir el archivo: $outputFile");
+		}
+
+		$imagick->clear();
+		$imagick->destroy();
+		return true;
+	} catch (ImagickException $e) {
+		fail("ImagickException al leer/escribir PDF: " . $e->getMessage());
+		// Sugerencias específicas
+		if (stripos($e->getMessage(), 'not authorized') !== false) {
+			fail("Posible bloqueo por policy.xml (\"not authorized\"). Revisa configuración de ImageMagick.");
+		}
+		if (
+			stripos($e->Message ?? '', 'no decode delegate for this image format') !== false ||
+			stripos($e->getMessage(), 'no decode delegate') !== false
+		) {
+			fail("Falta delegado para PDF (Ghostscript). Instala/expón Ghostscript en PATH.");
+		}
+		return false;
+	} catch (Throwable $t) {
+		fail("Error inesperado: " . $t->getMessage());
+		return false;
+	}
+}
 $inipath = php_ini_loaded_file();
 $archivo = file_get_contents($inipath);
 date_default_timezone_set('America/Monterrey');
@@ -113,20 +207,10 @@ foreach ($depends as $ext => $command) {
 }
 
 
-
-
 if (count($apts) > 0) {
 	$errores[] = 'sudo apt-get install ' . implode(' ', $apts);
 }
 
-
-// Command to check Ghostscript version
-$command = "gs --version";
-
-// Execute the command
-$output = [];
-$return_var = 0;
-exec($command, $output, $return_var);
 
 // Check if Ghostscript is installed
 if ($return_var === 0) {
@@ -135,11 +219,15 @@ if ($return_var === 0) {
 	$errores[] = "Ghostscript is not installed or not accessible. sudo apt-get -y install ghostscript ";
 }
 
-
+if (!checkGhostscript()) {
+	$errores[] = "Instala Ghostscript y asegúrate que el comando 'gs' esté en PATH.";
+}
+if (detectPolicyBlock()) {
+	$errores[] = "Revisa y corrige policy.xml de ImageMagick para permitir manejo de PDFs.";
+}
 
 
 $includespath = get_include_path();
-
 /*
 $data = explode(PHP_EOL, file_get_contents("/proc/meminfo"));
 print_r($data);
