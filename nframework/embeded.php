@@ -1,6 +1,7 @@
 <?
 require 'include.php';
-function getParentPositions(array $nodes, string $startId): array {
+function getParentPositions(array $nodes, string $startId): array
+{
     $positions = [];
     $current   = $startId;
 
@@ -66,14 +67,12 @@ function get_data($dataset, string $field)
                 return null;
             }
             $ref = $ref[$part];
-
         } elseif (is_object($ref)) {
             // 2) es propiedad válida del objeto?
             if (! property_exists($ref, $part)) {
                 return null;
             }
             $ref = $ref->$part;
-
         } else {
             // 3) ni array ni objeto → detenemos la navegación
             return null;
@@ -82,48 +81,47 @@ function get_data($dataset, string $field)
 
     return $ref;
 }
-$data=mongotoArray($dataset->info);
-$result['ssssssss']=$data;
-if(str_contains($field,'.')){
-//	if(empty($_POST['op'])||){
-		$items=get_data($data,$field);
-//	}
-	
-}else{
-	$items=$dataset->{$field};
-}
-$items=mongotoArray($items);
+$data = mongotoArray($dataset->info);
+$result['ssssssss'] = $data;
+if (str_contains($field, '.')) {
+    //	if(empty($_POST['op'])||){
+    $items = get_data($data, $field);
+    //	}
 
-if(isset($_POST['pos'])){
-	$pos=(int)$_POST['pos'];
+} else {
+    $items = $dataset->{$field};
 }
-if($_POST['op']=='pos'){
-	$_SESSION['nfembeded'][$id]['pos']=$pos;
-	$result['items']=$items;	
-}elseif($_POST['op']=='load'){
-	$result['item']=$items[$pos];
-	$_SESSION['nfembeded'][$id]['pos']=$pos;
-}else{
-	if($_POST['op']=='update'){		
-		foreach($_POST[$info['nameprefix']] as $k=>$pfield){
-			$set[$field.'.'.$pos.'.'.$k]=$pfield;
-			$items[$pos][$k]=$pfield;
-		}
-		$result['set']=$set;
-		$m->{$info['database']}->{$info['collection']}->updateOne(['_id'=>($info['simpleid']?$info['_id']:tomongoid($info['_id']))],['$set'=>$set],['upsert' => true]);
-	
-	}elseif($_POST['op']=='delete'){
+$items = mongotoArray($items);
+
+if (isset($_POST['pos'])) {
+    $pos = (int)$_POST['pos'];
+}
+if ($_POST['op'] == 'pos') {
+    $_SESSION['nfembeded'][$id]['pos'] = $pos;
+    $result['items'] = $items;
+} elseif ($_POST['op'] == 'load') {
+    $result['item'] = $items[$pos];
+    $_SESSION['nfembeded'][$id]['pos'] = $pos;
+} else {
+    if ($_POST['op'] == 'update') {
+        foreach ($_POST[$info['nameprefix']] as $k => $pfield) {
+            $set[$field . '.' . $pos . '.' . $k] = $pfield;
+            $items[$pos][$k] = $pfield;
+        }
+        $result['set'] = $set;
+        $m->{$info['database']}->{$info['collection']}->updateOne(['_id' => ($info['simpleid'] ? $info['_id'] : tomongoid($info['_id']))], ['$set' => $set], ['upsert' => true]);
+    } elseif ($_POST['op'] == 'delete') {
         unset($items[$pos]);
-	    $items=array_values($items);
+        $items = array_values($items);
         // $m->{$info['database']}->{$info['collection']}->updateOne(['_id'=>($info['simpleid']?$info['_id']:tomongoid($info['_id']))],['$unset'=>[$field.'.'.$pos=>1]]);
-	    $m->{$info['database']}->{$info['collection']}->updateOne(['_id'=>($info['simpleid']?$info['_id']:tomongoid($info['_id']))],['$set'=>[$field=>$items]]);	  
-	}
-	$result['field']=$field;
-	$template = $twig->createTemplate($info['template']);
-	$result['items']=$items;
-	$result['container']=$template->render([
-		'function_get'=>$id.'_get',
-		'function_delete'=>$id.'_delete',
-		'items'=>mongotoarray($items),
-	]);
+        $m->{$info['database']}->{$info['collection']}->updateOne(['_id' => ($info['simpleid'] ? $info['_id'] : tomongoid($info['_id']))], ['$set' => [$field => $items]]);
+    }
+    $result['field'] = $field;
+    $template = $twig->createTemplate($info['template']);
+    $result['items'] = $items;
+    $result['container'] = $template->render([
+        'function_get' => $id . '_get',
+        'function_delete' => $id . '_delete',
+        'items' => mongotoarray($items),
+    ]);
 }

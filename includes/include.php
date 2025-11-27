@@ -335,6 +335,7 @@ class class_nframework
     }
     function testcache()
     {
+
         if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
             $id = trim($_SERVER['HTTP_IF_NONE_MATCH']);
             if (substr($id, 0, 2) == "W/") {
