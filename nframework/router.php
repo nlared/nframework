@@ -564,13 +564,7 @@ $router->addRoute('/.well-known/microsoft-identity-association.json', function (
 }';
 }, ['GET']);
 
-
-
-
-
-
 //TODO:favicon.ico
-
 
 $router->addRoute('/robots.txt', function ($route, $variables) {
 	global $_SERVER;
@@ -611,8 +605,6 @@ $router->addRoute('/.well-known/acme-challenge/[s:filename]', function ($route, 
 	global $m, $config;
 	$client = new Api($config['letsencrypt_email'], __DIR__ . '/__account');
 	$account = $client->account()->get();
-
-
 	try {
 		$client->domainValidation()->start($account, $validationStatus[0], AuthorizationChallengeEnum::HTTP);
 		$privateKey = \Rogierw\RwAcme\Support\OpenSsl::generatePrivateKey();
@@ -725,7 +717,7 @@ $router->addRoute('/images/[s:id]/[i:w]/[i:h]/preview.png', function (string $ro
 }, 'GET');
 
 $router->addRoute('/images/config/[i:w]/[i:h]/logo.png', function (string $route, array $p) {
-	global $m, $config;
+	global $m, $config, $nframework;
 	$dir = 'img/nf/config/';
 	$dst = $dir . '/logo_' . $p['w'] . 'x' . $p['h'] . '.png';
 	if (!file_exists($dst) || filemtime($dst) < filemtime($config['image'])) {
