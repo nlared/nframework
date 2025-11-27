@@ -3,6 +3,24 @@
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);//*/
 
+function out($msg)
+{
+	echo $msg . PHP_EOL;
+}
+function fail($msg)
+{
+	out("❌ $msg");
+}
+function ok($msg)
+{
+	out("✅ $msg");
+}
+function warn($msg)
+{
+	out("⚠️ $msg");
+}
+
+
 $errores = [];
 function return_bytes($val)
 {
