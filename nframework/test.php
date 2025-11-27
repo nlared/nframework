@@ -237,11 +237,77 @@ foreach ($data as $line) {
     $meminfo[$key] = trim($val);
 }
 //*/
-/*
-opcache.enable_cli=1
-opcache.jit_buffer_size=500000000
-opcache.jit=1235
-*/
+
+// Check and configure opcache settings
+$opcache_settings = [
+	'opcache.enable_cli' => '1',
+	'opcache.jit_buffer_size' => '500000000',
+	'opcache.jit' => '1235'
+];
+
+$opcache_needs_update = false;
+foreach ($opcache_settings as $directive => $expected_value) {
+	$current = ini_get($directive);
+
+	if ($directive === 'opcache.jit_buffer_size') {
+		// Convert to bytes for comparison
+		$current_bytes = return_bytes($current);
+		$expected_bytes = (int)$expected_value;
+		if ($current_bytes != $expected_bytes) {
+			warn("$directive actual: $current (esperado: $expected_value)");
+			$opcache_needs_update = true;
+		} else {
+			ok("$directive configurado correctamente: $current");
+		}
+	} else if ($directive === 'opcache.jit') {
+		// JIT can be 'disable' or a number
+		if ($current === 'disable' || $current != $expected_value) {
+			warn("$directive actual: $current (esperado: $expected_value)");
+			$opcache_needs_update = true;
+		} else {
+			ok("$directive configurado correctamente: $current");
+		}
+	} else {
+		// opcache.enable_cli - simple comparison
+		if ($current != $expected_value) {
+			warn("$directive actual: $current (esperado: $expected_value)");
+			$opcache_needs_update = true;
+		} else {
+			ok("$directive configurado correctamente: $current");
+		}
+	}
+}
+
+if ($opcache_needs_update) {
+	$contents = file_get_contents($inipath);
+	$updated = false;
+
+	foreach ($opcache_settings as $directive => $value) {
+		// Check if directive exists in file
+		if (preg_match("/^;?\s*$directive\s*=.*$/m", $contents)) {
+			// Replace existing (commented or not)
+			$contents = preg_replace("/^;?\s*$directive\s*=.*$/m", "$directive=$value", $contents);
+			$updated = true;
+		} else {
+			// Add new directive
+			$contents .= "\n$directive=$value\n";
+			$updated = true;
+		}
+	}
+
+	if ($updated) {
+		if (file_put_contents($inipath, $contents)) {
+			ok("php.ini actualizado con configuración de opcache");
+			$errores[] = "Reinicia PHP para aplicar cambios: sudo systemctl restart php" . number_format((float)phpversion(), 1) . "-fpm";
+		} else {
+			fail("No se pudo escribir en php.ini (permisos insuficientes)");
+			$errores[] = "Edita manualmente $inipath y agrega: opcache.enable_cli=1, opcache.jit_buffer_size=500000000, opcache.jit=1235";
+		}
+	}
+}
+
+
+
 
 
 include('config.php');
