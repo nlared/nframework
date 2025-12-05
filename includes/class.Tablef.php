@@ -8,19 +8,18 @@ class TableF
     public $excelFile;
     private $originalPipeline;
     public $codeid;
-	public $query;
+    public $query;
     public function __construct($options)
     {
         foreach ($options as $op => $v) {
             $this->{$op} = $v;
         }
         $_SESSION['datatable'][$this->table->id]['original'] = $_SESSION['datatable'][$this->table->id]['pipeline'];
-
     }
 
     public function __toString()
     {
-        global $javas,$nframework;
+        global $javas, $nframework;
         $_SESSION['datatable'][$this->table->id]['excelCell'] = $this->excelCell;
         $_SESSION['datatable'][$this->table->id]['excelFile'] = $this->excelFile;
         $nframework->csss['200'] = 'https://cdn.jsdelivr.net/npm/jQuery-QueryBuilder@2.7.0/dist/css/query-builder.default.min.css';
@@ -29,16 +28,17 @@ class TableF
         $nframework->jss['199'] = 'https://cdn.jsdelivr.net/npm/dot@1.1.3/doT.min.js';
         $nframework->jss['200'] = 'https://cdn.jsdelivr.net/npm/jQuery-QueryBuilder@2.7.0/dist/js/query-builder.min.js';
         $nframework->jss['201'] = 'https://cdn.jsdelivr.net/npm/jQuery-QueryBuilder@2.7.0/dist/i18n/query-builder.es.js';
-        $nframework->jss['213'] = 'https://cdn.nlared.com/nframework/4.5.1/filters_template.js?d='.date('Ymdhis');
+        $nframework->jss['213'] = 'https://cdn.nlared.com/nframework/4.5.1/filters_template.js?d=' . date('Ymdhis');
 
         // https://www.bing.com/search?pglt=931&q=jquery-querybuilder+case+insensitive&cvid=c322539b0d9545f8897c62ee71ea95c1&gs_lcrp=EgRlZGdlKgYIABBFGDsyBggAEEUYOzIGCAEQABhAMgYIAhAAGEDSAQkxMTY4MGowajGoAgCwAgA&FORM=ANNTA1&PC=U531
 
-		$addcodeid=(empty($this->codeid)?'':'
-			$("#'.$this->codeid.'").val(JSON.stringify(pipelinequery));
+        $addcodeid = (empty($this->codeid) ? '' : '
+			$("#' . $this->codeid . '").val(JSON.stringify(pipelinequery));
 		');
-		$initquery=(empty($this->query)?'':"$('#builder-basic').queryBuilder('setRulesFromMongo',".$this->query.")");
+        $initquery = (empty($this->query) ? '' : "$('#builder-basic').queryBuilder('setRulesFromMongo'," . $this->query . ")");
 
-        $javas->addjs(<<<js
+        $javas->addjs(
+            <<<js
        
         
         QueryBuilder.defaults({
@@ -48,9 +48,9 @@ class TableF
             ends_withi: function(v) { return { '\$regex': Utils.escapeRegExp(v[0]) + '\$', '\$options': 'i' }; }
         }
     });
-js
-
-    , 'reaady');
+js,
+            'reaady'
+        );
 
         $javas->addjs("
 var rules_basic = {};
@@ -66,7 +66,7 @@ $('#builder-basic').queryBuilder({
   templates: {
 	ruleValueSelect: templates_ruleValueSelect
   },
-  filters:".json_encode($this->filters)." ,
+  filters:" . json_encode($this->filters) . " ,
   allow_empty :true,
   lang_code: 'es',
   mongoOperators: {
@@ -76,7 +76,7 @@ $('#builder-basic').queryBuilder({
         }
 });
 
-".$initquery."
+" . $initquery . "
 
 
 var fields=[];
@@ -94,7 +94,7 @@ function fieldschange(){
     pipelinequery = $('#builder-basic').queryBuilder('getMongo');
 	console.log(pipelinequery);
 	console.log(pipelinequery);
-	".$addcodeid."
+	" . $addcodeid . "
 	columnstitles=[];
   	/*var rowData = campos.rows().data(); //t is my table
         $.each($(rowData), function(key,value){
@@ -110,7 +110,7 @@ function fieldschange(){
 	$('#other').val(JSON.stringify(other));
 	
 	$.ajax({
-	    url: '/nframework/datatablef.php?id=".$this->table->id."',
+	    url: '/nframework/datatablef.php?id=" . $this->table->id . "',
 	    method: 'post',
 	    data: {
 	        pipelineproject: fields,
@@ -119,7 +119,7 @@ function fieldschange(){
 	}).then(
 	    function(response){
         console.log(response);
-        datatables['".$this->table->id."'].clearPipeline().draw(false);
+        datatables['" . $this->table->id . "'].clearPipeline().draw(false);
     	
     },
     function(xhr){
