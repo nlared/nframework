@@ -518,7 +518,7 @@ class inputDate extends baseInput
 {
     private $format = 'Y-m-d';
     public $timezone;
-    public $storeagetype = self::ST_MONGODATE;
+    public $storagetype = self::ST_MONGODATE;
     const ST_MONGODATE = 'st_mongodate';
     const ST_STRING = 'st_string';
     public function __toString()
