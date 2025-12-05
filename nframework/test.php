@@ -160,30 +160,12 @@ $inineeds = [
 $directive = 'memory_limit';
 $newValue = '512M';
 
-$contents = file_get_contents($iniPath);
-
-// Use regex to replace the directive
-if (!preg_match("/^$directive\s*=.*$/m", $contents)) {
-    $contents .= "\n$directive = $newValue\n";
-}
-
-// Write back to php.ini
-file_put_contents($iniPath, $contents);
-//*/
-
-/*
-shell_exec('sudo service php8.2-fpm restart');
-exec('sudo systemctl restart php8.2-fpm');
-
-*/
-
-
-
 /*
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 //*/
+
 $phpver = number_format((float)phpversion(), 1);
 $apts = [];
 
