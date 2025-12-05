@@ -436,7 +436,7 @@ $m->{$config['sitedb']}->nfuristats->insertOne([
     'ip' => $ip,
     'host' => $_SERVER['HTTP_HOST'],
     'path' => $_SERVER['REQUEST_URI'],
-    'agent' => $_SERVER['HTTP_USER_AGENT'],
+    'agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
 ]);
 
 $rules = [['host' => ['$exists' => false]]];
