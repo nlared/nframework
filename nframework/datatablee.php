@@ -7,13 +7,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 $datainfo = $_SESSION['datatable'][$_GET['id']];
 // Create a new spreadsheet
-if (empty($datainfo['excelFile'])) {
-	$spreadsheet = new Spreadsheet();
-} else {
-	$spreadsheet = IOFactory::load($datainfo['excelFile']);
-}
-// Access the active sheet
-$sheet = $spreadsheet->getActiveSheet();
 
 
 if (empty($datainfo)) {
@@ -56,12 +49,36 @@ foreach ($m->{$datainfo['db']}->{$datainfo['collection']}->aggregate($pipeline, 
 	}
 	$arrayData[] = array_values($toad);
 }
-
-$spreadsheet->getActiveSheet()
-	->fromArray(
-		$arrayData,  // The data to set
-		NULL,        // Array values with this value will not be set
-		(empty($datainfo['excelCell']) ? 'A1' : $datainfo['excelCell'])         // Top left coordinate of the worksheet range where
-		//    we want to set these values (default is A1)
-	);
-$nframework->excelOut($spreadsheet, 'reporte' . date('Y-m-d H:i:s'));
+if (!empty($_GET['type']) && $_GET['type'] == 'csv') {
+	$filename = "reporte_" . date('Y-m-d_H-i-s') . ".csv";
+	header('Content-Type: text/csv; charset=utf-8');
+	header('Content-Disposition: attachment; filename=' . $filename);
+	$output = fopen('php://output', 'w');
+	// Output the column headings
+	$header = [];
+	foreach ($datainfo['columns'] as $column) {
+		$header[] = $column;
+	}
+	fputcsv($output, $header);
+	// Output the data
+	foreach ($arrayData as $row) {
+		fputcsv($output, $row);
+	}
+	fclose($output);
+} else {
+	if (empty($datainfo['excelFile'])) {
+		$spreadsheet = new Spreadsheet();
+	} else {
+		$spreadsheet = IOFactory::load($datainfo['excelFile']);
+	}
+	// Access the active sheet
+	$sheet = $spreadsheet->getActiveSheet();
+	$spreadsheet->getActiveSheet()
+		->fromArray(
+			$arrayData,  // The data to set
+			NULL,        // Array values with this value will not be set
+			(empty($datainfo['excelCell']) ? 'A1' : $datainfo['excelCell'])         // Top left coordinate of the worksheet range where
+			//    we want to set these values (default is A1)
+		);
+	$nframework->excelOut($spreadsheet, 'reporte' . date('Y-m-d H:i:s'));
+}
