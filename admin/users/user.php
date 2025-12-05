@@ -78,10 +78,8 @@ if ($nframework->isAjax()) {
 
 ?>
 	<div class="container p-5">
-		<div class="mt-4 mb-4">
-			<h1 class="text-weight-10 text-center gradient gr-text-blue"><?= $nframework->language['user'] ?></h1>
-		</div>
 		<div class="box shadow-large-extra p-5">
+			<div class="box-title mb-4"><?= $nframework->language['user'] ?></div>
 			<?= secureform() ?>
 			<div class="grid">
 				<div class="row">
