@@ -137,7 +137,8 @@ function fieldschange(){
 		</div>
 		<div class="cell-md-2">
 			<a href="#" class="button w-100" onclick="fieldschange();"><span class="mif-filter"></span>&nbsp;Filtrar</a>
-			<a href="/nframework/datatablee.php?id={$this->table->id}" target="_blank" class="button w-100"><span class="mif-xls-file"></span>&nbsp;Excel</a>
+			<a href="/nframework/datatablee.php?id={$this->table->id}&type=csv" target="_blank" class="button w-50"><span class="mif-csv-file"></span>&nbsp;Csv</a>
+            <a href="/nframework/datatablee.php?id={$this->table->id}" target="_blank" class="button w-50"><span class="mif-xls-file"></span>&nbsp;Excel</a>
 			<div id="btn-reset" class="button w-100"><span class="mif-bin"></span>&nbsp;Limpiar</div>
 		</div>
 	</div>
