@@ -47,11 +47,11 @@ function checkGhostscript()
 	foreach ($candidates as $cmd) {
 		$output = @shell_exec("$cmd 2>&1");
 		if ($output) {
-			ok("Ghostscript detectado: $cmd → " . trim($output));
+			out(ok("Ghostscript detectado: $cmd → " . trim($output)));
 			return true;
 		}
 	}
-	warn("No se detectó Ghostscript en PATH (gs/gswin64c/gswin32c). Imagick no podrá leer PDFs sin Ghostscript.");
+	out(warn("No se detectó Ghostscript en PATH (gs/gswin64c/gswin32c). Imagick no podrá leer PDFs sin Ghostscript."));
 	return false;
 }
 
@@ -81,12 +81,12 @@ function detectPolicyBlock()
 				out("👉 Cambia a: <policy domain=\"coder\" rights=\"read|write\" pattern=\"PDF\" /> y reinicia el servicio (apache/php-fpm).");
 				return true; // blocked
 			} else {
-				ok("No se encontró regla de bloqueo explícito para PDF en policy.xml.");
+				out(ok("No se encontró regla de bloqueo explícito para PDF en policy.xml."));
 			}
 		}
 	}
 	if (!$found) {
-		warn("No se encontró policy.xml en rutas comunes. Si hay bloqueo, vendrá de otra ubicación de configuración.");
+		out(warn("No se encontró policy.xml en rutas comunes. Si hay bloqueo, vendrá de otra ubicación de configuración."));
 	}
 	return false; // not blocked or not found
 }
@@ -102,35 +102,35 @@ function tryReadWrite($pdfPath, $outputDir)
 		$imagick->readImage($pdfPath . '[0]');
 		$width = $imagick->getImageWidth();
 		$height = $imagick->getImageHeight();
-		ok("Lectura de PDF OK. Tamaño página 1: {$width}x{$height}px");
+		out(ok("Lectura de PDF OK. Tamaño página 1: {$width}x{$height}px"));
 
 		// Opcional: formato/compresión antes de guardar
 		$imagick->setImageFormat('png');
 		$imagick->setImageCompressionQuality(90);
 		if ($imagick->writeImage($outputFile)) {
-			ok("Escritura OK: $outputFile");
+			out(ok("Escritura OK: $outputFile"));
 		} else {
-			fail("Imagick no pudo escribir el archivo: $outputFile");
+			out(fail("Imagick no pudo escribir el archivo: $outputFile"));
 		}
 
 		$imagick->clear();
 		$imagick->destroy();
 		return true;
 	} catch (ImagickException $e) {
-		fail("ImagickException al leer/escribir PDF: " . $e->getMessage());
+		out(fail("ImagickException al leer/escribir PDF: " . $e->getMessage()));
 		// Sugerencias específicas
 		if (stripos($e->getMessage(), 'not authorized') !== false) {
-			fail("Posible bloqueo por policy.xml (\"not authorized\"). Revisa configuración de ImageMagick.");
+			out(fail("Posible bloqueo por policy.xml (\"not authorized\"). Revisa configuración de ImageMagick."));
 		}
 		if (
 			stripos($e->Message ?? '', 'no decode delegate for this image format') !== false ||
 			stripos($e->getMessage(), 'no decode delegate') !== false
 		) {
-			fail("Falta delegado para PDF (Ghostscript). Instala/expón Ghostscript en PATH.");
+			out(fail("Falta delegado para PDF (Ghostscript). Instala/expón Ghostscript en PATH."));
 		}
 		return false;
 	} catch (Throwable $t) {
-		fail("Error inesperado: " . $t->getMessage());
+		out(fail("Error inesperado: " . $t->getMessage()));
 		return false;
 	}
 }
@@ -254,26 +254,26 @@ foreach ($opcache_settings as $directive => $expected_value) {
 		$current_bytes = return_bytes($current);
 		$expected_bytes = (int)$expected_value;
 		if ($current_bytes != $expected_bytes) {
-			warn("$directive actual: $current (esperado: $expected_value)");
+			out(warn("$directive actual: $current (esperado: $expected_value)"));
 			$opcache_needs_update = true;
 		} else {
-			ok("$directive configurado correctamente: $current");
+			out(ok("$directive configurado correctamente: $current"));
 		}
 	} else if ($directive === 'opcache.jit') {
 		// JIT can be 'disable' or a number
 		if ($current === 'disable' || $current != $expected_value) {
-			warn("$directive actual: $current (esperado: $expected_value)");
+			out(warn("$directive actual: $current (esperado: $expected_value)"));
 			$opcache_needs_update = true;
 		} else {
-			ok("$directive configurado correctamente: $current");
+			out(ok("$directive configurado correctamente: $current"));
 		}
 	} else {
 		// opcache.enable_cli - simple comparison
 		if ($current != $expected_value) {
-			warn("$directive actual: $current (esperado: $expected_value)");
+			out(warn("$directive actual: $current (esperado: $expected_value)"));
 			$opcache_needs_update = true;
 		} else {
-			ok("$directive configurado correctamente: $current");
+			out(ok("$directive configurado correctamente: $current"));
 		}
 	}
 }
@@ -300,8 +300,8 @@ if ($opcache_needs_update) {
 			ok("php.ini actualizado con configuración de opcache");
 			$errores[] = "Reinicia PHP para aplicar cambios: sudo systemctl restart php" . number_format((float)phpversion(), 1) . "-fpm";
 		} else {
-			fail("No se pudo escribir en php.ini (permisos insuficientes)");
-			$errores[] = "Edita manualmente $inipath y agrega: opcache.enable_cli=1, opcache.jit_buffer_size=500000000, opcache.jit=1235";
+			out(fail("No se pudo escribir en php.ini (permisos insuficientes)"));
+			$errores[] = "Edita manualmente $inipath y agrega: " . $contents;
 		}
 	}
 }
