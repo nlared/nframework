@@ -14,20 +14,24 @@ function remove_trailing_separator($path)
 {
     return rtrim($path, DIRECTORY_SEPARATOR);
 }
+function clean_filename($filename)
+{
+    return preg_replace('/[^a-zA-Z0-9._-]/', '', $filename);
+}
 function array_diff_recursive($array1, $array2)
 {
     $result = [];
     foreach ($array1 as $key => $value) {
         if (is_array($value)) {
-            if (! isset($array2[$key]) || ! is_array($array2[$key])) {
+            if (!isset($array2[$key]) || !is_array($array2[$key])) {
                 $result[$key] = $value;
             } else {
                 $recursiveDiff = array_diff_recursive($value, $array2[$key]);
-                if (! empty($recursiveDiff)) {
+                if (!empty($recursiveDiff)) {
                     $result[$key] = $recursiveDiff;
                 }
             }
-        } elseif (! array_key_exists($key, $array2) || $array2[$key] !== $value) {
+        } elseif (!array_key_exists($key, $array2) || $array2[$key] !== $value) {
             $result[$key] = $value;
         }
     }
@@ -40,7 +44,7 @@ function unsetNestedKey(&$array, $path)
     $temp = &$array;
 
     foreach ($keys as $key) {
-        if (! isset($temp[$key])) {
+        if (!isset($temp[$key])) {
             return; // Stop if the path doesn't exist
         }
         $parent = &$temp;
@@ -72,13 +76,14 @@ function buildMetroMenu(array $nodes, string $menuClass = '', string $data_role 
         $shouldRender = true;
         if ($onfunction) {
             try {
-                $shouldRender = eval("$onfunction");
+                $shouldRender = eval ("$onfunction");
             } catch (Throwable $e) {
                 $shouldRender = false;
             }
         }
 
-        if (!$shouldRender) continue;
+        if (!$shouldRender)
+            continue;
 
         if (!empty($node['children'])) {
             $html .= "<li><a href=\"#\" class=\"dropdown-toggle\">$text</a>" . buildMetroMenu($node['children'], "d-menu", "dropdown");
@@ -94,7 +99,7 @@ function buildMetroMenu(array $nodes, string $menuClass = '', string $data_role 
 }
 
 
-function nfMetroMenu($menuName,  $menuClass = 'h-menu'): string
+function nfMetroMenu($menuName, $menuClass = 'h-menu'): string
 {
     global $m, $config;
     $menu = $m->{$config['sitedb']}->menus->findOne(['name' => $menuName]);
@@ -161,7 +166,7 @@ function flattenDocument($document, $prefix = '')
         $fullKey = $prefix === '' ? $key : "{$prefix}.{$key}";
 
         if (is_array($value) || is_object($value)) {
-            $flat += flattenDocument((array)$value, $fullKey);
+            $flat += flattenDocument((array) $value, $fullKey);
         } else {
             $flat[$fullKey] = normalizeBsonValue($value);
         }
@@ -214,7 +219,8 @@ function matchesQuery($doc, $query)
                 break;
             }
         }
-        if (!$orMatched) return false;
+        if (!$orMatched)
+            return false;
         unset($query['$or']);
     }
 
@@ -251,46 +257,59 @@ function matchesField($doc, $field, $condition)
     foreach ($condition as $op => $value) {
         switch ($op) {
             case '$gt':
-                if (!($fieldValue > $value)) return false;
+                if (!($fieldValue > $value))
+                    return false;
                 break;
             case '$lt':
-                if (!($fieldValue < $value)) return false;
+                if (!($fieldValue < $value))
+                    return false;
                 break;
             case '$gte':
-                if (!($fieldValue >= $value)) return false;
+                if (!($fieldValue >= $value))
+                    return false;
                 break;
             case '$lte':
-                if (!($fieldValue <= $value)) return false;
+                if (!($fieldValue <= $value))
+                    return false;
                 break;
             case '$eq':
-                if ($fieldValue !== $value) return false;
+                if ($fieldValue !== $value)
+                    return false;
                 break;
             case '$ne':
-                if ($fieldValue === $value) return false;
+                if ($fieldValue === $value)
+                    return false;
                 break;
             case '$in':
-                if (!in_array($fieldValue, $value, true)) return false;
+                if (!in_array($fieldValue, $value, true))
+                    return false;
                 break;
             case '$nin':
-                if (in_array($fieldValue, $value, true)) return false;
+                if (in_array($fieldValue, $value, true))
+                    return false;
                 break;
             case '$regex':
                 $pattern = '/' . str_replace('/', '\/', $value) . '/';
                 if (isset($condition['$options'])) {
                     $pattern .= $condition['$options'];
                 }
-                if (!preg_match($pattern, (string)$fieldValue)) return false;
+                if (!preg_match($pattern, (string) $fieldValue))
+                    return false;
                 break;
             case '$exists':
                 $exists = hasNestedKey($doc, $field);
-                if ($value && !$exists) return false;
-                if (!$value && $exists) return false;
+                if ($value && !$exists)
+                    return false;
+                if (!$value && $exists)
+                    return false;
                 break;
             case '$size':
-                if (!is_array($fieldValue) || count($fieldValue) !== $value) return false;
+                if (!is_array($fieldValue) || count($fieldValue) !== $value)
+                    return false;
                 break;
             case '$type':
-                if (gettype($fieldValue) !== $value) return false;
+                if (gettype($fieldValue) !== $value)
+                    return false;
                 break;
             case '$options':
                 // Skip options, handled by $regex
@@ -494,7 +513,7 @@ function mongoDateToReadable($mongoDate)
 function readableToMongoDate($dateString)
 {
     $dateTime = new DateTime($dateString);
-    $milliseconds = ($dateTime->getTimestamp() * 1000) + (int)($dateTime->format('v'));
+    $milliseconds = ($dateTime->getTimestamp() * 1000) + (int) ($dateTime->format('v'));
     return new MongoDB\BSON\UTCDateTime($milliseconds);
 }
 function updateCollectionStringIdToObjectId(Collection $collection, string $fieldName)

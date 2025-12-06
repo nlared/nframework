@@ -240,11 +240,52 @@ $router->addRoute('/api/users', function ($route, $params) {
 
 ## 🧪 Testing
 
-Run tests using PHPUnit:
+The framework includes a comprehensive test suite using PHPUnit.
 
+### Running Tests
+
+Run all tests:
 ```bash
-./vendor/bin/phpunit tests/
+./run-tests.sh
 ```
+
+Run only unit tests:
+```bash
+./run-tests.sh unit
+```
+
+Run only feature tests:
+```bash
+./run-tests.sh feature
+```
+
+Generate coverage report:
+```bash
+./run-tests.sh coverage
+```
+
+Or use PHPUnit directly:
+```bash
+./includes/vendor/bin/phpunit
+./includes/vendor/bin/phpunit --testsuite Unit
+./includes/vendor/bin/phpunit tests/Unit/FunctionsTest.php
+```
+
+### Test Structure
+
+```
+tests/
+├── bootstrap.php           # Test initialization
+├── Unit/                   # Unit tests
+│   ├── FunctionsTest.php      # Utility functions tests
+│   ├── BaseClassTest.php      # Base classes tests
+│   ├── UserTest.php           # User authentication tests
+│   └── ComponentsTest.php     # Component tests
+└── Feature/                # Integration tests
+    └── IntegrationTest.php    # Feature tests
+```
+
+See [tests/README.md](tests/README.md) for detailed testing documentation.
 
 ## 📖 Documentation
 

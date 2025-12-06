@@ -1,5 +1,5 @@
 <?php
-if (! empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
     $_SERVER['REQUEST_SCHEME'] = str_replace('http', 'https', $_SERVER['REQUEST_SCHEME']);
     $_SERVER['SERVER_PROTOCOL'] = str_replace('HTTP', 'HTTPS', $_SERVER['SERVER_PROTOCOL']);
     $_SERVER['HTTPS'] = 'on';
@@ -31,6 +31,7 @@ if (php_sapi_name() != 'cli') {
 }
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/functions.php';
+require __DIR__ . '/class.UIManager.php';
 
 use FontLib\Table\Type\head;
 use MongoDB\Client;
@@ -145,6 +146,7 @@ class class_nframework
     public string $body_addtag = '';
     public string $html_addtag = '';
     public array $onces = [];
+    public UIManager $ui;
 
     // Explicitly declare optional runtime properties to avoid "Undefined property" errors
     public ?string $etag = null;
@@ -157,19 +159,20 @@ class class_nframework
         $this->shutdown = true;
         $this->include_path = __DIR__;
         $this->api_path = $_SERVER['DOCUMENT_ROOT'] . '/nframework';
-        if (! empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+        if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
             if ($_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
                 $this->https = true;
             }
         } else {
-            if (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') {
+            if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') {
                 $this->https = true;
             }
         }
+        $this->ui = new UIManager();
 
         if (
             isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-            ! empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+            !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest'
         ) {
             $this->isAjax = true;
@@ -197,7 +200,7 @@ class class_nframework
 
 
             $this->jss['050'] = 'https://cdn.metroui.org.ua/current/metro.js';
-            $this->jss['100'] = 'https://cdn.nlared.com/nframework/6.0.1/nframework.min.js?dev=' . date('ymdhis');
+            $this->jss['100'] = 'https://cdn.nlared.com/nframework/6.0.1/nframework.min.js';
 
             /*
                 $this->csss['050']='https://cdn.nlared.com/metrodev/metro.css';
@@ -242,7 +245,7 @@ class class_nframework
 
     public function counters(string $v): int
     {
-        if (! array_key_exists($v, $this->counters)) {
+        if (!array_key_exists($v, $this->counters)) {
             $this->counters[$v] = 0;
         } else {
             $this->counters[$v]++;
@@ -251,7 +254,7 @@ class class_nframework
         return $this->counters[$v];
     }
 
-    public function  themeSwitcher(): ThemeSwitcher
+    public function themeSwitcher(): ThemeSwitcher
     {
         return new ThemeSwitcher();
     }
@@ -288,6 +291,7 @@ class class_nframework
 
     public function excelOut($spreadsheet, $filename)
     {
+        $filename = clean_filename($filename);
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $filename . '.xlsx"');
@@ -296,6 +300,7 @@ class class_nframework
 
     public function excelOutPdf($spreadsheet, $filename, $converter = 'Dompdf', $disposition = 'inline') // attachment
     {
+        $filename = clean_filename($filename);
         header('Content-Type: application/pdf');
         header('Content-Disposition: ' . $disposition . '; filename="' . $filename . '.pdf"');
         if ($converter == 'Dompdf') {
@@ -317,6 +322,7 @@ class class_nframework
 
     public function wordOut($word, $filename)
     {
+        $filename = clean_filename($filename);
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $filename . '.xlsx"');
         $word->save('php://output');
@@ -324,6 +330,7 @@ class class_nframework
 
     public function wordOutPdf($word, $filename)
     {
+        $filename = clean_filename($filename);
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
         $tmpfname = tempnam(sys_get_temp_dir(), 'xlsxpdf');
@@ -371,7 +378,7 @@ try {
 
     $config->loadfromdb();
 } catch (Exception $e) {
-    echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+    echo 'Excepción capturada: ', $e->getMessage(), "\n";
     phpinfo();
 }
 
@@ -398,7 +405,7 @@ if (isset($config['security_ip_blacklist'])) {
             if (!empty($tmp['end'])) {
                 if (time() < $tmp['end']->toDateTime()->getTimestamp()) {
                     http_response_code(403);
-                    exit("Access denied." .  $tmp['end']->toDateTime()->format('Y-m-d H:i:s'));
+                    exit("Access denied." . $tmp['end']->toDateTime()->format('Y-m-d H:i:s'));
                 } else {
                     // remove expired
                     $m->{$config['sitedb']}->configs->updateOne(['_id' => 'site'], ['$pull' => ['security_ip_blacklist' => ['ip' => $tmp['ip']]]]);
@@ -427,7 +434,7 @@ if (isset($config['security_path_blacklist'])) {
     }
 }
 
-if (! empty($config['timezone'])) {
+if (!empty($config['timezone'])) {
     date_default_timezone_set($config['timezone']);
 }
 
@@ -441,7 +448,7 @@ $m->{$config['sitedb']}->nfuristats->insertOne([
 
 $rules = [['host' => ['$exists' => false]]];
 foreach ($m->{$config['sitedb']}->nfsecurityrules->find() as $rule) {
-    if (!empty($rule->rule) && !empty($rule->enabled)  && $rule->enabled === true) {
+    if (!empty($rule->rule) && !empty($rule->enabled) && $rule->enabled === true) {
         $rules[] = fixSingleQuery(json_decode($rule->rule, true));
     }
 }
@@ -461,8 +468,8 @@ if ($attempts > 10) {
     exit("Access denied.");
 }
 
-$nframework->title = (! empty($config['title']) ? $config['title'] : 'nframework 5');
-$nframework->image = (! empty($config['image']) ? $config['image'] : '/images/config///logo.png');
+$nframework->title = (!empty($config['title']) ? $config['title'] : 'nframework 5');
+$nframework->image = (!empty($config['image']) ? $config['image'] : '/images/config///logo.png');
 
 function toMongoId($item): ObjectId
 {
@@ -485,7 +492,7 @@ define('E_FATAL', E_ERROR | E_USER_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ER
 function nferrorhandler(int $errno, string $errstr, string $errfile, int $errline, array $errcontext = []): bool
 {
     global $developermode, $m, $nframework, $config;
-    if (! $developermode) {
+    if (!$developermode) {
         if ($errno ^ E_NOTICE && $errno ^ E_WARNING) {
 
             $result = $m->{$config['sitedb']}->errorlog->updateOne([
@@ -568,7 +575,7 @@ if (empty($_SESSION['nf']['browser']['language'])) {
 }
 
 // Ensure tracking exists
-if (! isset($_SESSION['_gc_tracker'])) {
+if (!isset($_SESSION['_gc_tracker'])) {
     $_SESSION['_gc_tracker'] = [];
 }
 
@@ -586,7 +593,7 @@ $nframework->lang_ = str_replace('-', '_', $nframework->lang);
 $nframework->langshort = substr($nframework->lang, 0, 2);
 require $nframework->include_path . '/i18n/' . $nframework->lang . '.php';
 $nframework->language = $nframework->languages[$nframework->lang];
-if (! empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^[a-f\d]{24}$/i', $_SESSION['user'])) {
+if (!empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^[a-f\d]{24}$/i', $_SESSION['user'])) {
     $user = new User(['_id' => new MongoDB\BSON\ObjectID($_SESSION['user'])]);
     if (empty($user->_id) || $user->disabled == true) {
         unset($_SESSION['user']);
@@ -598,8 +605,8 @@ if (! empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^
         exit();
     } else {
 
-        if (empty($user->sessions) || ! in_array(session_id(), (array) $user->sessions)) {
-            $tmp = (array)$user->sessions;
+        if (empty($user->sessions) || !in_array(session_id(), (array) $user->sessions)) {
+            $tmp = (array) $user->sessions;
             $tmp[] = session_id();
             $user->sessions = array_values(array_unique($tmp));
         }
@@ -641,7 +648,7 @@ function nfshutdown()
 {
     global $nframework, $noobfuscate, $buffer, $developermode, $javas, $result, $config;
     $last_error = error_get_last();
-    if (! empty($last_error) && ($last_error['type'] === E_ERROR || $last_error['type'] === E_USER_ERROR)) {
+    if (!empty($last_error) && ($last_error['type'] === E_ERROR || $last_error['type'] === E_USER_ERROR)) {
         nferrorhandler(E_ERROR, $last_error['message'], $last_error['file'], $last_error['line']);
         if ($developermode) {
             if (php_sapi_name() == 'cli') {
@@ -707,17 +714,56 @@ function nfshutdown()
 
         if ($nframework->usecommon) {
             $metas = $nframework->metas;
-            $csss = '';
-            $jss = '';
-            foreach ($nframework->csss as $css) {
-                $csss .= '
-	<link rel="stylesheet" href="' . $css . '"/>';
+
+            // Sync legacy arrays to UIManager
+            $nframework->ui->syncFromArrays($nframework->csss, $nframework->jss);
+
+            // Add meta tags to UIManager
+            if (isset($metas['title']))
+                $nframework->ui->setTitle($metas['title']);
+
+            $defaultMetas = [
+                'viewport' => 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no',
+                'charset' => 'utf-8',
+                'metro4:jquery' => 'true',
+                'X-UA-Compatible' => 'IE=edge', // http-equiv
+                'google-site-verification' => $config['google-site-verification'] ?? '',
+                'Title' => $nframework->title . ' ' . ($metas['title'] ?? ''),
+                'Author' => $config['author'] ?? '',
+                'Subject' => $metas['title'] ?? '',
+                'Description' => $metas['description'] ?? '',
+                'theme-color' => '#005696',
+                'metro4:init' => 'true',
+                'metro4:locale' => $nframework->lang,
+                'metro4:week_start' => '1',
+                'og:url' => $metas['url'] ?? '',
+                'og:type' => 'article',
+                'og:title' => $nframework->title . ' ' . ($metas['title'] ?? ''),
+                'og:description' => $metas['description'] ?? '',
+                'og:image' => $nframework->image,
+                'twitter:card' => '/images/config/1200/628/logo.png',
+                'twitter:url' => $config['url'] ?? '',
+                'twitter:title' => $nframework->title . ' ' . ($metas['title'] ?? ''),
+                'twitter:description' => $metas['description'] ?? '',
+                'twitter:image' => '/images/config///logo.png',
+                'mobile-web-app-capable' => 'yes',
+                'apple-mobile-web-app-capable' => 'yes',
+                'application-name' => $nframework->title,
+                'apple-mobile-web-app-title' => $nframework->title,
+                'msapplication-starturl' => '/',
+            ];
+
+            foreach ($defaultMetas as $key => $val) {
+                if ($val)
+                    $nframework->ui->addMeta($key, $val);
             }
-            ksort($nframework->jss);
-            foreach ($nframework->jss as $js) {
-                $jss .= '
-	<script src="' . $js . '"></script>';
-            }
+
+            // Specific Meta Handling for http-equiv
+            // Note: UIManager::addMeta handles simple name/content. Future: improve for http-equiv vs name. 
+            // checks if property attribute is needed (og:...)
+
+            // ... manual fix for now, simplest integration
+
             $tmpkeyworsd2 = [];
             /*$tmpkeywords[]=array_merge(
                 explode(',',$metas['keywords']),
@@ -734,42 +780,10 @@ function nfshutdown()
             header('Content-Type:text/html; charset=utf-8');
             echo '<!DOCTYPE html>
 <html lang="' . $nframework->lang . '"' . $nframework->html_addtag . '>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta charset="utf-8" />
-    <meta name="metro4:jquery" content="true">
-<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-<meta name="google-site-verification" content="' . $config['google-site-verification'] . '" />
-<meta name="Title" content="' . $nframework->title . ' ' . $metas['title'] . '" />
-<meta name="Author" content="' . $config['author'] . '" />
-<meta name="Subject" content="' . $metas['title'] . '" />
-<meta name="Description" content="' . $metas['description'] . '" />
-<meta name="Keywords" lang="en" content="' . implode(',', $tmpkeyworsd2) . '" />
-<link rel="manifest" href="/nf.webmanifest" />
-<meta name="theme-color" content="#005696" />
-<meta name="metro4:init" content="true" />
-<meta name="metro4:locale" content="' . $nframework->lang . '" />
-<meta name="metro4:week_start" content="1" />
-<meta property="og:url" content="' . $metas['url'] . '" />
-<meta property="og:type" content="article" />
-<meta property="og:title" content="' . $nframework->title . ' ' . $metas['title'] . '" />
-<meta property="og:description" content="' . $metas['description'] . '" />
-<meta property="og:image" content="' . $nframework->image . '" />
-<meta property="twitter:card" content="/images/config/1200/628/logo.png" />
-<meta property="twitter:url" content="' . $config['url'] . '" />
-<meta property="twitter:title" content="' . $nframework->title . ' ' . $metas['title'] . '" />
-<meta property="twitter:description" content="' . $metas['description'] . '" />
-<meta property="twitter:image" content="/images/config///logo.png" />
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="application-name" content="' . $nframework->title . '">
-<meta name="apple-mobile-web-app-title" content="' . $nframework->title . '">
-<meta name="msapplication-starturl" content="/">
 <link rel="apple-touch-icon" sizes="57x57" href="/images/config/57/logo.png" />
 <link rel="apple-touch-icon" sizes="144x144" href="/images/config/144/logo.png" />
-<title>' . $nframework->title . ' ' . $metas['title'] . '</title>
-    ' . $csss . '
+<title>' . $nframework->title . ' ' . ($metas['title'] ?? '') . '</title>
+    ' . $nframework->ui->renderHead() . '
   </head>
   <body' . $nframework->body_addtag . '>
   <dialog id="dialogLoading">
@@ -778,7 +792,7 @@ function nfshutdown()
 			<div autofocus id="#dialogCancel" class="button">Cancelar</div>
 		</center>
 	</dialog>'
-                . $buffer . implode('', $nframework->docend) . $jss . $javas . $javasstr . '
+                . $buffer . implode('', $nframework->docend) . $nframework->ui->renderFooter() . $javas . $javasstr . '
 	
 </body>
 </html>';
