@@ -5,3 +5,8 @@
 /test/*
 /doc/tmp/*
 *.log
+
+# PHPUnit test artifacts
+/.phpunit.cache
+/coverage
+/.phpunit.result.cache
