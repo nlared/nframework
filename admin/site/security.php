@@ -61,31 +61,69 @@ FORM;
 echo $dialogIps;
 echo $arrayIps;
 
+$rules = [['host' => ['$exists' => false]]];
+foreach ($m->{$config['sitedb']}->nfsecurityrules->find() as $rule) {
+	if (!empty($rule->rule) && !empty($rule->enabled) && $rule->enabled === true) {
+		$rules[] = fixSingleQuery(json_decode($rule->rule, true));
+	}
+}
 
-$datatable=new Table();
+$datatablessuspicious = new Table();
+$datatablessuspicious->Ajax([
+	'id' => 'table_suspicious',
+	'db' => $config['sitedb'],
+	'collection' => 'nfuristats',
+	'header' => '<th>Fecha</th><th>IP</th><th>Host</th><th>Path</th><th>User Agent</th><th>id</th>',
+	'columns' => [
+		'created_at',
+		'ip',
+		'host',
+		'path',
+		'user_agent',
+		'_id'
+	],
+	'pipeline' => [
+		[
+			'$match' => [
+				'$or' => $rules
+			]
+		],
+		[
+			'$sort' => [
+				'created_at' => -1
+			]
+		]
+	]
+]);
+
+
+$datatable = new Table();
 $datatable->Ajax([
-    'id'=>'testid',
-    'db'=>$config['sitedb'],
-    'collection'=>'nfsecurityrules',
-    'header'=>'<th>Name</th><th>Rules</th><th>id</th>',
-    
-    'columns'=>[
-        'name','rule','_id'
-    ],
-    'columnDefs'=>[
-		'2'=>['render'=>"'<a href=\"rule.php?_id='+data+'\" class=\"button primary\"><span class=\"mif-pencil\"></span></a>'+
+	'id' => 'table_rules',
+	'db' => $config['sitedb'],
+	'collection' => 'nfsecurityrules',
+	'header' => '<th>Name</th><th>Rules</th><th>id</th>',
+	'columns' => [
+		'name',
+		'rule',
+		'_id'
+	],
+	'columnDefs' => [
+		'2' => [
+			'render' => "'<a href=\"rule.php?_id='+data+'\" class=\"button primary\"><span class=\"mif-pencil\"></span></a>'+
 		
-		'<a href=\"javascript:removeid(\\''+data+'\\');\" class=\"button alert\"><span class=\"mif-cross\"></span></a>'"],// data $row[0]
+		'<a href=\"javascript:removeid(\\''+data+'\\');\" class=\"button alert\"><span class=\"mif-cross\"></span></a>'"
+		],// data $row[0]
 	]
 ]);
 
 
 if ($nframework->isAjax()) {
-	if ($_POST['op']=='delete') {
-		$m->{$config['sitedb']}->nfsecurityrules->deleteOne(['_id'=>tomongoid($_POST['_id'])]);
+	if ($_POST['op'] == 'delete') {
+		$m->{$config['sitedb']}->nfsecurityrules->deleteOne(['_id' => tomongoid($_POST['_id'])]);
 	}
-}else{
-	$nframework->usecommon=true;
+} else {
+	$nframework->usecommon = true;
 	$javas->addjs("
 	function removeid(id){
 		Swal.fire({
