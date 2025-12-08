@@ -66,10 +66,10 @@ if (!empty($_GET['type']) && $_GET['type'] == 'csv') {
 	}
 	fclose($output);
 } else {
-	if (empty($datainfo['excelFile'])) {
-		$spreadsheet = new Spreadsheet();
-	} else {
+	if (!empty($datainfo['excelFile']) && file_exists($datainfo['excelFile'])) {
 		$spreadsheet = IOFactory::load($datainfo['excelFile']);
+	} else {
+		$spreadsheet = new Spreadsheet();
 	}
 	// Access the active sheet
 	$sheet = $spreadsheet->getActiveSheet();
