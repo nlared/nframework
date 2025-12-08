@@ -1,28 +1,30 @@
 <?
 require '../common2.php';
-$dataset=new dataset([
-    'collection'=>$m->{$config['sitedb']}->configs,
-    '_id'=>'site',
-    'simpleid'=>true,
-    'nameprefix'=>'data']
+$dataset = new dataset(
+	[
+		'collection' => $m->{$config['sitedb']}->configs,
+		'_id' => 'site',
+		'simpleid' => true,
+		'nameprefix' => 'data'
+	]
 );
 
 $blockips = new inputCheckbox([
-	'dataset'=>&$dataset,
-	'field'=>'blockips',
-	'caption'=>$nframework->language['blockips'].':'
+	'dataset' => &$dataset,
+	'field' => 'blockips',
+	'caption' => $nframework->language['blockips'] . ':'
 ]);
 
 
-$dialogIps=new Dialog([
-	'title'=>'Blocked IP',
-	]);
-$arrayIps=new embededArray([
-	'dataset'=>&$dataset,
-	'field'=>'security_ip_blacklist',
-	'containerid'=>'list_ips',
-	'dialogid'=>'dialogs_0',
-	'template'=><<<T
+$dialogIps = new Dialog([
+	'title' => 'Blocked IP',
+]);
+$arrayIps = new embededArray([
+	'dataset' => &$dataset,
+	'field' => 'security_ip_blacklist',
+	'containerid' => 'list_ips',
+	'dialogid' => 'dialogs_0',
+	'template' => <<<T
 	{% if items|length > 0 %}
     	<table class="table">
         {% for key,item in items %}
@@ -39,9 +41,9 @@ $arrayIps=new embededArray([
 T
 ]);
 
-$blockedips_ip=new inputtext(['nfembeded'=>&$arrayIps,'field'=>'ip','caption'=>'IP:']);
-$blockedips_until=new inputText(['nfembeded'=>&$arrayIps,'field'=>'end','caption'=>'Until:']);
-$dialogIps->content=<<<FORM
+$blockedips_ip = new inputtext(['nfembeded' => &$arrayIps, 'field' => 'ip', 'caption' => 'IP:']);
+$blockedips_until = new inputText(['nfembeded' => &$arrayIps, 'field' => 'end', 'caption' => 'Until:']);
+$dialogIps->content = <<<FORM
 	<div class="grid">
 		<div class="row">
 			<div class="cell">
