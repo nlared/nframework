@@ -34,7 +34,7 @@ $pipeline = (isset($datainfo['pipeline']) ? $datainfo['pipeline'] : []);
 $options = [];
 foreach ($m->{$datainfo['db']}->{$datainfo['collection']}->aggregate($pipeline, $options) as $d) {
 	$d = mongotoarray($d);
-	$d['_id'] = (string)$d['_id'];
+	$d['_id'] = (string) $d['_id'];
 	$toad = [];
 	foreach ($datainfo['columns'] as $column) {
 		if ($d[$column] instanceof MongoDB\BSON\UTCDateTime) {
