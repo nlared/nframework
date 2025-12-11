@@ -6,7 +6,7 @@ function booltotag($tag, $val)
 }
 function strtotag($tag, $val)
 {
-    return ! empty($val) ? ' ' . $tag . '="' . $val . '"' : '';
+    return !empty($val) ? ' ' . $tag . '="' . $val . '"' : '';
 }
 function icontotag($tag, $val)
 {
@@ -117,7 +117,7 @@ class baseInput
     {
         $this->tags = [];
         $ovars = array_keys(get_object_vars($this));
-        if (! isset($options['class'])) {
+        if (!isset($options['class'])) {
             $options['class'] = 'inputText';
         }
         foreach ($options as $option => $value) {
@@ -136,18 +136,18 @@ class baseInput
             }
         }
 
-        if (empty($this->value) && ! empty($this->default)) {
+        if (empty($this->value) && !empty($this->default)) {
             $this->value = $this->default;
         }
 
-        if (! empty($this->nfembeded)) {
+        if (!empty($this->nfembeded)) {
             if ($this->name == '' & $this->field != '') {
                 $this->name = $this->field;
             }
             $this->name = $this->nfembeded->nameprefix . '[' . $this->name . ']';
         }
 
-        if (! empty($this->dataset)) {
+        if (!empty($this->dataset)) {
             if ($this->name == '' & $this->field != '') {
                 $this->name = $this->field;
             }
@@ -175,14 +175,14 @@ class baseInput
                 $this->value = $current;
             } else {
 
-                if (! isset($this->dataset->{$this->field}) && isset($this->default)) {
+                if (!isset($this->dataset->{$this->field}) && isset($this->default)) {
                     $this->value = $this->default;
                 } else {
                     $this->value = $this->dataset->{$this->field};
                 }
             }
         } else {
-            if (! isset($this->value) && isset($this->default)) {
+            if (!isset($this->value) && isset($this->default)) {
                 $this->value = $this->default;
             }
         }
@@ -216,7 +216,7 @@ class baseInput
         } else {
             $rules = [];
         }
-        if ($this->required && ! in_array('required', $rules)) {
+        if ($this->required && !in_array('required', $rules)) {
             $rules[] = 'required';
         }
 
@@ -226,13 +226,13 @@ class baseInput
                     $encontrado = true;
                 }
             }
-            if (! $encontrado) {
+            if (!$encontrado) {
                 $rules[] = 'pattern=(' . $this->pattern . ')';
             }
         }
         $rulesstr = trim(implode(' ', $rules));
 
-        return ! empty($rulesstr) ? ' data-validate="' . $rulesstr . '"' : '';
+        return !empty($rulesstr) ? ' data-validate="' . $rulesstr . '"' : '';
     }
 
     public function inputtags()
@@ -402,7 +402,7 @@ class inputNumber extends baseInput
     public function __construct($options = [])
     {
         $options['class'] = 'inputNumber';
-        if (! isset($options['type'])) {
+        if (!isset($options['type'])) {
             $options['type'] = 'number';
         }
         parent::__construct($options);
@@ -444,7 +444,7 @@ class inputSpinner extends baseInput
     public $addclass;
     public function __toMongo($val)
     {
-        return ($this->data_validate == 'integer' || $this->data_validate == 'digits' ? (int)$val : (float)$val);
+        return ($this->data_validate == 'integer' || $this->data_validate == 'digits' ? (int) $val : (float) $val);
     }
 
     public function __toString()
@@ -538,7 +538,7 @@ class inputDate extends baseInput
     public function is_valid($date)
     {
         $d = DateTime::createFromFormat($this->format, $date);
-        return (empty($date) && ! $this->required) || ($d && $d->format($this->format) == $date);
+        return (empty($date) && !$this->required) || ($d && $d->format($this->format) == $date);
     }
 
     public function __toMongo($val)
@@ -605,7 +605,7 @@ class inputTime extends baseInput
     }
     public function __toMongo($val)
     {
-        if (! empty($val)) {
+        if (!empty($val)) {
             $orig_date = DateTime::createFromFormat('H:i', $val, new DateTimeZone('UTC'));
             $orig_date = $orig_date->getTimestamp();
             $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
@@ -648,7 +648,7 @@ class inputDateTime extends baseInput
             $this->timezone = new DateTimeZone('UTC');
         }
 
-        if (! empty($val)) {
+        if (!empty($val)) {
             if ($this->storagetype == self::ST_STRING) {
                 return $val;
             } else {
@@ -887,7 +887,7 @@ class inputRadios extends baseOptions
 function nflistoptions($options, $selected = []): string
 {
     $result = '';
-    if (! is_array($selected)) {
+    if (!is_array($selected)) {
         $selected = [0 => $selected];
     }
     foreach ($options as $value => $text) {
@@ -914,7 +914,7 @@ class Select extends baseOptions
     public function __toString(): string
     {
         $result = '';
-        if ($this->combobox && $this->value != '' && ! array_search($this->value, $this->options)) {
+        if ($this->combobox && $this->value != '' && !array_search($this->value, $this->options)) {
             $this->options += [$this->value];
         }
         $this->role = 'select';
@@ -946,7 +946,7 @@ class Select extends baseOptions
             ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
             ($this->canadd ? ' canadd="canadd"' : '') .
             ($this->onChange ? ' onChange="' . $this->onChange . '"' : '') .
-            (! $this->datafilter ? ' data-filter="false"' : '') .
+            (!$this->datafilter ? ' data-filter="false"' : '') .
             ' data-filter="true" data-filter-placeholder="' . $this->placeholder . '">' . $result . '</select>';
     }
 
@@ -962,7 +962,7 @@ class Select extends baseOptions
 // ######################## AGREGUE PARA PONER ICONOS EN LAS OPCIONES DE LOS SELECT########################
 function nflistoptionsIcons($options, $selected = [])
 {
-    if (! is_array($selected)) {
+    if (!is_array($selected)) {
         $selected = [0 => $selected];
     }
 
@@ -1001,7 +1001,7 @@ class SelectIcon extends baseOptions
     public $datafilter = true;
     public function __toString()
     {
-        if ($this->combobox && $this->value != '' && ! array_search($this->value, $this->options)) {
+        if ($this->combobox && $this->value != '' && !array_search($this->value, $this->options)) {
             $this->options += [$this->value];
         }
         $this->role = 'select';
@@ -1034,7 +1034,7 @@ class SelectIcon extends baseOptions
             ($this->canadd ? ' canadd="canadd"' : '') .
             ($this->disabled ? ' disabled="disabled"' : '') .
             ($this->required ? ' required="required"' : '') .
-            (! $this->datafilter ? ' data-filter="false"' : '') .
+            (!$this->datafilter ? ' data-filter="false"' : '') .
             ($this->placeholder ? ' data-filter-placeholder="' . $this->placeholder . '"' : '') .
             ($this->validate ? 'data-validate="' . $this->validate . '"' : '') .
             ($this->multiple ? ' multiple' : '') .
@@ -1308,7 +1308,7 @@ class inputFiles extends BaseFileInput
 
         // Prepare session configuration
         $_SESSION['uploads4'][$this->id] = array_merge($this->getSessionConfig(), [
-            'countlimit' => (int)$this->countlimit,
+            'countlimit' => (int) $this->countlimit,
             'sizelimit' => $this->sizelimit,
         ]);
 
@@ -1586,7 +1586,7 @@ class mapmarker extends baseInput
             maps['" . $this->id . "_map'].flyTo(position);
             $('#" . $this->id . "_lat').val(position.lat);
             $('#" . $this->id . "_lng').val(position.lng);
-            " . (! empty($this->onchange) ? $this->onchange : '') . "
+            " . (!empty($this->onchange) ? $this->onchange : '') . "
             marker.setLatLng(position,{draggable:'true'}).bindPopup(position).update();
     	});
 		maps['" . $this->id . "_map'].addLayer(mapsmarker['" . $this->id . "_mapmarker']);
@@ -1662,12 +1662,12 @@ class datasetpdo
         $errores = '';
         foreach ($this->elements as $element) {
             $element->value = $_POST[$this->nameprefix][$element->field];
-            if ($element->disabled != false && ! $element->is_valid($_POST[$this->nameprefix][$element->field])) {
+            if ($element->disabled != false && !$element->is_valid($_POST[$this->nameprefix][$element->field])) {
                 $errores .= 'Error en:' . $element->field . '<br/>';
             }
         }
         if (empty($errores)) {
-            if (! $this->exists) {
+            if (!$this->exists) {
                 foreach ($this->elements as $element) {
                     $changes[$element->field] = $_POST[$this->nameprefix][$element->field];
                 }
@@ -1783,12 +1783,12 @@ class dataset
 
     public function __set($name, $value)
     {
-        if (! in_array($name, $this->nfprotected)) {
+        if (!in_array($name, $this->nfprotected)) {
             if (property_exists($this, $name)) {
                 $this->{$name} = $value;
             } else {
                 $options = [];
-                if (! empty($this->mongo_session)) {
+                if (!empty($this->mongo_session)) {
                     $options['session'] = $this->mongo_session;
                 }
                 if ($this->info[$name] != $value) {
@@ -1830,7 +1830,7 @@ class dataset
     {
         if ($name != '_id') {
             $options = [];
-            if (! empty($this->mongo_session)) {
+            if (!empty($this->mongo_session)) {
                 $options['session'] = $this->mongo_session;
             }
             unset($this->info[$name]);
@@ -1899,11 +1899,11 @@ class dataset
         $punto = false;
         $changes = [];
 
-        if (! empty($this->mongo_session)) {
+        if (!empty($this->mongo_session)) {
             $options['session'] = $this->mongo_session;
         }
         foreach ($this->elements as $element) {
-            if ($element->disabled != false && ! $element->is_valid($_POST[$this->nameprefix][$element->field])) {
+            if ($element->disabled != false && !$element->is_valid($_POST[$this->nameprefix][$element->field])) {
                 $errores .= 'Error en:' . $element->field . '<br/>';
             } else {
                 $element->value = $_POST[$this->nameprefix][$element->field];
