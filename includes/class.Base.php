@@ -381,12 +381,18 @@ class inputText extends baseInput
     {
         $attrs = [];
 
-        if ($this->uppercase) $attrs[] = 'uppercase="true"';
-        if ($this->lowercase) $attrs[] = 'lowercase="true"';
-        if ($this->autotrim) $attrs[] = 'autotrim="true"';
-        if ($this->mask) $attrs[] = 'data-mask="' . htmlspecialchars($this->mask) . '"';
-        if ($this->mask_pattern) $attrs[] = 'data-mask-pattern="' . htmlspecialchars($this->mask_pattern) . '"';
-        if ($this->pattern) $attrs[] = 'pattern="' . htmlspecialchars($this->pattern) . '"';
+        if ($this->uppercase)
+            $attrs[] = 'uppercase="true"';
+        if ($this->lowercase)
+            $attrs[] = 'lowercase="true"';
+        if ($this->autotrim)
+            $attrs[] = 'autotrim="true"';
+        if ($this->mask)
+            $attrs[] = 'data-mask="' . htmlspecialchars($this->mask) . '"';
+        if ($this->mask_pattern)
+            $attrs[] = 'data-mask-pattern="' . htmlspecialchars($this->mask_pattern) . '"';
+        if ($this->pattern)
+            $attrs[] = 'pattern="' . htmlspecialchars($this->pattern) . '"';
 
         return implode(' ', $attrs);
     }
@@ -456,14 +462,14 @@ class inputSpinner extends baseInput
             $_SESSION['ANTIXSS'][$this->id] = [FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_THOUSAND];
         } else {
             /*$_SESSION['ANTIXSS'][$this->id]=[
-    			FILTER_VALIDATE_INT,[
-		        'options' => [
-		            'default' => $this->default,
-		            'min_range' => $this->min,
-		            'max_range' => $this->max
-		        ],
-		        'flags' => FILTER_FLAG_ALLOW_HEX]
-    		];*/
+                FILTER_VALIDATE_INT,[
+                'options' => [
+                    'default' => $this->default,
+                    'min_range' => $this->min,
+                    'max_range' => $this->max
+                ],
+                'flags' => FILTER_FLAG_ALLOW_HEX]
+            ];*/
             $_SESSION['ANTIXSS'][$this->id] = [
                 FILTER_VALIDATE_INT
             ];
@@ -690,11 +696,11 @@ class inputMCE extends baseInput
     {
         global $nframework, $javas;
         /*
-    	'a11ychecker','advcode', 'editimage', 'powerpaste', 'tinymcespellchecker', 'tinydrive'
-    	*/
+        'a11ychecker','advcode', 'editimage', 'powerpaste', 'tinymcespellchecker', 'tinydrive'
+        */
 
         if (empty($this->content_css)) {
-            $this->content_css = array_values((array)$nframework->csss);
+            $this->content_css = array_values((array) $nframework->csss);
         }
         $nframework->jss['025'] = 'https://cdn.jsdelivr.net/npm/hugerte@1/hugerte.min.js';
         // $nframework->jss['905']='https://cdn.nlared.com/hugerte/nf.js';
@@ -755,15 +761,15 @@ setup: function(editor) {
 }
 });");
         /*
-	setup: function (editor) {
-    	editor.on('init', function () {
-    		const head = editor.dom.select('head')[0];
-    		editor.dom.add(head, 'script', {
-        		src: 'https://cdn.metroui.org.ua/5.1.13/metro.js',
-        		type: 'text/javascript'
-    		})
-    	})
-	}
+    setup: function (editor) {
+        editor.on('init', function () {
+            const head = editor.dom.select('head')[0];
+            editor.dom.add(head, 'script', {
+                src: 'https://cdn.metroui.org.ua/5.1.13/metro.js',
+                type: 'text/javascript'
+            })
+        })
+    }
 */
         $_SESSION['ANTIXSS'][($this->id)][0] = ['html'];
         $_SESSION['ANTIXSS'][($this->id)] = ['html'];
@@ -928,15 +934,15 @@ class Select extends baseOptions
             $this->role = 'select';
             $this->value = (array) ($this->value);
         }/*
-            //if (!is_array($this->value) && get_class($this->value)!='MongoDB\\Model\\BSONArray')$this->value=[];
-            foreach ($this->options as $value => $text) {
-                $result.='<option value="' . $value . '"' .(in_array($value, $this->value) ? ' selected>' : '>') . $text . '</option>';
-            }
-        } else {
-            foreach ($this->options as $value => $text) {
-                $result.='<option value="' . $value . '"' . ($value == $this->value ? ' selected>' : '>') . $text . '</option>';
-            }
-        }*/
+          //if (!is_array($this->value) && get_class($this->value)!='MongoDB\\Model\\BSONArray')$this->value=[];
+          foreach ($this->options as $value => $text) {
+              $result.='<option value="' . $value . '"' .(in_array($value, $this->value) ? ' selected>' : '>') . $text . '</option>';
+          }
+      } else {
+          foreach ($this->options as $value => $text) {
+              $result.='<option value="' . $value . '"' . ($value == $this->value ? ' selected>' : '>') . $text . '</option>';
+          }
+      }*/
         $result .= nflistoptions($this->options, $this->value);
 
         // onfocus=\"Autoformonfocus(this)\" onblur=\"Autoformonblur(this)\">\n";
@@ -1015,15 +1021,15 @@ class SelectIcon extends baseOptions
             $this->role = 'select';
             $this->value = (array) ($this->value);
         }/*
-            //if (!is_array($this->value) && get_class($this->value)!='MongoDB\\Model\\BSONArray')$this->value=[];
-            foreach ($this->options as $value => $text) {
-                $result.='<option value="' . $value . '"' .(in_array($value, $this->value) ? ' selected>' : '>') . $text . '</option>';
-            }
-        } else {
-            foreach ($this->options as $value => $text) {
-                $result.='<option value="' . $value . '"' . ($value == $this->value ? ' selected>' : '>') . $text . '</option>';
-            }
-        }*/
+          //if (!is_array($this->value) && get_class($this->value)!='MongoDB\\Model\\BSONArray')$this->value=[];
+          foreach ($this->options as $value => $text) {
+              $result.='<option value="' . $value . '"' .(in_array($value, $this->value) ? ' selected>' : '>') . $text . '</option>';
+          }
+      } else {
+          foreach ($this->options as $value => $text) {
+              $result.='<option value="' . $value . '"' . ($value == $this->value ? ' selected>' : '>') . $text . '</option>';
+          }
+      }*/
         $result = nflistoptionsIcons($this->options, $this->value);
 
         // onfocus=\"Autoformonfocus(this)\" onblur=\"Autoformonblur(this)\">\n";
