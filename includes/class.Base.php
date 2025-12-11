@@ -838,9 +838,11 @@ class inputCheckBox extends baseOptions
             return $val ? 1 : 0;
         } else if ($this->storeagetype == self::ST_CUSTOM) {
             if ($val) {
-                return $this->customtrue;;
+                return $this->customtrue;
+                ;
             } else {
-                return $this->customfalse;;
+                return $this->customfalse;
+                ;
             }
         } else {
             return $val;
@@ -1374,7 +1376,8 @@ class inputAddress extends baseInput
     }
     public function __toPHP($val)
     {
-        return $val;;
+        return $val;
+        ;
     }
     public function __construct()
     {
