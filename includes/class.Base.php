@@ -556,7 +556,7 @@ class inputDate extends baseInput
         if (!empty($val)) {
             if ($this->storagetype == self::ST_STRING) {
                 return $val;
-            } elseif ($this->storagetype == self::ST_MONGODATE) {
+            } else {
                 $orig_date = DateTime::createFromFormat($this->format, $val, $this->timezone);
                 $orig_date = $orig_date->getTimestamp();
                 $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
