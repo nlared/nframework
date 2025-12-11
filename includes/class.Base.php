@@ -934,15 +934,15 @@ class Select extends baseOptions
             $this->role = 'select';
             $this->value = (array) ($this->value);
         }/*
-         //if (!is_array($this->value) && get_class($this->value)!='MongoDB\\Model\\BSONArray')$this->value=[];
-         foreach ($this->options as $value => $text) {
-             $result.='<option value="' . $value . '"' .(in_array($value, $this->value) ? ' selected>' : '>') . $text . '</option>';
-         }
-     } else {
-         foreach ($this->options as $value => $text) {
-             $result.='<option value="' . $value . '"' . ($value == $this->value ? ' selected>' : '>') . $text . '</option>';
-         }
-     }*/
+    //if (!is_array($this->value) && get_class($this->value)!='MongoDB\\Model\\BSONArray')$this->value=[];
+    foreach ($this->options as $value => $text) {
+        $result.='<option value="' . $value . '"' .(in_array($value, $this->value) ? ' selected>' : '>') . $text . '</option>';
+    }
+} else {
+    foreach ($this->options as $value => $text) {
+        $result.='<option value="' . $value . '"' . ($value == $this->value ? ' selected>' : '>') . $text . '</option>';
+    }
+}*/
         $result .= nflistoptions($this->options, $this->value);
 
         // onfocus=\"Autoformonfocus(this)\" onblur=\"Autoformonblur(this)\">\n";
@@ -1021,15 +1021,15 @@ class SelectIcon extends baseOptions
             $this->role = 'select';
             $this->value = (array) ($this->value);
         }/*
-         //if (!is_array($this->value) && get_class($this->value)!='MongoDB\\Model\\BSONArray')$this->value=[];
-         foreach ($this->options as $value => $text) {
-             $result.='<option value="' . $value . '"' .(in_array($value, $this->value) ? ' selected>' : '>') . $text . '</option>';
-         }
-     } else {
-         foreach ($this->options as $value => $text) {
-             $result.='<option value="' . $value . '"' . ($value == $this->value ? ' selected>' : '>') . $text . '</option>';
-         }
-     }*/
+    //if (!is_array($this->value) && get_class($this->value)!='MongoDB\\Model\\BSONArray')$this->value=[];
+    foreach ($this->options as $value => $text) {
+        $result.='<option value="' . $value . '"' .(in_array($value, $this->value) ? ' selected>' : '>') . $text . '</option>';
+    }
+} else {
+    foreach ($this->options as $value => $text) {
+        $result.='<option value="' . $value . '"' . ($value == $this->value ? ' selected>' : '>') . $text . '</option>';
+    }
+}*/
         $result = nflistoptionsIcons($this->options, $this->value);
 
         // onfocus=\"Autoformonfocus(this)\" onblur=\"Autoformonblur(this)\">\n";
