@@ -547,10 +547,10 @@ class inputDate extends baseInput
             $this->timezone = new DateTimeZone('UTC');
         }
 
-        if (! empty($val)) {
-            if ($this->storeagetype == self::ST_STRING) {
+        if (!empty($val)) {
+            if ($this->storagetype == self::ST_STRING) {
                 return $val;
-            } elseif ($this->storeagetype == self::ST_MONGODATE) {
+            } elseif ($this->storagetype == self::ST_MONGODATE) {
                 $orig_date = DateTime::createFromFormat($this->format, $val, $this->timezone);
                 $orig_date = $orig_date->getTimestamp();
                 $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
@@ -563,9 +563,9 @@ class inputDate extends baseInput
 
     public function __toPHP($val)
     {
-        if ($this->storeagetype == self::ST_STRING) {
+        if ($this->storagetype == self::ST_STRING) {
             return $val;
-        } elseif ($this->storeagetype == self::ST_MONGODATE) {
+        } elseif ($this->storagetype == self::ST_MONGODATE) {
             if ($val instanceof MongoDB\BSON\UTCDateTime) {
                 $datetime = $val->toDateTime();
                 $date = $datetime->format($this->format);
