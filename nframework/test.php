@@ -2,10 +2,11 @@
 /*ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);//*/
-
+$buffer = '';
 function out($msg)
 {
-	echo $msg . '<br>';
+	global $buffer;
+	$buffer .= $msg . '<br>';
 }
 function fail($msg)
 {
@@ -383,22 +384,33 @@ if ($config['sitedb'] == '') {
 	}
 }
 
+use Nlared\MongoSessionHandler;
+
+$sessions = $m->{$config['sitedb']}->sessions;
+$handler = new MongoSessionHandler($sessions);
+session_set_save_handler($handler);
+session_name(str_replace('.', '_', $config['cookie_domain']));
+session_set_cookie_params(0, '/', $config['cookie_domain'], $nframework->https, false);
+session_start();
+
+
 $a = ini_get('post_max_size');
 $b = ini_get('upload_max_filesize');
-echo date("Y-m-d H:i:s") . '<br>
+out(date("Y-m-d H:i:s") . '<br>
 Capacidad de post_max_size:' . $a . '<br>
 Capacidad de upload_max_filesize:' . $b . '<br>
 Tu capacidad de subida es de:' .
 	(return_bytes($a) < return_bytes($b) ?
 		$a . '<br>Determinada por post_max_size' :
 		$b . '<br>Determinada por upload_max_filesize') .
-	'<br>';
+	'<br>');
 if (count($errores) > 0) {
 	foreach ($errores  as $errs) {
-		echo $errs . '<br>';
+		out($errs . '<br>');
 	}
 } else {
-	echo "No se encontraron errores de configuración";
+	out("No se encontraron errores de configuración");
 }
 require 'include.php';
-echo "sid:" . session_id() . '<br>Lenguaje' . $_SESSION['nf']['browser']['language'];
+out("sid:" . session_id() . '<br>Lenguaje:' . $_SESSION['nf']['browser']['language']);
+echo $buffer;
