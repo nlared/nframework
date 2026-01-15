@@ -22,7 +22,7 @@ class embededArray
 	public $nfchilds = [];
 	public function addElement(&$object)
 	{
-		$this->elements[] = $object;
+		//$this->elements[] = $object;
 	}
 
 	public function __construct($options = [])
