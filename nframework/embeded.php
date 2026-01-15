@@ -23,7 +23,7 @@ function getParentPositions(array $nodes, string $startId): array
 use Twig\Environment;
 use Twig\Extension\StringLoaderExtension;
 
-$result = ['status' => 'ok', 'item' => []];
+$result = ['status' => 'ok', 'items' => []];
 function get_data($dataset, string $field)
 {
     $parts = explode('.', $field);
