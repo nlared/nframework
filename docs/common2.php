@@ -124,6 +124,12 @@ $sidebar=new Sidebar([
 	                    <span class="caption">Special vars</span>
 	                </a>
 	            </li>
+				<li>
+					<a href="/docs/backgroundps.php" class="side-menu__item">
+						<span class="icon"><span class="mif-file-code"></span></span>
+						<span class="caption">Background Process</span>
+					</a>
+				</li>
 	            <li>
 	                <a href="#" class="side-menu__item">
 	                    <span class="icon"><span class="mif-file-image"></span></span>
