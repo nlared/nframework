@@ -61,6 +61,7 @@ try {
         //die('Invalid embeded ID');
     }
     $result['ss'] = $_SESSION['nfembeded'];
+    $result['session_id'] = session_id();
     $id = $_GET['_id'];
     $info = $_SESSION['nfembeded'][$id];
     $result['debug'] = $info;
