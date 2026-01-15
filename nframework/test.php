@@ -195,12 +195,6 @@ if (count($apts) > 0) {
 }
 
 
-// Check if Ghostscript is installed
-if ($return_var === 0) {
-	out("Ghostscript is installed. Version: " . implode("\n", $output));
-} else {
-	$errores[] = "Ghostscript is not installed or not accessible. sudo apt-get -y install ghostscript ";
-}
 
 if (!checkGhostscript()) {
 	$errores[] = "Instala Ghostscript y asegúrate que el comando 'gs' esté en PATH.";
@@ -308,12 +302,16 @@ if ((include 'vendor/autoload.php') != TRUE) {
 if (ini_get('auto_append_file') == '') {
 	$errores[] = 'auto_append_file =/var/www/html/includes/append_file.php';
 }
-
-$imagick = new Imagick();
-out("Memory limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_MEMORY) . " MB\n");
-out("Map limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_MAP) . " MB\n");
-out("Disk limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_DISK) . " MB\n");
-out("Thread limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_THREAD) . "\n");
+if (extension_loaded('imagick')) {
+	ok('Imagick extension is loaded');
+	$imagick = new Imagick();
+	out("Memory limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_MEMORY) . " MB\n");
+	out("Map limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_MAP) . " MB\n");
+	out("Disk limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_DISK) . " MB\n");
+	out("Thread limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_THREAD) . "\n");
+} else {
+	$errores[] = 'Imagick extension is not loaded';
+}
 
 if ($config['sitedb'] == '') {
 	$errores[] = '$config[sitedb] no configurada';
@@ -418,5 +416,5 @@ if (count($errores) > 0) {
 	out("No se encontraron errores de configuración");
 }
 require 'include.php';
-out("sid:" . session_id() . '<br>Lenguaje:' . $_SESSION['nf']['browser']['language']);
+out("sid: " . session_id() . '<br>Lenguaje: ' . $_SESSION['nf']['browser']['language']);
 echo $buffers;
