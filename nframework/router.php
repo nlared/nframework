@@ -676,6 +676,29 @@ $router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].png', function (stri
 		}
 	}
 }, 'GET');
+$router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].jpg', function (string $route, array $p) {
+	$options = $_SESSION['frompdf'][$p['id']];
+	if (file_exists($options['filename'])) {
+		$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
+		mkdir($options['directory']);
+		$pdf->format(\Spatie\PdfToImage\Enums\OutputFormat::Jpg);
+		$pdf->selectPage($p['p'])->size($p['w'])->save($options['directory'] . $p['p'] . '.jpg');
+		header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+		header("Cache-Control: post-check=0, pre-check=0", false);
+		header("Pragma: no-cache");
+		header('Content-Length: ' . filesize($options['directory'] . '/' . $p['p'] . '.jpg'));
+		header('Content-Type: image/jpeg');
+		echo file_get_contents($options['directory'] . '/' . $p['p'] . '.jpg');
+		if (!empty($options['deletefile']) && $options['deletefile'] == true) {
+			unlink($options['directory'] . '/' . $p['p'] . '.jpg');
+		}
+		if (!empty($options['deletedirectory']) && $options['deletedirectory'] == true) {
+			rmdir($options['directory']);
+		}
+	}
+}, 'GET');
+
+
 
 $router->addRoute('/images/frompdf/[s:id]/info.json', function (string $route, array $p) {
 	global $nframework;
