@@ -55,6 +55,12 @@ class bgprocess
     {
         $process = BackgroundProcess::createFromPID($this->pid);
         if ($process->isRunning()) {
+            $process->stop();
+            $_SESSION['pids'][$this->id]['pid'] = null;
+            return true;
+        } else {
+            return false;
+        }
     }
 
 
