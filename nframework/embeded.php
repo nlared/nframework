@@ -24,7 +24,7 @@ function getParentPositions(array $nodes, string $startId): array
 use Twig\Environment;
 use Twig\Extension\StringLoaderExtension;
 
-$result = ['status' => 'init', 'items' => [], 'SSS' => $_SESSION ?? null];
+$result = ['status' => 'init'];
 function get_data($dataset, string $field)
 {
     $parts = explode('.', $field);
@@ -58,13 +58,13 @@ try {
     ]);
     $twig->addExtension(new StringLoaderExtension());
     if (empty($_SESSION['nfembeded']) || empty($_GET['_id']) || empty($_SESSION['nfembeded'][$_GET['_id']])) {
-        //die('Invalid embeded ID');
+        die('Invalid embeded ID');
     }
-    $result['ss'] = $_SESSION['nfembeded'];
-    $result['session_id'] = session_id();
     $id = $_GET['_id'];
     $info = $_SESSION['nfembeded'][$id];
-    $result['debug'] = $info;
+    //$result['debug'] = $info;
+    //$result['ss'] = $_SESSION['nfembeded'];
+    //$result['session_id'] = session_id();
 
 
     $dataset = new dataset(
