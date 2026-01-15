@@ -22,7 +22,7 @@ class embededArray
 	public $nfchilds = [];
 	public function addElement(&$object)
 	{
-		//$this->elements[] = $object;
+		$this->elements[] = $object;
 	}
 
 	public function __construct($options = [])
@@ -51,10 +51,13 @@ class embededArray
 	public function __toString()
 	{
 		global $nframework, $javas;
-		/*$elements = [];
+		$elements = [];
 		foreach ($this->elements as $e) {
-			$elements[] = $e;
-		}*/
+			$elements[] = [
+				'class' => get_class($e),
+				'options' => $e->getOptions()
+			];
+		}
 		$_SESSION['nfembeded'][$this->id] = [
 			'database' => $this->database,
 			'collection' => $this->collection,
