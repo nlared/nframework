@@ -61,15 +61,16 @@ echo $arrayf;
 
 ?>
 <style>
-    dialog {
-        width: 800px;
-    }</style>
+	dialog {
+		width: 800px;
+	}
+</style>
 <div class="container p-5">
-	<div class="bg-cyan fg-white p-3"><h4>Embeded Data</h4></div>
-	<div class="bg-white p-3">
-		<div class="button" onclick="<?=$arrayf->function_new()?>">Agregar</div>
+	<div class="box shadow-large">
+		<div class="box-title">Embeded Data</div>
+		<div class="button" onclick="<?= $arrayf->function_new() ?>">Agregar</div>
 		<div id="list">
-			
+
 		</div>
 	</div>
 </div>
