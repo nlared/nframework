@@ -60,6 +60,7 @@ try {
     if (empty($_SESSION['nfembeded']) || empty($_GET['_id']) || empty($_SESSION['nfembeded'][$_GET['_id']])) {
         //die('Invalid embeded ID');
     }
+    $result['ss'] = $_SESSION['nfembeded'];
     $id = $_GET['_id'];
     $info = $_SESSION['nfembeded'][$id];
     $result['debug'] = $info;
@@ -79,7 +80,7 @@ try {
     $field = $info['field'];
     $parents = getParentPositions($_SESSION['nfembeded'], $id);
     $result['parents'] = $parents;
-    $result['ss'] = $_SESSION['nfembeded'];
+
     if (!empty($parents)) {
         foreach ($parents as $value) {
             $field = preg_replace('/\$/', $value, $field, 1);
