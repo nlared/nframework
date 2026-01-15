@@ -1,5 +1,6 @@
 <?
 require 'include.php';
+
 function getParentPositions(array $nodes, string $startId): array
 {
     $positions = [];
