@@ -2,11 +2,11 @@
 /*ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);//*/
-$buffer = '';
+$buffers = '';
 function out($msg)
 {
-	global $buffer;
-	$buffer .= $msg . '<br>';
+	global $buffers;
+	$buffers .= $msg . '<br>';
 }
 function fail($msg)
 {
@@ -419,4 +419,4 @@ if (count($errores) > 0) {
 }
 require 'include.php';
 out("sid:" . session_id() . '<br>Lenguaje:' . $_SESSION['nf']['browser']['language']);
-echo $buffer;
+echo $buffers;
