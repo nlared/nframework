@@ -67,10 +67,9 @@ class embededArray
 			'nfparent' => $this->nfparent,
 			'nfchilds' => $this->nfchilds,
 			'target' => $this->target,
-			//'elements' => $elements
 		];
 
-		//addVarToGarbage('nfembeded\\' . $this->id, time() + (60 * 60));
+		addVarToGarbage('nfembeded\\' . $this->id, time() + (60 * 60));
 
 
 		if (!$nframework->onces['embededArray']) {
