@@ -1,29 +1,29 @@
 <?
-$developermode=true;
-$usecommon=true;
-if(empty($nframework)){
+$developermode = true;
+$usecommon = true;
+if (empty($nframework)) {
 	require_once 'include.php';
 }
 
-if (!$nframework->isAjax()){
-$nframework->usecommon=true;
-$nframework->csss['998']='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css';
-$nframework->jss['998']='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+if (!$nframework->isAjax()) {
+	$nframework->usecommon = true;
+	$nframework->csss['998'] = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css';
+	$nframework->jss['998'] = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
 
-$nframework->csss['101']='/css/index.css?d='.date('Ymhis');
-function tocode($filetocode,$all=false) :string
-{
-    $code=file_get_contents($filetocode);
-    if($all){
-    	$pos=strlen($code);
-    }else{
-    	$pos=strpos($code, '<pre class="stay-on"><code');
-    }
-    return htmlentities(substr($code, 0, $pos));
-}
-$sidebar=new Sidebar([
-    'title'=> 'nf5',
-    'sidemenu'=> '<li class="item-header">Introducction</li>
+	$nframework->csss['101'] = '/css/index.css?d=' . date('Ymhis');
+	function tocode($filetocode, $all = false): string
+	{
+		$code = file_get_contents($filetocode);
+		if ($all) {
+			$pos = strlen($code);
+		} else {
+			$pos = strpos($code, '<pre class="stay-on"><code');
+		}
+		return htmlentities(substr($code, 0, $pos));
+	}
+	$sidebar = new Sidebar([
+		'title' => 'nf5',
+		'sidemenu' => '<li class="item-header">Introducction</li>
 	            <li>
 	                <a href="/" class="side-menu__item">
 	                    <span class="icon"><span class="mif-featured-play-list"></span></span>
@@ -81,7 +81,7 @@ $sidebar=new Sidebar([
 	            </li>
 	            <li class="item-header category-name">Ajax</li>
 	            <li>
-	                <a href="/docs/databindingajax.php?id='.session_id().'" class="side-menu__item">
+	                <a href="/docs/databindingajax.php?id=' . session_id() . '" class="side-menu__item">
 	                    <span class="icon"><span class="mif-database"></span></span>
 	                    <span class="caption">Ajax Databinding</span>
 	                </a>
@@ -143,6 +143,6 @@ $sidebar=new Sidebar([
 	                </a>
 	            </li>
 	'
-    ]);
-   echo $sidebar;
+	]);
+	echo $sidebar;
 }
