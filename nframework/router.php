@@ -684,6 +684,7 @@ $router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].jpg', function (stri
 			$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
 			mkdir($options['directory']);
 			$pdf->format(\Spatie\PdfToImage\Enums\OutputFormat::Jpg);
+			$pdf->setResolution(150);
 			$pdf->selectPage($p['p'])->size($p['w'])->save($options['directory'] . $p['p'] . '.jpg');
 			header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 			header("Cache-Control: post-check=0, pre-check=0", false);
