@@ -3,22 +3,16 @@
 class Sidebar
 {
     public string $title = 'Sidebar';
-
     public string $sidemenu = '';
-
     public string $content = '';
-
     public string $menuAdd = '';
-
     public string $color = 'cyan';
-
     public string $contentclass = '';
-
     public string $focuscolor = 'cyan';
-
     public string $darkcolor = 'darkCyan';
-
     public string $footer = '';
+    public bool $expand = false;
+    public bool $static = false;
 
     public function __construct($options)
     {
