@@ -74,7 +74,7 @@ class embededArray
 		addVarToGarbage('nfembeded\\' . $this->id, time() + (60 * 60));
 
 
-		if (! $nframework->onces['embededArray']) {
+		if (!$nframework->onces['embededArray']) {
 			$javas->addjs('var nfembededs=[];');
 			$nframework->onces['embededArray'] = true;
 		}

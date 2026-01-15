@@ -23,7 +23,7 @@ class Sidebar
 
     public function __toString(): string
     {
-        global $javas,$user,$nframework,$config;
+        global $javas, $user, $nframework, $config;
         // $nframework->csss['101']='https://cdn.nlared.com/pandora/css/index.css';
         $javas->addjs("
 $('#buscar').keyup(function(){
@@ -92,6 +92,5 @@ $('.item').click(function(e) {
         </div>
         <main id="page-content{$this->contentclass}">
 return;
-
     }
 }

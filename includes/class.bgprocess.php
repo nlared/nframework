@@ -143,10 +143,8 @@ JS;
             }
         } else {
             $html .= '<tr><td colspan="4">No processes configured.</td></tr>';
-        }
-        
-        $html .= '</tbody></table>';
-        
+        }        
+        $html .= '</tbody></table>';        
         return $html;
     }
 

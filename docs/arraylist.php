@@ -1,33 +1,34 @@
 <?
 require 'include.php';
 if (empty($_GET['_id'])) {
-    $newid=new MongoDB\BSON\ObjectID();
-    header('Location: ?_id='.$newid);
-    exit();
+	$newid = new MongoDB\BSON\ObjectID();
+	header('Location: ?_id=' . $newid);
+	exit();
 }
 
-$nframework->usecommon=true;
-$dataset=new dataset([
-    'collection'=>$m->{$config['sitedb']}->exampledata,
-    '_id'=>$_GET['_id'],
-    'simpleid'=>false,
-    'nameprefix'=>'data']
+$nframework->usecommon = true;
+$dataset = new dataset(
+	[
+		'collection' => $m->{$config['sitedb']}->exampledata,
+		'_id' => $_GET['_id'],
+		'simpleid' => false,
+		'nameprefix' => 'data'
+	]
 );
-$noobfuscate=true;
-$developermode=true;
+$noobfuscate = true;
+$developermode = true;
 
 
-$dialog=new Dialog([
-	'title'=>'title',
-	
-	]);
-$arrayf=new embededArray([
+$dialog = new Dialog([
+	'title' => 'title',
+]);
+$arrayf = new embededArray([
 	//'action'=>'items.php?_id='.$dataset->_id,
-	'dataset'=>&$dataset,
-	'field'=>'texts',
-	'containerid'=>'list',
-	'dialogid'=>$dialog->id,
-	'template'=><<<T
+	'dataset' => &$dataset,
+	'field' => 'texts',
+	'containerid' => 'list',
+	'dialogid' => $dialog->id,
+	'template' => <<<T
 	{% if items|length > 0 %}
     	<div class="grid">
         {% for key,item in items %}
@@ -46,8 +47,8 @@ $arrayf=new embededArray([
 T
 ]);
 
-$txt=new inputtext(['nfembeded'=>&$arrayf,'field'=>'text']);
-$dialog->content=<<<FORM
+$txt = new inputtext(['nfembeded' => &$arrayf, 'field' => 'text']);
+$dialog->content = <<<FORM
 	<div class="grid">
 		<div class="row">
 			$txt
