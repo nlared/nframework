@@ -79,7 +79,7 @@ try {
     $field = $info['field'];
     $parents = getParentPositions($_SESSION['nfembeded'], $id);
     $result['parents'] = $parents;
-    //$result['ss']=$_SESSION['nfembeded'];
+    $result['ss'] = $_SESSION['nfembeded'];
     if (!empty($parents)) {
         foreach ($parents as $value) {
             $field = preg_replace('/\$/', $value, $field, 1);
