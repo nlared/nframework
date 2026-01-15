@@ -45,7 +45,6 @@ class embededArray
 
 	public function function_new()
 	{
-
 		return $this->id . '_show()';
 	}
 
