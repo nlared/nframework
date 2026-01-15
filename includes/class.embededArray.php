@@ -71,7 +71,7 @@ class embededArray
 			'elements' => $elements
 		];
 
-		addVarToGarbage('nfembeded\\' . $this->id, time() + (60 * 60));
+		//addVarToGarbage('nfembeded\\' . $this->id, time() + (60 * 60));
 
 
 		if (!$nframework->onces['embededArray']) {
