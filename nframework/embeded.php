@@ -58,7 +58,7 @@ try {
     ]);
     $twig->addExtension(new StringLoaderExtension());
     if (empty($_SESSION['nfembeded']) || empty($_GET['_id']) || empty($_SESSION['nfembeded'][$_GET['_id']])) {
-        die('Invalid embeded ID');
+        //die('Invalid embeded ID');
     }
     $id = $_GET['_id'];
     $info = $_SESSION['nfembeded'][$id];
