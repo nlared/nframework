@@ -309,6 +309,12 @@ if (ini_get('auto_append_file') == '') {
 	$errores[] = 'auto_append_file =/var/www/html/includes/append_file.php';
 }
 
+$imagick = new Imagick();
+out("Memory limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_MEMORY) . " MB\n");
+out("Map limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_MAP) . " MB\n");
+out("Disk limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_DISK) . " MB\n");
+out("Thread limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_THREAD) . "\n");
+
 if ($config['sitedb'] == '') {
 	$errores[] = '$config[sitedb] no configurada';
 } else {
