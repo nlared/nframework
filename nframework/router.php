@@ -681,41 +681,66 @@ $router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].jpg', function (stri
 	$options = $_SESSION['frompdf'][$p['id']];
 
 	if (file_exists($options['filename'])) {
-		try {
-			$dst = $options['directory'] . $p['p'] . '.jpg';
-			if (!file_exists($dst) || filemtime($dst) < filemtime($options['filename'])) {
-				if (!file_exists($options['directory'])) {
-					mkdir($options['directory'], 0777, true);
-				}
-
-
-				$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
-				$pdf->format(\Spatie\PdfToImage\Enums\OutputFormat::Jpg);
-				$pdf->setResolution(150);
-				$pdf->selectPage($p['p'])->size($p['w'])->save($options['directory'] . $p['p'] . '.jpg');
-
-				if (!empty($options['deletefile']) && $options['deletefile'] == true) {
-					unlink($options['directory'] . '/' . $p['p'] . '.jpg');
-				}
-				if (!empty($options['deletedirectory']) && $options['deletedirectory'] == true) {
-					rmdir($options['directory']);
-				}
+		$dst = $options['directory'] . $p['p'] . '.jpg';
+		if (!file_exists($dst) || filemtime($dst) < filemtime($options['filename'])) {
+			if (!file_exists($options['directory'])) {
+				mkdir($options['directory'], 0777, true);
 			}
-			$toetag = $dst . filemtime($dst);
-			$lasttimedst = filemtime($dst);
-			$nframework->lastmodified = $lasttimedst;
-			$nframework->etag = md5($toetag);
-			$nframework->testcache();
-			header('Content-Length: ' . filesize($dst));
-			header('Content-Type: image/jpeg');
-			echo file_get_contents($dst);
-		} catch (Exception $e) {
-			header("HTTP/1.1 500 Internal Server Error");
-			echo "Error processing PDF file.";
-			echo $e->getMessage();
+			$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
+			$pdf->format(\Spatie\PdfToImage\Enums\OutputFormat::Jpg);
+			$pdf->setResolution(150);
+			$pdf->selectPage($p['p'])->size($p['w'])->save($options['directory'] . $p['p'] . '.jpg');
+
+			if (!empty($options['deletefile']) && $options['deletefile'] == true) {
+				unlink($options['directory'] . '/' . $p['p'] . '.jpg');
+			}
+			if (!empty($options['deletedirectory']) && $options['deletedirectory'] == true) {
+				rmdir($options['directory']);
+			}
 		}
+		$toetag = $dst . filemtime($dst);
+		$lasttimedst = filemtime($dst);
+		$nframework->lastmodified = $lasttimedst;
+		$nframework->etag = md5($toetag);
+		$nframework->testcache();
+		header('Content-Length: ' . filesize($dst));
+		header('Content-Type: image/jpeg');
+		echo file_get_contents($dst);
 	}
 }, 'GET');
+
+$router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].jpg', function (string $route, array $p) {
+	global $nframework, $m, $config;
+	$options = $_SESSION['frompdf'][$p['id']];
+
+	if (file_exists($options['filename'])) {
+		$dst = $options['directory'] . $p['p'] . '.webp';
+		if (!file_exists($dst) || filemtime($dst) < filemtime($options['filename'])) {
+			if (!file_exists($options['directory'])) {
+				mkdir($options['directory'], 0777, true);
+			}
+			$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
+			$pdf->format(\Spatie\PdfToImage\Enums\OutputFormat::Webp);
+			$pdf->selectPage($p['p'])->size($p['w'])->save($options['directory'] . $p['p'] . '.webp');
+
+			if (!empty($options['deletefile']) && $options['deletefile'] == true) {
+				unlink($options['directory'] . '/' . $p['p'] . '.webp');
+			}
+			if (!empty($options['deletedirectory']) && $options['deletedirectory'] == true) {
+				rmdir($options['directory']);
+			}
+		}
+		$toetag = $dst . filemtime($dst);
+		$lasttimedst = filemtime($dst);
+		$nframework->lastmodified = $lasttimedst;
+		$nframework->etag = md5($toetag);
+		$nframework->testcache();
+		header('Content-Length: ' . filesize($dst));
+		header('Content-Type: image/webp');
+		echo file_get_contents($dst);
+	}
+}, 'GET');
+
 
 
 
