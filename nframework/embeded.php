@@ -23,6 +23,32 @@ function getParentPositions(array $nodes, string $startId): array
 use Twig\Environment;
 use Twig\Extension\StringLoaderExtension;
 
+$result = [];
+function get_data($dataset, string $field)
+{
+    $parts = explode('.', $field);
+    $ref   = $dataset;
+    foreach ($parts as $part) {
+        if (is_array($ref)) {
+            // 1) existe la clave en el array?
+            if (! array_key_exists($part, $ref)) {
+                return null;
+            }
+            $ref = $ref[$part];
+        } elseif (is_object($ref)) {
+            // 2) es propiedad válida del objeto?
+            if (! property_exists($ref, $part)) {
+                return null;
+            }
+            $ref = $ref->$part;
+        } else {
+            // 3) ni array ni objeto → detenemos la navegación
+            return null;
+        }
+    }
+    return $ref;
+}
+
 try {
     $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates');
     $twig = new \Twig\Environment($loader, [
@@ -62,31 +88,7 @@ try {
 
 
     //$data=mongotoArray($dataset->{$field});
-    function get_data($dataset, string $field)
-    {
-        $parts = explode('.', $field);
-        $ref   = $dataset;
-        foreach ($parts as $part) {
-            if (is_array($ref)) {
-                // 1) existe la clave en el array?
-                if (! array_key_exists($part, $ref)) {
-                    return null;
-                }
-                $ref = $ref[$part];
-            } elseif (is_object($ref)) {
-                // 2) es propiedad válida del objeto?
-                if (! property_exists($ref, $part)) {
-                    return null;
-                }
-                $ref = $ref->$part;
-            } else {
-                // 3) ni array ni objeto → detenemos la navegación
-                return null;
-            }
-        }
 
-        return $ref;
-    }
     $data = mongotoArray($dataset->info);
     $result['ssssssss'] = $data;
     if (str_contains($field, '.')) {
