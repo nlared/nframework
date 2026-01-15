@@ -5,7 +5,7 @@ error_reporting(E_ALL);//*/
 
 function out($msg)
 {
-	echo $msg . PHP_EOL;
+	echo $msg . '<br>';
 }
 function fail($msg)
 {
@@ -283,7 +283,7 @@ if ($opcache_needs_update) {
 			$errores[] = "Reinicia PHP para aplicar cambios: sudo systemctl restart php" . number_format((float)phpversion(), 1) . "-fpm";
 		} else {
 			out(fail("No se pudo escribir en php.ini (permisos insuficientes)"));
-			$errores[] = "Edita manualmente $inipath y agrega: " . $contents;
+			$errores[] = "Edita manualmente $inipath y agrega: <br><textarea>" . $contents . "</textarea>";
 		}
 	}
 }
@@ -388,10 +388,10 @@ $b = ini_get('upload_max_filesize');
 echo date("Y-m-d H:i:s") . '<br>
 Capacidad de post_max_size:' . $a . '<br>
 Capacidad de upload_max_filesize:' . $b . '<br>
-Tu capacidad de subida es de :' .
+Tu capacidad de subida es de:' .
 	(return_bytes($a) < return_bytes($b) ?
-		$a . ' determinada por post_max_size' :
-		$b . ' determinada por upload_max_filesize') .
+		$a . '<br>Determinada por post_max_size' :
+		$b . '<br>Determinada por upload_max_filesize') .
 	'<br>';
 if (count($errores) > 0) {
 	foreach ($errores  as $errs) {
@@ -401,4 +401,4 @@ if (count($errores) > 0) {
 	echo "No se encontraron errores de configuración";
 }
 require 'include.php';
-echo "sid:" . session_id() . '<br>' . $_SESSION['nf']['browser']['language'];
+echo "sid:" . session_id() . '<br>Lenguaje' . $_SESSION['nf']['browser']['language'];
