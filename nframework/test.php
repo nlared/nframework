@@ -197,7 +197,7 @@ if (count($apts) > 0) {
 
 // Check if Ghostscript is installed
 if ($return_var === 0) {
-	echo "Ghostscript is installed. Version: " . implode("\n", $output);
+	out("Ghostscript is installed. Version: " . implode("\n", $output));
 } else {
 	$errores[] = "Ghostscript is not installed or not accessible. sudo apt-get -y install ghostscript ";
 }
