@@ -22,7 +22,7 @@ class embededArray
 	public $nfchilds = [];
 	public function addElement(&$object)
 	{
-		$this->elements[] = json_decode(json_encode($object), true);;
+		$this->elements[] = $object;
 	}
 
 	public function __construct($options = [])
@@ -52,7 +52,7 @@ class embededArray
 	public function __toString()
 	{
 		global $nframework, $javas;
-		$elements = ['test'];
+		$elements = [];
 		foreach ($this->elements as $e) {
 			$elements[] = $e;
 		}
