@@ -52,10 +52,10 @@ class embededArray
 	public function __toString()
 	{
 		global $nframework, $javas;
-		$elements = [];
+		/*$elements = [];
 		foreach ($this->elements as $e) {
 			$elements[] = $e;
-		}
+		}*/
 		$_SESSION['nfembeded'][$this->id] = [
 			'database' => $this->database,
 			'collection' => $this->collection,
@@ -68,7 +68,7 @@ class embededArray
 			'nfparent' => $this->nfparent,
 			'nfchilds' => $this->nfchilds,
 			'target' => $this->target,
-			'elements' => $elements
+			//'elements' => $elements
 		];
 
 		//addVarToGarbage('nfembeded\\' . $this->id, time() + (60 * 60));
