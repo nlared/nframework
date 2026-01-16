@@ -750,11 +750,11 @@ $router->addRoute('/images/frompdf/[s:id]/info.json', function (string $route, a
 	$options = $_SESSION['frompdf'][$p['id']];
 	if (file_exists($options['filename'])) {
 		$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
-		$size = $pdf->getSize();
+		//$size = $pdf->getSize();
 		$result = [
 			'numberOfPages' => $pdf->pageCount(),
-			'width' => $size->width,
-			'height' => $size->height,
+			//	'width' => $size->width,
+			//	'height' => $size->height,
 		];
 		header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 		header("Cache-Control: post-check=0, pre-check=0", false);
