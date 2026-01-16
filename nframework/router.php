@@ -751,8 +751,19 @@ $router->addRoute('/images/frompdf/[s:id]/info.json', function (string $route, a
 	if (file_exists($options['filename'])) {
 		$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
 		//$size = $pdf->getSize();
+
+		$cmd = sprintf(
+			'gs -q -dNODISPLAY -c "(%s) (r) file runpdfbegin pdfpagecount = quit" 2>&1',
+			escapeshellarg($options['filename'])
+		);
+		$out = trim(shell_exec($cmd) ?? '');
+		if (ctype_digit($out)) {
+			$count = (int)$out;
+		} else {
+			$count = $pdf->pageCount();
+		}
 		$result = [
-			'numberOfPages' => $pdf->pageCount(),
+			'numberOfPages' => $count,
 			//	'width' => $size->width,
 			//	'height' => $size->height,
 		];
