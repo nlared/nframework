@@ -55,7 +55,7 @@ class embededArray
 		foreach ($this->elements as $e) {
 			$elements[] = [
 				'class' => get_class($e),
-				'options' => $e->getOptions()
+				//'options' => $e->getOptions()
 			];
 		}
 		$_SESSION['nfembeded'][$this->id] = [
