@@ -372,11 +372,10 @@ class class_nframework
         header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
         header("Cache-Control: post-check=0, pre-check=0", false);
         header("Pragma: no-cache");
-        $filename = clean_filename($filename);
         if (file_exists($filename)) {
             header('Content-Description: File Transfer');
             header('Content-Type: ' . mime_content_type($filename));
-            header('Content-Disposition: attachment; filename="' . basename($filename) . '"');            
+            header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
             header('Content-Length: ' . filesize($filename));
             readfile($filename);
             exit;
