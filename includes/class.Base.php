@@ -1276,8 +1276,7 @@ class inputFile extends BaseFileInput
                     data-drop-icon="{$this->dropIcon}"
                     data-clear-button="true"
                     data-clear-button-icon="{$this->clearButtonIcon}"
-                    data-role="file" 
-                    data-custom-buttons='[{"text":"download","onclick":"copyToClipboard","cls":"copy-btn"}]'
+                    data-role="file"                     
                     data-mode="{$this->mode}"
                     data-button-title="<span class='mif-folder'></span>"
                     data-form-data='{"mid":"{$this->id}"}' />
