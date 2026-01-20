@@ -89,6 +89,26 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 		]);
 
 		if (!empty($user->_id)) {
+			if (!empty($user->disabled) && $user->disabled == true) {
+				$msgError = 'La cuenta no está activada.';
+				$nframework->usecommon = true;
+				$template = $twig->load('login.html');
+				$oauths = [
+					'google' => $config['google_oauth_client_enable'],
+					'facebook' => $config['facebook_oauth_client_enable'],
+				];
+				echo $template->render([
+					'nframework' => [
+						'themeSwitcher' => $nframework->themeSwitcher()
+					],
+					'lng' => $nframework->language(),
+					'config' => $config, //TODO: Solo pasar lo necesario
+					'oauths' => $oauths,
+					'msgError' => $msgError
+				]);
+				exit();
+			}
+
 			if (!empty($user->twofa_secret)) {
 				$_SESSION['tmp_user'] = $user->_id;
 				header('location: /account/twofa');
