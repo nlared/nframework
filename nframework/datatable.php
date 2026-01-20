@@ -102,22 +102,34 @@ if ((int)$_GET['length'] > 0) {
 	$pipeline[] = ['$limit' => $datastart + $datalength];
 }
 $data = [];
-foreach ($m->{$datainfo['db']}->{$datainfo['collection']}->aggregate($pipeline, $options) as $doc) {
-	$toad = [];
-	foreach ($datainfo['columns'] as $column) {
-		$toad[$column] = normalizeBsonValue($doc[$column]);
+try {
+	foreach ($m->{$datainfo['db']}->{$datainfo['collection']}->aggregate($pipeline, $options) as $doc) {
+		$toad = [];
+		foreach ($datainfo['columns'] as $column) {
+			$toad[$column] = normalizeBsonValue($doc[$column]);
+		}
+		$data[] = array_values($toad);
+		$filtrados++;
 	}
-	$data[] = array_values($toad);
-	$filtrados++;
+} catch (Exception $e) {
+	$error = 'Error en la consulta: ' . $e->getMessage();
 }
 $result = [
 	'draw' => (int)$_GET['draw'],
 	"recordsTotal" => (is_null($datat['recordsTotal']) ? 0 : $datat['recordsTotal']),
 	'pipeline' => $pipeline,
 	"recordsFiltered" => (is_null($dataf['recordsTotal']) ? 0 : $dataf['recordsTotal']),
-	'datainfo' => $datainfo,
 	'data' => $data,
-	'add' => $add
 ];
 
+if ($developermode) {
+	$result['debug'] = [
+		'pipeline' => $pipeline,
+		'pipelinef' => $pipelinef,
+		'datainfo' => $datainfo,
+	];
+}
+if ($error) {
+	$result['error'] = $error;
+}
 echo json_encode($result);
