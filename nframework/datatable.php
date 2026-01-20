@@ -36,7 +36,7 @@ function modifyArray(&$array, $targetKey, $newKey, $newValue)
 		if (is_array($item)) {
 			modifyArray($item, $targetKey, $newKey, $newValue);
 		} elseif ($item instanceof \MongoDB\BSON\ObjectId) {
-		}elseif ($item instanceof \MongoDB\BSON\Regex) {
+		} elseif ($item instanceof \MongoDB\BSON\Regex) {
 			//no hacer nada		
 		} elseif (isset($item[$targetKey])) {
 			$item[$newKey] = $newValue;
@@ -61,10 +61,6 @@ modifyArray($pipeline, '$regex', '$options', 'i');
 if ($_GET['search']['value'] != '') {
 	$globalfind = ($_GET['search']['regex'] ?
 		new MongoDB\BSON\Regex($_GET['search']['value'], "i")
-		/*[
-		'$regex'=> '/'.$_GET['search']['value'].'/',
-		'$options'=> 'i' 
-	]*/
 		:
 		new MongoDB\BSON\Regex('/' . $_GET['search']['value'] . '/', "i")
 	);
@@ -76,9 +72,7 @@ if ($_GET['search']['value'] != '') {
 
 $columnaf = [];
 foreach ($datainfo['columns'] as $index => $column) {
-
 	if ($_GET['columns'][$index]['search']['value'] != '') {
-
 		$columnaf[$column] = ($_GET['columns'][$index]['search']['regex'] ?
 			new MongoDB\BSON\Regex($_GET['columns'][$index]['search']['value'])
 			:
