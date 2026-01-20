@@ -17,6 +17,8 @@ $dataset = new dataset(
 $password = new inputText(['id' => 'password', 'name' => "password", 'caption' => $nframework->language['password'] . ':', 'required' => true]);
 $username = new inputText(['dataset' => &$dataset, 'field' => 'username', 'caption' => $nframework->language['username'] . ':', 'required' => true]);
 
+$disabled = new inputCheckbox(['dataset' => &$dataset, 'field' => 'disabled', 'caption' => $nframework->language['disabled'] . ':']);
+
 if (file_exists(include $_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.php')) {
 	include $_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.php';
 }
@@ -83,10 +85,10 @@ if ($nframework->isAjax()) {
 			<?= secureform() ?>
 			<div class="grid">
 				<div class="row">
-					<div class="cell col"><?= $username ?></div>
+					<div class="cell"><?= $username ?></div>
 				</div>
 				<div class="row">
-					<div class="cell col"><?= $permisos ?></div>
+					<div class="cell"><?= $permisos ?></div>
 				</div>
 				<?
 				if (file_exists(include $_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.ui.php')) {
@@ -94,9 +96,10 @@ if ($nframework->isAjax()) {
 				}
 				?>
 				<div class="row">
-					<div class="cell-md-3 col offset-md-5"><a href="#" onclick="dialogpass_open();" class="btn btn-primary button primary w-100" data-toggle="modal" data-target="#demoDialog1"><span class="mif-lock"></span>&nbsp;<?= $nframework->language['changepassword'] ?></a></div>
-					<div class="cell-md-2 col"><a href="./" class="button primary btn btn-primary w-100"><span class="mif-exit"></span>&nbsp;<?= $nframework->language['close'] ?></a></div>
-					<div class="cell-md-2 col"><button class="button btn btn-success secureop success w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;<?= $nframework->language['save'] ?></button></div>
+					<div class="cell"><?= $disabled ?></div>
+					<div class="cell-md-3"><a href="#" onclick="dialogpass_open();" class="btn btn-primary button primary w-100" data-toggle="modal" data-target="#demoDialog1"><span class="mif-lock"></span>&nbsp;<?= $nframework->language['changepassword'] ?></a></div>
+					<div class="cell-md-2"><a href="./" class="button primary btn btn-primary w-100"><span class="mif-exit"></span>&nbsp;<?= $nframework->language['close'] ?></a></div>
+					<div class="cell-md-2"><button class="button btn btn-success secureop success w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;<?= $nframework->language['save'] ?></button></div>
 				</div>
 			</div>
 			</form>
