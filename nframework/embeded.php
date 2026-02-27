@@ -20,7 +20,7 @@ function getParentPositions(array $nodes, string $startId): array
     return array_reverse($positions);
 }
 
-use Twig\TwigFunction;
+
 use Twig\Environment;
 use Twig\Extension\StringLoaderExtension;
 
@@ -62,61 +62,6 @@ try {
     }
     $id = $_GET['_id'];
     $info = $_SESSION['nfembeded'][$id];
-
-    $twig->addFunction(new TwigFunction('numeroOrdinal', function (int $numero): string {
-        $baseOrdinales = [
-            1  => "PRIMERO",
-            2  => "SEGUNDO",
-            3  => "TERCERO",
-            4  => "CUARTO",
-            5  => "QUINTO",
-            6  => "SEXTO",
-            7  => "SÉPTIMO",
-            8  => "OCTAVO",
-            9  => "NOVENO",
-            10 => "DÉCIMO",
-            11 => "UNDÉCIMO",
-            12 => "DUODÉCIMO",
-            13 => "DECIMOTERCERO",
-            14 => "DECIMOCUARTO",
-            15 => "DECIMOQUINTO",
-            16 => "DECIMOSEXTO",
-            17 => "DECIMOSÉPTIMO",
-            18 => "DECIMOCTAVO",
-            19 => "DECIMONOVENO",
-            20 => "VIGÉSIMO",
-            30 => "TRIGÉSIMO",
-            40 => "CUADRAGÉSIMO",
-            50 => "QUINCUAGÉSIMO",
-            60 => "SEXAGÉSIMO",
-            70 => "SEPTUAGÉSIMO",
-            80 => "OCTOGÉSIMO",
-            90 => "NONAGÉSIMO",
-            100 => "CENTÉSIMO",
-        ];
-
-        // Si está en la lista directa
-        if (isset($baseOrdinales[$numero])) {
-            return $baseOrdinales[$numero];
-        }
-
-        // Manejo de compuestos (21 = vigésimo primero, 32 = trigésimo segundo, etc.)
-        if ($numero < 100) {
-            $decenas = intval($numero / 10) * 10;
-            $unidades = $numero % 10;
-
-            if (isset($baseOrdinales[$decenas]) && isset($baseOrdinales[$unidades])) {
-                return $baseOrdinales[$decenas] . " " . $baseOrdinales[$unidades];
-            }
-        }
-
-        // Fallback genérico
-        return $numero . "º";
-    }));
-
-
-
-
     //$result['debug'] = $info;
     //$result['ss'] = $_SESSION['nfembeded'];
     //$result['session_id'] = session_id();
