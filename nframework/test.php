@@ -189,6 +189,12 @@ foreach ($depends as $ext => $command) {
 	}
 }
 
+$classMongoExists = class_exists('MongoDB\\Driver\\Manager');
+if (!$classMongoExists) {
+	$errores[] = "MongoDB extension no está instalada o no se cargó (clase MongoDB\\Driver\\Manager no encontrada).";
+}
+
+
 
 if (count($apts) > 0) {
 	$errores[] = 'sudo apt-get install ' . implode(' ', $apts);
