@@ -502,11 +502,11 @@ function nfurlencode($rb)
     $rb = str_replace("Ãš", "&Uacute;", $rb);
     return $rb;
 }
-function mongoDateToReadable($mongoDate)
+function mongoDateToReadable($mongoDate, $format = 'Y-m-d H:i:s')
 {
     if ($mongoDate instanceof MongoDB\BSON\UTCDateTime) {
         $dateTime = $mongoDate->toDateTime();
-        return $dateTime->format('Y-m-d H:i:s');
+        return $dateTime->format($format);
     }
     return null;
 }
