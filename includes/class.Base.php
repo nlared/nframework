@@ -642,8 +642,8 @@ class inputDateTime extends baseInput
             ($this->required ? ' required="required"' : '') .
             ($this->readonly ? ' readonly="readonly"' : '') .
             ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
-            ($this->disabled ? ' disabled' : '') .
-            ' data-validate="' . $this->data_validate() . '"' .
+            ($this->disabled ? ' disabled' : '') . $this->inputtags()
+            . ' data-validate="' . $this->data_validate() . '"' .
             $this->addtags . ' value="' . $this->__toPHP($this->value)
             . '" data-clear-button="false"  autocomplete="off"/>';
     }
