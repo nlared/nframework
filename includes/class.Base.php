@@ -639,8 +639,8 @@ class inputDateTime extends baseInput
         // $nframework->csss['099dtime']='//cdn.nlared.com/jquery-datetimepicker/build/jquery.datetimepicker.min.css';
         return
             '<input name="' . $this->name . '" id="' . $this->id . '" class="form-control" type="datetime-local" data-role="input"' .
-            ($this->required ? ' required="required"' : '') .
-            ($this->readonly ? ' readonly="readonly"' : '') .
+            //($this->required ? ' required="required"' : '') .
+            //($this->readonly ? ' readonly="readonly"' : '') .
             ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
             ($this->disabled ? ' disabled' : '') . $this->inputtags()
             . ' data-validate="' . $this->data_validate() . '"' .
