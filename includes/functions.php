@@ -76,7 +76,7 @@ function buildMetroMenu(array $nodes, string $menuClass = '', string $data_role 
         $shouldRender = true;
         if ($onfunction) {
             try {
-                $shouldRender = eval ("$onfunction");
+                $shouldRender = eval("$onfunction");
             } catch (Throwable $e) {
                 $shouldRender = false;
             }
