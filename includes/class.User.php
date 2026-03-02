@@ -37,7 +37,10 @@ class User implements ArrayAccess
         }
         $this->notifications = new Notifications;
     }
-
+    public  function isLoggedIn(): bool
+    {
+        return $this->info['username'] != 'guest' && $this->info['username'] != '';
+    }
     public function requireAuth()
     {
         $_SESSION['nframework']['logiopage'] = $_SERVER['DOCUMENT_URI'];
