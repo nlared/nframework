@@ -1731,7 +1731,7 @@ class dataset
     public $simpleid;
     public $autosave; // pensar
     public $mongo_session;
-    public $position; // se va
+    public $position = ''; // se va
     public $fieldprefix; // se va
     public $historic = false;
     private $nfprotected;
