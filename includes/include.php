@@ -331,18 +331,29 @@ class class_nframework
     public function wordOutPdf($word, $filename)
     {
         $filename = clean_filename($filename);
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
-        $tmpfname = tempnam(sys_get_temp_dir(), 'xlsxpdf');
-        $word->saveAs($tmpfname . '.docx');
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
-        shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
-        $size = filesize($tmpfname . '.pdf');
-        header("Content-length: $size");
-        readfile($tmpfname . '.pdf');
-        unlink($tmpfname . '.docx');
-        unlink($tmpfname . '.pdf');
+        if ($this->config['word_pdf_converter'] == 'Dompdf' || empty($this->config['word_pdf_converter'])) {
+            $writer = \PhpOffice\PhpWord\IOFactory::createWriter($word, 'Dompdf');
+            $writer->save('php://output');
+        } else {
+            $tmpfname = tempnam(sys_get_temp_dir(), 'xlsxpdf');
+            $word->saveAs($tmpfname . '.docx');
+            if ($this->config['word_pdf_converter'] == 'unoconv') {
+                shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
+            } else {
+                shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;' " . $tmpfname . '.docx');
+            }
+        }
+        if (file_exists($tmpfname . '.pdf')) {
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
+            $size = filesize($tmpfname . '.pdf');
+            header("Content-length: $size");
+            readfile($tmpfname . '.pdf');
+            unlink($tmpfname . '.pdf');
+        }
+        if (file_exists($tmpfname . '.docx')) {
+            unlink($tmpfname . '.docx');
+        }
     }
     function testcache()
     {
