@@ -1,46 +1,47 @@
 <?
 require '../common2.php';
 require 'timezonelist.php';
-	$dataset=new dataset(
-    [
-    'collection'=>$m->{$config['sitedb']}->configs,
-    '_id'=>'site',
-    'simpleid'=>true,
-    'nameprefix'=>'data']
+$dataset = new dataset(
+	[
+		'collection' => $m->{$config['sitedb']}->configs,
+		'_id' => 'site',
+		'simpleid' => true,
+		'nameprefix' => 'data'
+	]
 );
 
-$themesdir=scandir('../../themes/');
-$developermode=true;
+$themesdir = scandir('../../themes/');
+$developermode = true;
 
-foreach($themesdir as $themedir){
-	if($themedir!='.'&& $themedir!='..'){
-		$themes[$themedir]=$themedir;
+foreach ($themesdir as $themedir) {
+	if ($themedir != '.' && $themedir != '..') {
+		$themes[$themedir] = $themedir;
 	}
 }
 
 
-$title=new inputText(['dataset'=>&$dataset,'field'=>'title','caption'=>$nframework->language['title'].':','required'=>true]);
-$shortname=new inputText(['dataset'=>&$dataset,'field'=>'shortname','caption'=>$nframework->language['shortname'].':','required'=>true]);
-$tagline=new inputText(['dataset'=>&$dataset,'field'=>'tagline','caption'=>'Tagline:']);
-$image=new inputText(['dataset'=>&$dataset,'field'=>'image','caption'=>'Image:']);
-$description=new textarea(['dataset'=>&$dataset,'field'=>'description','caption'=>$nframework->language['description'].':','required'=>true]);
-$timezone=new select(['dataset'=>&$dataset,'field'=>'timezone','caption'=>$nframework->language['timezone'].':','options'=>$timezones]);
+$title = new inputText(['dataset' => &$dataset, 'field' => 'title', 'caption' => $nframework->language['title'] . ':', 'required' => true]);
+$shortname = new inputText(['dataset' => &$dataset, 'field' => 'shortname', 'caption' => $nframework->language['shortname'] . ':', 'required' => true]);
+$tagline = new inputText(['dataset' => &$dataset, 'field' => 'tagline', 'caption' => 'Tagline:']);
+$image = new inputText(['dataset' => &$dataset, 'field' => 'image', 'caption' => 'Image:']);
+$description = new textarea(['dataset' => &$dataset, 'field' => 'description', 'caption' => $nframework->language['description'] . ':', 'required' => true]);
+$timezone = new select(['dataset' => &$dataset, 'field' => 'timezone', 'caption' => $nframework->language['timezone'] . ':', 'options' => $timezones]);
 
-$theme=new select(['dataset'=>&$dataset,'field'=>'theme','caption'=>$nframework->language['theme'].':','options'=>$themes]);
-$homepagetype=new inputradios(['dataset'=>&$dataset,'field'=>'homepagetype','caption'=>$nframework->language['homepagetype'].':<br>','options'=>[
-	'page'=>'Page',
-	'blog'=>'Blog'
-	]]);
-$email=new inputText(['dataset'=>&$dataset,'field'=>'email','caption'=>$nframework->language['webmasteremail'].':']);
+$theme = new select(['dataset' => &$dataset, 'field' => 'theme', 'caption' => $nframework->language['theme'] . ':', 'options' => $themes]);
+$homepagetype = new inputradios(['dataset' => &$dataset, 'field' => 'homepagetype', 'caption' => $nframework->language['homepagetype'] . ':<br>', 'options' => [
+	'page' => 'Page',
+	'blog' => 'Blog'
+]]);
+$email = new inputText(['dataset' => &$dataset, 'field' => 'email', 'caption' => $nframework->language['webmasteremail'] . ':']);
 
-$logo=new inputfile([
-	'id'=>'logo',
-	'name'=>'logo',
-	'dir'=>$_SERVER['DOCUMENT_ROOT'].'/img/nf/',
-	'path'=>$_SERVER['DOCUMENT_ROOT'].'/img/nf/logo.png',
-	'accept'=>'.png',
-	'drop'=>false,
-	'onDone'=><<<js
+$logo = new inputfile([
+	'id' => 'logo',
+	'name' => 'logo',
+	'dir' => $_SERVER['DOCUMENT_ROOT'] . '/img/nf/',
+	'path' => $_SERVER['DOCUMENT_ROOT'] . '/img/nf/logo.png',
+	'accept' => '.png',
+	'drop' => false,
+	'onDone' => <<<js
 	if (data.files.length==1){
 		$("#img-container").html('<img width="256" src="/images/config/256/logo.png?time='+Date.now()+'">');	
 	}
