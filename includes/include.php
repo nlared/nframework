@@ -355,7 +355,7 @@ class class_nframework
             unlink($tmpfname . '.docx');
         }
     }
-    public function wordTemplateOutPdf(TemplateProcessor $template, $filename)
+    public function wordTemplateOutPdf(PhpOffice\PhpWord\TemplateProcessor $template, $filename)
     {
         $filename = clean_filename($filename);
         $tmpfname = tempnam(sys_get_temp_dir(), 'templatepdf');
