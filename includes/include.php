@@ -506,10 +506,15 @@ $m->{$config['sitedb']}->nfuristats->insertOne([
 ]);
 
 $rules = [['host' => ['$exists' => false]]];
-foreach ($m->{$config['sitedb']}->nfsecurityrules->find() as $rule) {
-    if (!empty($rule->rule) && !empty($rule->enabled) && $rule->enabled === true) {
-        $rules[] = fixSingleQuery(json_decode($rule->rule, true));
-    }
+foreach (
+    $m->{$config['sitedb']}->nfsecurityrules->find([
+        'enabled' => true,
+        'rule' => ['$ne' => null],
+    ]) as $rule
+) {
+    //if (!empty($rule->rule) && !empty($rule->enabled) && $rule->enabled === true) {
+    $rules[] = fixSingleQuery(json_decode($rule->rule, true));
+    //}
 }
 
 if ($attempts = $m->{$config['sitedb']}->nfuristats->count([
