@@ -330,14 +330,15 @@ class class_nframework
 
     public function wordOutPdf($word, $filename)
     {
+        global $config;
         $filename = clean_filename($filename);
-        if ($this->config['word_pdf_converter'] == 'Dompdf' || empty($this->config['word_pdf_converter'])) {
+        if ($config['word_pdf_converter'] == 'Dompdf' || empty($config['word_pdf_converter'])) {
             $writer = \PhpOffice\PhpWord\IOFactory::createWriter($word, 'Dompdf');
             $writer->save('php://output');
         } else {
             $tmpfname = tempnam(sys_get_temp_dir(), 'xlsxpdf');
             $word->saveAs($tmpfname . '.docx');
-            if ($this->config['word_pdf_converter'] == 'unoconv') {
+            if ($config['word_pdf_converter'] == 'unoconv') {
                 shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
             } else {
                 shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;' " . $tmpfname . '.docx');
@@ -357,15 +358,16 @@ class class_nframework
     }
     public function wordTemplateOutPdf(PhpOffice\PhpWord\TemplateProcessor $template, $filename)
     {
+        global $config;
         $filename = clean_filename($filename);
         $tmpfname = tempnam(sys_get_temp_dir(), 'templatepdf');
         $template->saveAs($tmpfname . '.docx');
 
-        if ($this->config['word_pdf_converter'] == 'Dompdf' || empty($this->config['word_pdf_converter'])) {
+        if ($config['word_pdf_converter'] == 'Dompdf' || empty($config['word_pdf_converter'])) {
             $phpWord = \PhpOffice\PhpWord\IOFactory::load($tmpfname . '.docx');
             $this->wordOutPdf($phpWord, $filename);
         } else {
-            if ($this->config['word_pdf_converter'] == 'unoconv') {
+            if ($config['word_pdf_converter'] == 'unoconv') {
                 shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
             } else {
                 shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;' " . $tmpfname . '.docx');
