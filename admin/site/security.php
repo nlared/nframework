@@ -113,7 +113,7 @@ $datatable->Ajax([
 			'render' => "'<a href=\"rule.php?_id='+data+'\" class=\"button primary\"><span class=\"mif-pencil\"></span></a>'+
 		
 		'<a href=\"javascript:removeid(\\''+data+'\\');\" class=\"button alert\"><span class=\"mif-cross\"></span></a>'"
-		],// data $row[0]
+		], // data $row[0]
 	]
 ]);
 
@@ -163,7 +163,7 @@ if ($nframework->isAjax()) {
 	}
 	");
 
-	?>
+?>
 
 	<style>
 		#dialogs_0 {
