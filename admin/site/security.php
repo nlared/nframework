@@ -103,13 +103,15 @@ $datatable->Ajax([
 	'db' => $config['sitedb'],
 	'collection' => 'nfsecurityrules',
 	'header' => '<th>Name</th><th>Rules</th><th>id</th>',
+	'responsive' => false,
 	'columns' => [
 		'name',
 		'rule',
+		'enable',
 		'_id'
 	],
 	'columnDefs' => [
-		'2' => [
+		'3' => [
 			'render' => "'<a href=\"rule.php?_id='+data+'\" class=\"button primary\"><span class=\"mif-pencil\"></span></a>'+
 		
 		'<a href=\"javascript:removeid(\\''+data+'\\');\" class=\"button alert\"><span class=\"mif-cross\"></span></a>'"
