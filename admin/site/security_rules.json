@@ -3,111 +3,144 @@
         {
             "name": "PetalBot",
             "enabled": false,
+            "description": "Blocks requests from PetalBot user agent",
             "query": {
-                "field": "user_agent",
-                "pattern": "PetalBot",
-                "action": "block",
-                "description": "Blocks requests from PetalBot user agent"
+                "$and": {
+                    "agent": {
+                        "regex": "PetalBot",
+                        "options": "i"
+                    }
+                }
             }
         },
         {
             "name": "bingbot",
             "enabled": false,
+            "description": "Blocks requests from bingbot user agent",
             "query": {
-                "field": "user_agent",
-                "pattern": "bingbot",
-                "action": "block",
-                "description": "Blocks requests from bingbot user agent"
+                "$and": {
+                    "agent": {
+                        "regex": "bingbot",
+                        "options": "i"
+                    }
+                }
             }
         },
         {
             "name": "GPTBot",
             "enabled": false,
+            "description": "Blocks requests from GPTBot user agent",
             "query": {
-                "field": "user_agent",
-                "pattern": "GPTBot",
-                "action": "block",
-                "description": "Blocks requests from GPTBot user agent"
+                "$and": {
+                    "agent": {
+                        "regex": "GPTBot",
+                        "options": "i"
+                    }
+                }
             }
         },
         {
             "name": "Yandex",
             "enabled": false,
+            "description": "Blocks requests from Yandex user agent",
             "query": {
-                "field": "user_agent",
-                "pattern": "Yandex",
-                "action": "block",
-                "description": "Blocks requests from Yandex user agent"
+                "$and": {
+                    "agent": {
+                        "regex": "Yandex",
+                        "options": "i"
+                    }
+                }
             }
         },
         {
             "name": "meta-externalagent",
             "enabled": false,
+            "description": "Blocks requests from meta-externalagent user agent",
             "query": {
-                "field": "user_agent",
-                "pattern": "meta-externalagent",
-                "action": "block",
-                "description": "Blocks requests from meta-externalagent user agent"
+                "$and": {
+                    "agent": {
+                        "regex": "meta-externalagent",
+                        "options": "i"
+                    }
+                }
             }
         },
         {
             "name": "Googlebot",
             "enabled": false,
+            "description": "Blocks requests from Googlebot user agent",
             "query": {
-                "field": "user_agent",
-                "pattern": "Googlebot",
-                "action": "block",
-                "description": "Blocks requests from Googlebot user agent"
+                "$and": {
+                    "agent": {
+                        "regex": "Googlebot",
+                        "options": "i"
+                    }
+                }
             }
         },
         {
             "name": "AhrefsBot",
             "enabled": false,
+            "description": "Blocks requests from AhrefsBot user agent",
             "query": {
-                "field": "user_agent",
-                "pattern": "AhrefsBot",
-                "action": "block",
-                "description": "Blocks requests from AhrefsBot user agent"
+                "$and": {
+                    "agent": {
+                        "regex": "AhrefsBot",
+                        "options": "i"
+                    }
+                }
             }
         },
         {
             "name": "YandexBot",
             "enabled": false,
+            "description": "Blocks requests from YandexBot user agent",
             "query": {
-                "field": "user_agent",
-                "pattern": "YandexBot",
-                "action": "block",
-                "description": "Blocks requests from YandexBot user agent"
+                "$and": {
+                    "agent": {
+                        "regex": "YandexBot",
+                        "options": "i"
+                    }
+                }
             }
         },
         {
             "name": "Bingbot",
             "enabled": false,
+            "description": "Blocks requests from Bingbot user agent",
             "query": {
-                "field": "user_agent",
-                "pattern": "Bingbot",
-                "action": "block",
-                "description": "Blocks requests from Bingbot user agent"
+                "$and": {
+                    "agent": {
+                        "regex": "Bingbot",
+                        "options": "i"
+                    }
+                }
             }
         },
         {
             "name": "Block All Bots",
             "enabled": true,
+            "description": "Blocks requests from multiple known bots",
             "query": {
-                "field": "user_agent",
-                "pattern": "(PetalBot|Googlebot|Bingbot|AhrefsBot|YandexBot|Yandex|meta-externalagent|GPTBot)",
-                "action": "block",
-                "description": "Blocks requests from multiple known bots"
+                "$and": {
+                    "agent": {
+                        "regex": "(PetalBot|Googlebot|Bingbot|AhrefsBot|YandexBot|Yandex|meta-externalagent|GPTBot)",
+                        "options": "i"
+                    }
+                }
             }
         },
         {
             "name": "Block Common Malicious URIs",
             "enabled": true,
+            "description": "Blocks requests to common malicious URIs",
             "query": {
-                "field": "request_uri",
-                "pattern": "(wp-includes/|xmlrpc\\.php|wlwmanifest\\.xml|\\.env|\\.git|config\\.inc\\.php|adminer\\.php|phpmyadmin/|pma/|mysql/|setup\\.php|install\\.php|vendor/|\\.htaccess|\\.bash_history|shellshock|cmd\\.exe|etc/passwd)",
-                "action": "block",
-                "description": "Blocks requests to common malicious URIs"
+                "$and": {
+                    "request_uri": {
+                        "regex": "(wp-includes/|xmlrpc\\.php|wlwmanifest\\.xml|\\.env|\\.git|config\\.inc\\.php|adminer\\.php|phpmyadmin/|pma/|mysql/|setup\\.php|install\\.php|vendor/|\\.htaccess|\\.bash_history|shellshock|cmd\\.exe|etc/passwd)",
+                        "options": "i"
+                    }
+                }
             }
         }
     ]
