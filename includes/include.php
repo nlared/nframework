@@ -511,13 +511,13 @@ foreach ($m->{$config['sitedb']}->nfsecurityrules->find() as $rule) {
         $rules[] = fixSingleQuery(json_decode($rule->rule, true));
     }
 }
-try {
-    $attempts = $m->{$config['sitedb']}->nfuristats->count([
-        'ip' => $ip,
-        'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - (isset($config['windowSeconds']) ? $config['windowSeconds'] : 900)) * 1000)], // use DateTime for comparison; driver converts to BSON UTC datetime
-        '$or' => $rules,
-    ]);
-} catch (Exception $e) {
+
+if ($attempts = $m->{$config['sitedb']}->nfuristats->count([
+    'ip' => $ip,
+    'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - (isset($config['windowSeconds']) ? $config['windowSeconds'] : 900)) * 1000)], // use DateTime for comparison; driver converts to BSON UTC datetime
+    '$or' => $rules,
+])) {
+} else {
     $attempts = 0;
 }
 
