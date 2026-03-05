@@ -77,13 +77,13 @@ $mailfromemail = new inputText(['dataset' => &$dataset, 'field' => 'smtp.fromema
 $letsencryptemail = new inputText(['dataset' => &$dataset, 'field' => 'letsencrypt_email', 'caption' => $nframework->language['email'] . ':']);
 $letsencryptuse = new inputcheckbox(['dataset' => &$dataset, 'field' => 'letsencrypt_use', 'caption' => $nframework->language['useletsencrypt'] . ':']);
 
-$wordtopdfconvertion = new inputcheckbox(['dataset' => &$dataset, 'field' => 'word_pdf_converter', 'caption' => 'Word to PDF conversion:', 'options' => [
+$wordtopdfconvertion = new select(['dataset' => &$dataset, 'field' => 'word_pdf_converter', 'caption' => 'Word to PDF conversion:', 'options' => [
 	'' => 'DOMPDF',
 	'unoconv' => 'unoconv',
 	'unoconv-server' => 'unoconv server'
 ]]);
 
-$exceltopdfconvertion = new inputcheckbox(['dataset' => &$dataset, 'field' => 'excel_pdf_converter', 'caption' => 'Excel to PDF conversion:', 'options' => [
+$exceltopdfconvertion = new select(['dataset' => &$dataset, 'field' => 'excel_pdf_converter', 'caption' => 'Excel to PDF conversion:', 'options' => [
 	'' => 'DOMPDF',
 	'unoconv' => 'unoconv',
 	'unoconv-server' => 'unoconv server'
