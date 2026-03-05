@@ -149,7 +149,7 @@ if ($nframework->isAjax()) {
 						_id: id
 					}
 				}).done(function() {
-					datatable=$('#testid').DataTable();
+					datatable=$('#table_rules').DataTable();
 					datatable.clearPipeline();
 					datatable.draw();
 					Swal.fire(
