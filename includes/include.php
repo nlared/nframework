@@ -355,6 +355,34 @@ class class_nframework
             unlink($tmpfname . '.docx');
         }
     }
+    public function wordTemplateOutPdf(TemplateProcessor $template, $filename)
+    {
+        $filename = clean_filename($filename);
+        $tmpfname = tempnam(sys_get_temp_dir(), 'templatepdf');
+        $template->saveAs($tmpfname . '.docx');
+
+        if ($this->config['word_pdf_converter'] == 'Dompdf' || empty($this->config['word_pdf_converter'])) {
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($tmpfname . '.docx');
+            $this->wordOutPdf($phpWord, $filename);
+        } else {
+            if ($this->config['word_pdf_converter'] == 'unoconv') {
+                shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
+            } else {
+                shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;' " . $tmpfname . '.docx');
+            }
+        }
+        if (file_exists($tmpfname . '.pdf')) {
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
+            $size = filesize($tmpfname . '.pdf');
+            header("Content-length: $size");
+            readfile($tmpfname . '.pdf');
+            unlink($tmpfname . '.pdf');
+        }
+        if (file_exists($tmpfname . '.docx')) {
+            unlink($tmpfname . '.docx');
+        }
+    }
     function testcache()
     {
 
