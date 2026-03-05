@@ -204,7 +204,7 @@ if ($nframework->isAjax()) {
 				</div>
 				<div class="row ">
 					<div class="cell-md-2"><a href="loadrecomended.php" class="button primary w-100"><span
-								class="mif-plus"></span>&nbsp;<?= $nframework->language['recomended'] ?></a></div>
+								class="mif-plus"></span>&nbsp;<?= $nframework->language['defaults'] ?></a></div>
 					<div class="cell-md-2 offset-md-6"><a href="./" class="button primary w-100"><span
 								class="mif-exit"></span>&nbsp;<?= $nframework->language['close'] ?></a></div>
 					<div class="cell-md-2"><button class="button secureop success w-100" value="save"><span
