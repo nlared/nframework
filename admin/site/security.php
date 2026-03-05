@@ -102,7 +102,7 @@ $datatable->Ajax([
 	'id' => 'table_rules',
 	'db' => $config['sitedb'],
 	'collection' => 'nfsecurityrules',
-	'header' => '<th>Name</th><th>Rules</th><th>id</th>',
+	'header' => '<th>Name</th><th>Rules</th><th>Enable</th><th>id</th>',
 	'responsive' => false,
 	'columns' => [
 		'name',
