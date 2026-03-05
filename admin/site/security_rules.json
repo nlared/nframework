@@ -5,12 +5,14 @@
             "enabled": false,
             "description": "Blocks requests from PetalBot user agent",
             "query": {
-                "$and":[ {
-                    "agent": {
-                        "regex": "PetalBot",
-                        "options": "i"
+                "$and": [
+                    {
+                        "agent": {
+                            "$regex": "PetalBot",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         },
         {
@@ -18,12 +20,14 @@
             "enabled": false,
             "description": "Blocks requests from bingbot user agent",
             "query": {
-                "$and":[ {
-                    "agent": {
-                        "regex": "bingbot",
-                        "options": "i"
+                "$and": [
+                    {
+                        "agent": {
+                            "$regex": "bingbot",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         },
         {
@@ -31,12 +35,14 @@
             "enabled": false,
             "description": "Blocks requests from GPTBot user agent",
             "query": {
-                "$and":[ {
-                    "agent": {
-                        "regex": "GPTBot",
-                        "options": "i"
+                "$and": [
+                    {
+                        "agent": {
+                            "$regex": "GPTBot",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         },
         {
@@ -44,12 +50,14 @@
             "enabled": false,
             "description": "Blocks requests from Yandex user agent",
             "query": {
-                "$and": [{
-                    "agent": {
-                        "regex": "Yandex",
-                        "options": "i"
+                "$and": [
+                    {
+                        "agent": {
+                            "$regex": "Yandex",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         },
         {
@@ -57,12 +65,14 @@
             "enabled": false,
             "description": "Blocks requests from meta-externalagent user agent",
             "query": {
-                "$and":[ {
-                    "agent": {
-                        "regex": "meta-externalagent",
-                        "options": "i"
+                "$and": [
+                    {
+                        "agent": {
+                            "$regex": "meta-externalagent",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         },
         {
@@ -70,12 +80,14 @@
             "enabled": false,
             "description": "Blocks requests from Googlebot user agent",
             "query": {
-                "$and":[ {
-                    "agent": {
-                        "regex": "Googlebot",
-                        "options": "i"
+                "$and": [
+                    {
+                        "agent": {
+                            "$regex": "Googlebot",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         },
         {
@@ -83,12 +95,14 @@
             "enabled": false,
             "description": "Blocks requests from AhrefsBot user agent",
             "query": {
-                "$and":[ {
-                    "agent": {
-                        "regex": "AhrefsBot",
-                        "options": "i"
+                "$and": [
+                    {
+                        "agent": {
+                            "$regex": "AhrefsBot",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         },
         {
@@ -96,12 +110,14 @@
             "enabled": false,
             "description": "Blocks requests from YandexBot user agent",
             "query": {
-                "$and":[ {
-                    "agent": {
-                        "regex": "YandexBot",
-                        "options": "i"
+                "$and": [
+                    {
+                        "agent": {
+                            "$regex": "YandexBot",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         },
         {
@@ -109,12 +125,14 @@
             "enabled": false,
             "description": "Blocks requests from Bingbot user agent",
             "query": {
-                "$and":[ {
-                    "agent": {
-                        "regex": "Bingbot",
-                        "options": "i"
+                "$and": [
+                    {
+                        "agent": {
+                            "$regex": "Bingbot",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         },
         {
@@ -122,12 +140,14 @@
             "enabled": true,
             "description": "Blocks requests from multiple known bots",
             "query": {
-                "$and":[ {
-                    "agent": {
-                        "regex": "(PetalBot|Googlebot|Bingbot|AhrefsBot|YandexBot|Yandex|meta-externalagent|GPTBot)",
-                        "options": "i"
+                "$and": [
+                    {
+                        "agent": {
+                            "$regex": "(PetalBot|Googlebot|Bingbot|AhrefsBot|YandexBot|Yandex|meta-externalagent|GPTBot)",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         },
         {
@@ -135,12 +155,14 @@
             "enabled": true,
             "description": "Blocks requests to common malicious URIs",
             "query": {
-                "$and":[ {
-                    "request_uri": {
-                        "regex": "(wp-includes/|xmlrpc\\.php|wlwmanifest\\.xml|\\.env|\\.git|config\\.inc\\.php|adminer\\.php|phpmyadmin/|pma/|mysql/|setup\\.php|install\\.php|vendor/|\\.htaccess|\\.bash_history|shellshock|cmd\\.exe|etc/passwd)",
-                        "options": "i"
+                "$and": [
+                    {
+                        "request_uri": {
+                            "$regex": "(wp-includes/|xmlrpc\\.php|wlwmanifest\\.xml|\\.env|\\.git|config\\.inc\\.php|adminer\\.php|phpmyadmin/|pma/|mysql/|setup\\.php|install\\.php|vendor/|\\.htaccess|\\.bash_history|shellshock|cmd\\.exe|etc/passwd)",
+                            "$options": "i"
+                        }
                     }
-                } ]
+                ]
             }
         }
     ]
