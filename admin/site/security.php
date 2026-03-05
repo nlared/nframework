@@ -188,7 +188,7 @@ if ($nframework->isAjax()) {
 					<div class="cell">
 						<div class="button" onclick="<?= $arrayIps->function_new() ?>"><span class="mif-plus">Agregar</span>
 						</div>
-					</div>
+					</div>nfuristats
 				</div>
 				<div class="row">
 					<div class="cell">
