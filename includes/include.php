@@ -520,11 +520,6 @@ try {
 } catch (Exception $e) {
     $attempts = 0;
 }
-$attempts = $m->{$config['sitedb']}->nfuristats->count([
-    'ip' => $ip,
-    'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - (isset($config['windowSeconds']) ? $config['windowSeconds'] : 900)) * 1000)], // use DateTime for comparison; driver converts to BSON UTC datetime
-    '$or' => $rules,
-]);
 
 if ($attempts > 10) {
     $doc = [
