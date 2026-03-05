@@ -123,7 +123,7 @@ if ($nframework->isAjax()) {
 		$m->{$config['sitedb']}->nfsecurityrules->deleteOne(['_id' => tomongoid($_POST['_id'])]);
 		$result = [
 			'error' => '',
-			'js' => "datatable=$('#table_rules').DataTable();datatable.clearPipeline();datatable.draw();"
+			//'js' => "datatable=$('#table_rules').DataTable();datatable.clearPipeline();datatable.draw();"
 		];
 	}
 } else {
