@@ -107,7 +107,7 @@ $datatable->Ajax([
 	'columns' => [
 		'name',
 		'rule',
-		'enable',
+		'enabled',
 		'_id'
 	],
 	'columnDefs' => [
