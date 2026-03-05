@@ -370,7 +370,7 @@ class class_nframework
             if ($config['word_pdf_converter'] == 'unoconv') {
                 shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
             } else {
-                shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;' " . $tmpfname . '.docx');
+                shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;StarOffice.ComponentContext' " . $tmpfname . '.docx');
             }
         }
         if (file_exists($tmpfname . '.pdf')) {
