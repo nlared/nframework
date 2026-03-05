@@ -121,6 +121,10 @@ $datatable->Ajax([
 if ($nframework->isAjax()) {
 	if ($_POST['op'] == 'delete') {
 		$m->{$config['sitedb']}->nfsecurityrules->deleteOne(['_id' => tomongoid($_POST['_id'])]);
+		$result = [
+			'error' => '',
+			'js' => "datatable=$('#table_rules').DataTable();datatable.clearPipeline();datatable.draw();"
+		];
 	}
 } else {
 	$nframework->usecommon = true;
