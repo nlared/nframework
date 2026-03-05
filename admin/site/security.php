@@ -79,7 +79,7 @@ $datatablessuspicious->Ajax([
 		'ip',
 		'host',
 		'path',
-		'user_agent',
+		'agent',
 		'_id'
 	],
 	'pipeline' => [

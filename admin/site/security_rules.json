@@ -157,7 +157,7 @@
             "query": {
                 "$and": [
                     {
-                        "request_uri": {
+                        "path": {
                             "$regex": "(wp-includes/|xmlrpc\\.php|wlwmanifest\\.xml|\\.env|\\.git|config\\.inc\\.php|adminer\\.php|phpmyadmin/|pma/|mysql/|setup\\.php|install\\.php|vendor/|\\.htaccess|\\.bash_history|shellshock|cmd\\.exe|etc/passwd)",
                             "$options": "i"
                         }
