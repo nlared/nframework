@@ -36,6 +36,7 @@ class Table
     public $collection;
     public $pipeline;
     public $footerCallback;
+    public $rowReorder = false;
 
     public function __construct($options = [])
     {
@@ -45,10 +46,15 @@ class Table
             $this->{$option} = $value;
         }
         $nframework->addjqueryui();
-        $nframework->csss['006'] = 'https://cdn.datatables.net/v/dt/dt-1.13.6/r-2.5.0/sc-2.2.0/sl-1.7.0/datatables.min.css';
-        $nframework->jss['006'] = 'https://cdn.datatables.net/v/dt/dt-1.13.6/r-2.5.0/sc-2.2.0/sl-1.7.0/datatables.min.js';
+        $nframework->csss['006'] = 'https://cdn.datatables.net/v/dt/dt-1.13.8/r-2.5.0/sc-2.2.0/sl-1.7.0/datatables.min.css';
+        $nframework->jss['006'] = 'https://cdn.datatables.net/v/dt/dt-1.13.8/r-2.5.0/sc-2.2.0/sl-1.7.0/datatables.min.js';
         // $nframework->jss['0061']='https://cdn.nlared.com/nframework/4.5.1/dtpipeline.js';
         $nframework->jss['0061'] = 'https://cdn.nlared.com/nframework/4.5.1/dtpipeline.js?dev=' . date('ymdhis');
+
+        if ($this->rowReorder) {
+            $nframework->jss['0062'] = 'https://cdn.datatables.net/rowreorder/1.4.1/js/dataTables.rowReorder.min.js';
+            $nframework->csss['0062'] = 'https://cdn.datatables.net/rowreorder/1.4.1/css/rowReorder.dataTables.min.css';
+        }
 
         // $nframework->jss['002']='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js';
         // $nframework->jss['060']='https://cdn.datatables.net/responsive/2.2.6/js/dataTables.responsive.min.js';
@@ -157,6 +163,13 @@ class Table
                 'initializecomponent'
             );
         }
+        if ($this->rowReorder) {
+            $javas->addjs(
+                '$("#' . $this->id . '").on( "row-reorder", function ( e, diff, edit ) {var result="";for ( var i=0, ien=diff.length ; i<ien ; i++ ) {var rowData = $("#' . $this->id . '").DataTable().row( diff[i].node ).data();result += rowData[0]+" moved from position "+diff[i].oldPosition+" to "+diff[i].newPosition+"\\n";}alert( result );} );',
+                'initializecomponent'
+            );
+        }
+
 
         return $result . '</table>';
     }
