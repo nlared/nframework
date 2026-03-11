@@ -38,6 +38,13 @@ use MongoDB\Client;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\BSON\ObjectId;
 
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\Settings;
+
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
+
 class nFrameworkException extends Exception
 {
     public function errorMessage()
@@ -304,7 +311,11 @@ class class_nframework
         header('Content-Type: application/pdf');
         header('Content-Disposition: ' . $disposition . '; filename="' . $filename . '.pdf"');
         if ($converter == 'Dompdf') {
-            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Dompdf');
+            Settings::setPdfRendererName(Settings::PDF_RENDERER_DOMPDF);
+            // Optional since PHPWord can usually locate it via Composer autoload,
+            // but harmless to set explicitly:
+            Settings::setPdfRendererPath(__DIR__ . '/vendor/dompdf/dompdf');
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'PDF');
             $writer->save('php://output');
         }
         if ($converter == 'unoconv') {
@@ -333,10 +344,15 @@ class class_nframework
         global $config;
         $filename = clean_filename($filename);
         if ($config['word_pdf_converter'] == 'Dompdf' || empty($config['word_pdf_converter'])) {
-            $writer = \PhpOffice\PhpWord\IOFactory::createWriter($word, 'Dompdf');
+            Settings::setPdfRendererName(Settings::PDF_RENDERER_DOMPDF);
+            // Optional since PHPWord can usually locate it via Composer autoload,
+            // but harmless to set explicitly:
+            Settings::setPdfRendererPath(__DIR__ . '/vendor/dompdf/dompdf');
+
+            $writer = \PhpOffice\PhpWord\IOFactory::createWriter($word, 'PDF');
             $writer->save('php://output');
         } else {
-            $tmpfname = tempnam(sys_get_temp_dir(), 'xlsxpdf');
+            $tmpfname = tempnam(sys_get_temp_dir(), 'docxtpdf');
             $word->saveAs($tmpfname . '.docx');
             if ($config['word_pdf_converter'] == 'unoconv') {
                 shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
