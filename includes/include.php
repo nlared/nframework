@@ -335,7 +335,7 @@ class class_nframework
     {
         $filename = clean_filename($filename);
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $filename . '.xlsx"');
+        header('Content-Disposition: inline; filename="' . $filename . '.xlsx"');
         $word->save('php://output');
     }
 
@@ -362,7 +362,7 @@ class class_nframework
         }
         if (file_exists($tmpfname . '.pdf')) {
             header('Content-Type: application/pdf');
-            header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
+            header('Content-Disposition: inline; filename="' . $filename . '.pdf"');
             $size = filesize($tmpfname . '.pdf');
             header("Content-length: $size");
             readfile($tmpfname . '.pdf');
