@@ -413,7 +413,7 @@ if ($config['sitedb'] == '') {
 
 	foreach ($indexes as $idx) {
 		try {
-			$result = $m->{$idx['colletion']}->createIndex(
+			$result = $m->{$config['sitedb']}->{$idx['colletion']}->createIndex(
 				$idx['key'],
 				$idx['options']
 			);
