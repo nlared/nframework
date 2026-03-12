@@ -368,6 +368,7 @@ if ($config['sitedb'] == '') {
 			}
 		}
 
+
 		$gadmin = $m->{$config['sitedb']}->usersgroups->findOne(['name' => 'developers']);
 		if (empty($gadmin)) {
 			$m->{$config['sitedb']}->usersgroups->insertOne([
