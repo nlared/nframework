@@ -332,7 +332,7 @@ if ($config['sitedb'] == '') {
 			$errores[] = "guest no existe";
 			$m->{$config['sitedb']}->users->insertOne(['username' => 'guest']);
 			$errores[] = "guest creado error solucionado actualiza la pagina";
-			$m->{$config['sitedb']}->users->createIndex(["username" => 1], ['unique' => true]);
+			//$m->{$config['sitedb']}->users->createIndex(["username" => 1], ['unique' => true]);
 		}
 
 		$admin = $m->{$config['sitedb']}->users->findOne(['username' => 'admin']);
@@ -357,7 +357,7 @@ if ($config['sitedb'] == '') {
 				'description' => 'administrators',
 				'users' => [$adminid]
 			]);
-			$m->{$config['sitedb']}->usersgroups->createIndex(["name" => 1], ['unique' => true]);
+			//$m->{$config['sitedb']}->usersgroups->createIndex(["name" => 1], ['unique' => true]);
 		} else {
 			if (count($gadmin->users) == 0) {
 				$m->{$config['sitedb']}->usersgroups->updateOne(['name' => 'admins'], [
@@ -385,7 +385,7 @@ if ($config['sitedb'] == '') {
 				$m->{$config['sitedb']}->securityrules->insertOne($rule);
 			}
 		}
-		$m->{$config['sitedb']}->configs->createIndex(['_id' => 1]);
+		/*$m->{$config['sitedb']}->configs->createIndex(['_id' => 1]);
 		$m->{$config['sitedb']}->sessions->createIndex(['_id' => 1]);
 		$m->{$config['sitedb']}->sessions->createIndex(['last_accessed' => 1]);
 
