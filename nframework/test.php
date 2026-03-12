@@ -385,11 +385,19 @@ if ($config['sitedb'] == '') {
 				$m->{$config['sitedb']}->securityrules->insertOne($rule);
 			}
 		}
-
+		$m->{$config['sitedb']}->configs->createIndex(['_id' => 1]);
+		$m->{$config['sitedb']}->sessions->createIndex(['_id' => 1]);
 		$m->{$config['sitedb']}->sessions->createIndex(['last_accessed' => 1]);
+
 		$m->{$config['sitedb']}->users->createIndex(['username' => 1]);
+		$m->{$config['sitedb']}->users->createIndex(['_id' => 1]);
+		$m->{$config['sitedb']}->users->createIndex(['sessions' => 1]);
+
 		$m->{$config['sitedb']}->pages->createIndex(['path' => 1]);
 		$m->{$config['sitedb']}->usergroups->createIndex(['name' => 1]);
+		$m->{$config['sitedb']}->nfuristats->createIndex(['created_at' => 1, 'ip' => 1]);
+		$m->{$config['sitedb']}->nfuristats->createIndex(['ip' => 1, 'created_at' => 1]);
+		$m->{$config['sitedb']}->nfsecurityrules->createIndex(['enabled' => 1]);
 	} catch (Exception $e) {
 		$errores[] = 'Excepción capturada: ' .  $e->getMessage();
 	}
