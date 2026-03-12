@@ -417,11 +417,11 @@ if ($config['sitedb'] == '') {
 				$idx['key'],
 				$idx['options']
 			);
-			out( "Index created: $result\n";	
+			out("Index created: $result\n");
 		} catch (MongoDB\Driver\Exception\CommandException $e) {
 			// If the index already exists → don’t stop
 			if (str_contains($e->getMessage(), 'already exists')) {
-				out( "Index already exists, skipping...\n");
+				out("Index already exists, skipping...\n");
 				continue;
 			}
 
