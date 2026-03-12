@@ -397,9 +397,37 @@ if ($config['sitedb'] == '') {
 		$m->{$config['sitedb']}->usergroups->createIndex(['name' => 1]);
 		$m->{$config['sitedb']}->nfuristats->createIndex(['created_at' => 1, 'ip' => 1]);
 		$m->{$config['sitedb']}->nfuristats->createIndex(['ip' => 1, 'created_at' => 1]);
-		$m->{$config['sitedb']}->nfsecurityrules->createIndex(['enabled' => 1]);
+		$m->{$config['sitedb']}->nfsecurityrules->createIndex(['enabled' => 1]);*/
 	} catch (Exception $e) {
 		$errores[] = 'Excepción capturada: ' .  $e->getMessage();
+	}
+
+	$indexes = [
+		['colletion' => 'users', 'key' => ['username' => 1], 'options' => ['unique' => true]],
+		['colletion' => 'pages', 'key' => ['path' => 1]],
+		['colletion' => 'usergroups', 'key' => ['name' => 1]],
+		['colletion' => 'nfuristats', 'key' => ['ip' => 1, 'created_at' => 1]],
+		['colletion' => 'nfuristats', 'key' => ['created_at' => 1, 'ip' => 1]],
+		['colletion' => 'nfsecurityrules', 'key' => ['enabled' => 1]],
+	];
+
+	foreach ($indexes as $idx) {
+		try {
+			$result = $m->{$idx['colletion']}->createIndex(
+				$idx['key'],
+				$idx['options']
+			);
+			out( "Index created: $result\n";	
+		} catch (MongoDB\Driver\Exception\CommandException $e) {
+			// If the index already exists → don’t stop
+			if (str_contains($e->getMessage(), 'already exists')) {
+				out( "Index already exists, skipping...\n");
+				continue;
+			}
+
+			// For other errors, rethrow (to avoid hiding real problems)
+			throw $e;
+		}
 	}
 }
 
