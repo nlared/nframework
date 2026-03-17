@@ -163,14 +163,14 @@ class Table
                 'initializecomponent'
             );
         }
+
+
         if ($this->rowReorder) {
             $javas->addjs(
-                'datatables["' . $this->id . '").on( "row-reorder", function ( e, diff, edit ) {var result="";for ( var i=0, ien=diff.length ; i<ien ; i++ ) {var rowData = $("#' . $this->id . '").DataTable().row( diff[i].node ).data();result += rowData[0]+" moved from position "+diff[i].oldPosition+" to "+diff[i].newPosition+"\\n";}alert( result );} );',
+                'datatables["' . $this->id . '"].on( "row-reorder", function ( e, diff, edit ) {var result="";for ( var i=0, ien=diff.length ; i<ien ; i++ ) {var rowData = $("#' . $this->id . '").DataTable().row( diff[i].node ).data();result += rowData[0]+" moved from position "+diff[i].oldPosition+" to "+diff[i].newPosition+"\\n";}alert( result );} );',
                 'initializecomponent'
             );
         }
-
-
         return $result . '</table>';
     }
 }
