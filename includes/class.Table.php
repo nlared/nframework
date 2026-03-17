@@ -119,6 +119,8 @@ class Table
             }
         }
 
+
+
         $json = [
             'language' => $nframework->languages[$nframework->lang]['datatables'],
             'destroy' => true,
