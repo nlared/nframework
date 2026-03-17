@@ -51,10 +51,6 @@ class Table
         // $nframework->jss['0061']='https://cdn.nlared.com/nframework/4.5.1/dtpipeline.js';
         $nframework->jss['0061'] = 'https://cdn.nlared.com/nframework/4.5.1/dtpipeline.js?dev=' . date('ymdhis');
 
-        if ($this->rowReorder) {
-            $nframework->jss['0062'] = 'https://cdn.datatables.net/rowreorder/1.4.1/js/dataTables.rowReorder.min.js';
-            $nframework->csss['0062'] = 'https://cdn.datatables.net/rowreorder/1.4.1/css/rowReorder.dataTables.min.css';
-        }
 
         // $nframework->jss['002']='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js';
         // $nframework->jss['060']='https://cdn.datatables.net/responsive/2.2.6/js/dataTables.responsive.min.js';
@@ -88,6 +84,10 @@ class Table
     public function __toString()
     {
         global $javas, $javasonce, $nframework;
+        if ($this->rowReorder) {
+            $nframework->jss['0062'] = 'https://cdn.datatables.net/rowreorder/1.4.1/js/dataTables.rowReorder.min.js';
+            $nframework->csss['0062'] = 'https://cdn.datatables.net/rowreorder/1.4.1/css/rowReorder.dataTables.min.css';
+        }
         $class = [];
         if ($this->border) $class[] = 'table-border';
         if ($this->rowborder) $class[] = 'row-border';
