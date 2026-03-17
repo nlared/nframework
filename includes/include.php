@@ -361,7 +361,7 @@ class class_nframework
             }
         }
         if (file_exists($tmpfname . '.pdf')) {
-            header('Content-Type: application/pdf');
+            header("Content-type: application/pdf; charset=utf-8");
             header('Content-Disposition: inline; filename="' . $filename . '.pdf"');
             $size = filesize($tmpfname . '.pdf');
             header("Content-length: $size");
@@ -390,7 +390,7 @@ class class_nframework
             }
         }
         if (file_exists($tmpfname . '.pdf')) {
-            header('Content-Type: application/pdf');
+            header("Content-type: application/pdf; charset=utf-8");
             header('Content-Disposition: inline; filename="' . $filename . '.pdf"');
             $size = filesize($tmpfname . '.pdf');
             header("Content-length: $size");
