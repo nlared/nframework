@@ -182,7 +182,7 @@ class Table
                     let updates = [];                    
                     diff.forEach(function (item) {
                         updates.push({
-                            id: table.row(item.node).data()[' . $this->_id_pos . '],   // FIRST COLUMN MUST BE ID
+                            id: datatables["' . $this->id . '"].row(item.node).data()[' . $this->_id_pos . '],   // FIRST COLUMN MUST BE ID
                             newPosition: item.newData
                         });
                     });
