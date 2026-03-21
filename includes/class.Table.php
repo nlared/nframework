@@ -178,7 +178,31 @@ class Table
 
         if ($this->rowReorder) {
             $javas->addjs(
-                'datatables["' . $this->id . '"].on( "row-reorder", function ( e, diff, edit ) {var result="";for ( var i=0, ien=diff.length ; i<ien ; i++ ) {var rowData = $("#' . $this->id . '").DataTable().row( diff[i].node ).data();result += rowData[0]+" moved from position "+diff[i].oldPosition+" to "+diff[i].newPosition+"\\n";}alert( result );} );',
+                'datatables["' . $this->id . '"].on( "row-reorder", function ( e, diff, edit ) {
+                    let updates = [];                    
+                    diff.forEach(function (item) {
+                        updates.push({
+                            id: table.row(item.node).data()[' . $this->_id_pos . '],   // FIRST COLUMN MUST BE ID
+                            newPosition: item.newData
+                        });
+                    });
+
+                    if (updates.length > 0) {
+                        $.ajax({
+                            url: "/nframework/datatabler.php?id=' . $this->id . '",
+                            method: "POST",
+                            contentType: "application/json",
+                            data: JSON.stringify({ rows: updates }),
+                            success: function(res){
+                                console.log("Saved order:", res);
+                            },
+                            error: function(err){
+                                console.error("ERROR:", err.responseText);
+                            }
+                        });
+                    }
+
+                });',
                 'initializecomponent'
             );
         }
