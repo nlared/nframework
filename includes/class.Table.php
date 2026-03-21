@@ -33,6 +33,7 @@ class Table
     public $disablejs = false;
     public $stateSave = 'true';
     public $db;
+    public $_id_pos = 0; //position of _id in the columns, used for rowReorder
     public $collection;
     public $pipeline;
     public $footerCallback;
