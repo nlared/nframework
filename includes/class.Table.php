@@ -152,16 +152,25 @@ class Table
             $result .= '</tbody>';
         }
 
+        if ($this->rowReorder) {
+            $rowReorder = ['selector' => 'tr'];
+            if (is_string($this->rowReorder)) {
+                $rowReorder = array_merge($rowReorder, json_decode($this->rowReorder, true));
+            }
+        }
         if (!$this->disablejs) {
             $javas->addjs(
                 'datatables["' . $this->id . '"]=$("#' . $this->id . '").DataTable(' .
                     str_replace([
                         '"ajaxconfig"',
-                        '"columnDefsssssss"'
+                        '"columnDefsssssss"',
+                        '"rowReorderConfig"'
                     ], [
                         '$.fn.dataTable.pipeline({url: \'/nframework/datatable.php?id=' . $this->id . '\',pages:5})',
-                        $columnDefs
+                        $columnDefs,
+                        json_encode($rowReorder)
                     ], json_encode($json)) . ');',
+
                 'initializecomponent'
             );
         }
