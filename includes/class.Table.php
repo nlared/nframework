@@ -157,6 +157,7 @@ class Table
             if (is_string($this->rowReorder)) {
                 $rowReorder = array_merge($rowReorder, json_decode($this->rowReorder, true));
             }
+            $json['rowReorder'] = $rowReorder;
         }
         if (!$this->disablejs) {
             $javas->addjs(
@@ -164,11 +165,9 @@ class Table
                     str_replace([
                         '"ajaxconfig"',
                         '"columnDefsssssss"',
-                        '"rowReorderConfig"'
                     ], [
                         '$.fn.dataTable.pipeline({url: \'/nframework/datatable.php?id=' . $this->id . '\',pages:5})',
                         $columnDefs,
-                        json_encode($rowReorder)
                     ], json_encode($json)) . ');',
 
                 'initializecomponent'
