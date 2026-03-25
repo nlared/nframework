@@ -378,7 +378,7 @@ if ($config['sitedb'] == '') {
 			]);
 		}
 
-		$rules = $m->{$config['sitedb']}->securityrules->findOne([]);
+		/*$rules = $m->{$config['sitedb']}->securityrules->findOne([]);
 		if (empty($rules)) {
 			$tmprules = json_decode(file_get_contents('includes/default_security_rules.php'), true);
 			foreach ($tmprules as $rule) {
