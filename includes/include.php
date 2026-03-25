@@ -378,7 +378,7 @@ class class_nframework
         $filename = clean_filename($filename);
         $tmpfname = tempnam(sys_get_temp_dir(), 'templatepdf');
         $template->saveAs($tmpfname . '.docx');
-
+        $config['word_pdf_converter'] = 'unoconv';
         if ($config['word_pdf_converter'] == 'Dompdf' || empty($config['word_pdf_converter'])) {
             $phpWord = \PhpOffice\PhpWord\IOFactory::load($tmpfname . '.docx');
             $this->wordOutPdf($phpWord, $filename);
