@@ -456,13 +456,12 @@ try {
     echo 'Excepción capturada: ', $e->getMessage(), "\n";
     phpinfo();
 }
-
+$block_reason = '';
 if (isset($config['security_user_agents_blacklist'])) {
     $userAgent = strtolower($_SERVER['HTTP_USER_AGENT']);
     foreach ($config['security_user_agents_blacklist'] as $bot) {
         if (str_contains($userAgent, $bot) !== false) {
-            header("HTTP/1.1 403 Forbidden");
-            exit("Access denied.");
+            $block_reason = 'User agent is blacklisted';
         }
     }
 }
@@ -479,15 +478,13 @@ if (isset($config['security_ip_blacklist'])) {
         if ($ip == $tmp['ip']) {
             if (!empty($tmp['end'])) {
                 if (time() < $tmp['end']->toDateTime()->getTimestamp()) {
-                    http_response_code(403);
-                    exit("Access denied." . $tmp['end']->toDateTime()->format('Y-m-d H:i:s'));
+                    $block_reason = 'IP is blacklisted until ' . $tmp['end']->toDateTime()->format('Y-m-d H:i:s');
                 } else {
                     // remove expired
                     $m->{$config['sitedb']}->configs->updateOne(['_id' => 'site'], ['$pull' => ['security_ip_blacklist' => ['ip' => $tmp['ip']]]]);
                 }
             } else {
-                http_response_code(403);
-                exit("Access denied.");
+                $block_reason = 'IP is blacklisted';
             }
         }
     }
@@ -495,16 +492,14 @@ if (isset($config['security_ip_blacklist'])) {
 if (isset($config['security_host_blacklist'])) {
     foreach ($config['security_host_blacklist'] as $tmp) {
         if ($_SERVER['HTTP_HOST'] == $tmp['host']) {
-            http_response_code(403);
-            exit("Access denied.");
+            $block_reason = 'Host is blacklisted';
         }
     }
 }
 if (isset($config['security_path_blacklist'])) {
     foreach ($config['security_path_blacklist'] as $tmp) {
         if ($_SERVER['REQUEST_URI'] == $tmp['path']) {
-            http_response_code(403);
-            exit("Access denied.");
+            $block_reason = 'Path is blacklisted';
         }
     }
 }
@@ -519,7 +514,12 @@ $m->{$config['sitedb']}->nfuristats->insertOne([
     'host' => $_SERVER['HTTP_HOST'],
     'path' => $_SERVER['REQUEST_URI'],
     'agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+    'block_reason' => $block_reason,
 ]);
+if ($block_reason != "") {
+    http_response_code(403);
+    exit("Access denied.");
+}
 
 $rules = [['host' => ['$exists' => false]]];
 foreach (
@@ -548,6 +548,7 @@ if ($attempts > 10) {
         'end' => new MongoDB\BSON\UTCDateTime((time() + (isset($config['windowSeconds']) ? $config['windowSeconds'] : 900)) * 1000)
     ];
     $m->{$config['sitedb']}->configs->updateOne(['_id' => 'site'], ['$addToSet' => ['security_ip_blacklist' => $doc]]);
+    $block_reason = 'IP is blacklisted';
     http_response_code(403);
     exit("Access denied.");
 }
