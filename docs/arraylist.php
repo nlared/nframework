@@ -1,5 +1,5 @@
 <?
-require 'include.php';
+require 'common2.php';
 if (empty($_GET['_id'])) {
 	$newid = new MongoDB\BSON\ObjectID();
 	header('Location: ?_id=' . $newid);
