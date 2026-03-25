@@ -75,3 +75,10 @@ echo $arrayf;
 		</div>
 	</div>
 </div>
+
+
+
+<pre class="stay-on"><code class="language-plaintext">
+<?= tocode(__file__) ?>
+</code></pre>
+</div>
