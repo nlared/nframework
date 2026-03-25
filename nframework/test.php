@@ -410,14 +410,8 @@ if ($config['sitedb'] == '') {
 			);
 			out("Index created: $result\n");
 		} catch (MongoDB\Driver\Exception\CommandException $e) {
-			// If the index already exists → don’t stop
-			if (str_contains($e->getMessage(), 'already exists')) {
-				out("Index already exists, skipping...\n");
-				continue;
-			}
-
-			// For other errors, rethrow (to avoid hiding real problems)
-			throw $e;
+			out("Error on Index " . $e->getMessage());
+			continue;
 		}
 	}
 }
