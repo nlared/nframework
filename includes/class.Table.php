@@ -208,50 +208,45 @@ class Table
         }
         return $result . '</table>';
     }
-    public function __destruct()
-    {
-        global $nframework;
-        if ($this->ajax) {
-            unset($_SESSION['datatable'][$this->id]);
-            removeVarFromGarbage('datatable\\' . $this->id);
-        }
-    }
+
     public function positionreset()
-    {   
-        $con=0;        
-        $cambios=[];
-        $nuevos=[];
-        foreach($collection->find([
-            'carpeta'=>tomongoid($dataset->_id)
+    {
+        $con = 0;
+        $cambios = [];
+        $nuevos = [];
+        foreach (
+            $collection->find([
+                'carpeta' => tomongoid($dataset->_id)
             ], [
-            'sort' => ['position' => 1]
-        ]) as $d){
-            if(!empty($d['position'])){
+                'sort' => ['position' => 1]
+            ]) as $d
+        ) {
+            if (!empty($d['position'])) {
                 $con++;
-                if($d['position']!=$con){
-                    $cambios[$d['_id']]=$con;
+                if ($d['position'] != $con) {
+                    $cambios[$d['_id']] = $con;
                 }
-            }else{               
-                $nuevos[]=$d['_id'];
+            } else {
+                $nuevos[] = $d['_id'];
             }
         }
-        
+
         foreach ($cambios as $id => $newPosition) {
             $operations[] = [
                 'updateOne' => [
                     ['_id' => new \MongoDB\BSON\ObjectId($id)],
                     ['$set' => ['position' => $newPosition]]
                 ]
-            ];            
+            ];
         }
-        foreach($nuevos as $id){
+        foreach ($nuevos as $id) {
             $con++;
             $operations[] = [
                 'updateOne' => [
                     ['_id' => new \MongoDB\BSON\ObjectId($id)],
                     ['$set' => ['position' => $con]]
                 ]
-            ];            
+            ];
         }
 
         if (!empty($operations)) {
