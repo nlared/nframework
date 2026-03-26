@@ -70,6 +70,12 @@ if ($nframework->isAjax()) {
 		</div>
 	</dialog>
 	</div>
+	<style>
+		#dialogPass {
+			width: 600px;
+			left: auto;
+		}
+	</style>
 	<script>
 		const dialogpass = document.querySelector("#dialogPass");
 		let usertochange = null;
