@@ -2,6 +2,7 @@
 //Datatable reorder
 namespace nframework;
 
+require_once 'include.php';
 $data = \json_decode(file_get_contents('php://input'), true);
 
 $datainfo = $_SESSION['datatable'][$_GET['id']];
