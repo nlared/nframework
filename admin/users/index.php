@@ -73,8 +73,20 @@ if ($nframework->isAjax()) {
 	</div>
 	<style>
 		#dialogPass {
-			width: 600px;
-			left: auto;
+			max-width: 600px;
+			width: 90%;
+			max-height: 80vh;
+			padding: 2rem;
+		}
+
+		#dialogPass[open] {
+			inset: 0;
+			margin: auto;
+		}
+
+		#dialogPass::backdrop {
+			background: rgba(0, 0, 0, 0.45);
+			backdrop-filter: blur(3px);
 		}
 	</style>
 	<script>
