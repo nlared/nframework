@@ -209,17 +209,14 @@ class Table
         return $result . '</table>';
     }
 
-    public function positionreset()
+    public function positionsreset()
     {
+        global $m;
         $con = 0;
         $cambios = [];
         $nuevos = [];
-        foreach (
-            $collection->find([
-                'carpeta' => tomongoid($dataset->_id)
-            ], [
-                'sort' => ['position' => 1]
-            ]) as $d
+        $collection = $m->{$this->db}->{$this->collection};
+        foreach ($collection->aggregate($this->pipeline) as $d
         ) {
             if (!empty($d['position'])) {
                 $con++;
