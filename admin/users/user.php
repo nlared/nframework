@@ -105,19 +105,24 @@ if ($nframework->isAjax()) {
 			</form>
 			<?= $datatable ?>
 		</div>
-		<dialog id="dialogPass">
-			<div class="dialog-title"><?= $nframework->language['changepassword'] ?></div>
-			<div class="dialog-content">
-				<?= $password ?>
-			</div>
-			<div class="dialog-actions">
-				<button class="button success btn btn-success" onclick="dialogpass_close();"><?= $nframework->language['buttons']['cancel'] ?></button>
-				<button class="button primary btn btn-primary" onclick="cambiar();"><?= $nframework->language['buttons']['ok'] ?></button>
-			</div>
-		</dialog>
 	</div>
-	<script>
-		const dialogpass = document.querySelector("#dialogPass");
+	<dialog id="dialogPass">
+		<div class="dialog-title"><?= $nframework->language['changepassword'] ?></div>
+		<div class="dialog-content">
+			<?= $password ?>
+		</div>
+		<div class="dialog-actions">
+			<button class="button success btn btn-success" onclick="dialogpass_close();"><?= $nframework->language['buttons']['cancel'] ?></button>
+			<button class="button primary btn btn-primary" onclick="cambiar();"><?= $nframework->language['buttons']['ok'] ?></button>
+		</div>
+	</dialog>
+	<style>
+		#dialogPass {
+			width: 600px;
+
+		}
+
+		<script>const dialogpass=document.querySelector("#dialogPass");
 
 		function dialogpass_open() {
 			dialogpass.showModal();
