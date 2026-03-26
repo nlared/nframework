@@ -134,21 +134,26 @@ if ($nframework->isAjax()) {
 
 		function cambiar() {
 			$.ajax({
+
 				url: 'user.php?_id=<?= $dataset->_id ?>',
 				method: 'post',
 				data: {
 					op: 'password',
 					password: $('#password').val()
-				},
+				}
+
+				,
 				success: function(respuesta) {
 					nAjaxFormDone(respuesta);
 					dialogpass_close();
-				},
+				}
+
+				,
 				error: function() {
 					console.log("No se ha podido obtener la información");
 					dialogpass_close();
 				}
 			});
 		}
-	</script>
-<? } ?>
+
+		</script><? } ?>
