@@ -154,7 +154,7 @@ class Table
         }
 
         if ($this->rowReorder) {
-            $rowReorder = ['selector' => 'tr'];
+            $rowReorder = ['selector' => 'tr td:nth-child(' . ($this->_id_pos - 1) . ') '];
             if (is_string($this->rowReorder)) {
                 $rowReorder = array_merge($rowReorder, json_decode($this->rowReorder, true));
             }
