@@ -26,6 +26,7 @@ $datatable->Ajax([
 		+'<a href=\"javascript:eliminar(\''+data+'\')\" class=\"button alert btn btn-danger \"><span class=\"mif-cross\"></span</a>'"],
 	]
 ]);
+$password = new inputText(['id' => 'password', 'name' => "password", 'caption' => $nframework->language['password'] . ':', 'required' => true]);
 
 if ($nframework->isAjax()) {
 	if (!empty($_GET['eliminar'])) {
