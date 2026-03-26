@@ -121,8 +121,10 @@ if ($nframework->isAjax()) {
 			width: 600px;
 
 		}
-
-		<script>const dialogpass=document.querySelector("#dialogPass");
+	</style>
+	<script>
+		< script >
+			const dialogpass = document.querySelector("#dialogPass");
 
 		function dialogpass_open() {
 			dialogpass.showModal();
@@ -144,16 +146,15 @@ if ($nframework->isAjax()) {
 
 				,
 				success: function(respuesta) {
-					nAjaxFormDone(respuesta);
-					dialogpass_close();
-				}
+						nAjaxFormDone(respuesta);
+						dialogpass_close();
+					}
 
-				,
+					,
 				error: function() {
 					console.log("No se ha podido obtener la información");
 					dialogpass_close();
 				}
 			});
 		}
-
-		</script><? } ?>
+	</script><? } ?>
