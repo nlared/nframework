@@ -50,12 +50,15 @@ function unsetNestedKey(&$array, $path)
         $parent = &$temp;
         $temp = &$temp[$key]; // Traverse deeper
     }
-
     unset($parent[$key]); // Unset last key
 }
 function addVarToGarbage($key, $time)
 {
     $_SESSION['_gc_tracker'][$key] = $time;
+}
+function removeVarFromGarbage($key)
+{
+    unset($_SESSION['_gc_tracker'][$key]);
 }
 
 function ifset($array, $key): mixed
