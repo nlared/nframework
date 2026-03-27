@@ -11,11 +11,11 @@ header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 $data = \json_decode(file_get_contents('php://input'), true);
 
-foreach ($data as $row) {
+foreach ($data['rows'] as $row) {
 
     $id = $row['id'];
     $newPos = intval($row['newPosition']);
 
     $m->{$datainfo['db']}->{$datainfo['collection']}->updateOne(['_id' => new \MongoDB\BSON\ObjectId($id)], ['$set' => ['position' => $newPos]]);
 }
-$result = ['success' => true,'data' => $data];
+$result = ['success' => true, 'data' => $data];
