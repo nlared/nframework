@@ -18,4 +18,4 @@ foreach ($data as $row) {
 
     $m->{$datainfo['db']}->{$datainfo['collection']}->updateOne(['_id' => new \MongoDB\BSON\ObjectId($id)], ['$set' => ['position' => $newPos]]);
 }
-$result = ['success' => true];
+$result = ['success' => true,'data' => $data];
