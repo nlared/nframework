@@ -216,8 +216,7 @@ class Table
         $cambios = [];
         $nuevos = [];
         $collection = $m->{$this->db}->{$this->collection};
-        foreach ($collection->aggregate($this->pipeline) as $d
-        ) {
+        foreach ($collection->aggregate($this->pipeline) as $d) {
             if (!empty($d['position'])) {
                 $con++;
                 if ($d['position'] != $con) {
