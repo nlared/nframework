@@ -67,6 +67,10 @@ foreach ($m->{$config['sitedb']}->nfsecurityrules->find() as $rule) {
 		$rules[] = fixSingleQuery(json_decode($rule->rule, true));
 	}
 }
+$range = 900;
+if (isset($_GET['range']) && in_array($_GET['range'], ['900', '3600', '86400'])) {
+	$range = (int)$_GET['range'];
+}
 
 $datatablessuspicious = new Table();
 $datatablessuspicious->Ajax([
@@ -85,8 +89,10 @@ $datatablessuspicious->Ajax([
 	'pipeline' => [
 		[
 			'$match' => [
-				'$or' => $rules
+				'$or' => $rules,
+				'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - $range) * 1000)]
 			]
+		]
 		],
 		[
 			'$sort' => [
@@ -194,6 +200,13 @@ if ($nframework->isAjax()) {
 				</div>
 				<div class="row">
 					<div class="cell">
+						<select id="select_timeframe" name="range" class="input">
+							<option value="900">Last 15 minutes</option>
+							<option value="3600">Last hour</option>
+							<option value="86400">Last day</option>
+						</select>
+
+
 						<?= $datatablessuspicious ?>
 					</div>
 				</div>
