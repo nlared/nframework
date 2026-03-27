@@ -508,19 +508,19 @@ if (!empty($config['timezone'])) {
     date_default_timezone_set($config['timezone']);
 }
 if ($block_reason != "") {
-    $m->{$config['sitedb']}->nfuristats->insertOne([
-        'created_at' => new MongoDB\BSON\UTCDateTime(time() * 1000), // use PHP DateTime; the MongoDB driver will convert it to BSON UTC datetime
-        'ip' => $ip,
-        'host' => $_SERVER['HTTP_HOST'],
-        'path' => $_SERVER['REQUEST_URI'],
-        'agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
-        'block_reason' => $block_reason,
-    ]);
+
 
     http_response_code(403);
     exit("Access denied.");
 }
-
+$m->{$config['sitedb']}->nfuristats->insertOne([
+    'created_at' => new MongoDB\BSON\UTCDateTime(time() * 1000), // use PHP DateTime; the MongoDB driver will convert it to BSON UTC datetime
+    'ip' => $ip,
+    'host' => $_SERVER['HTTP_HOST'],
+    'path' => $_SERVER['REQUEST_URI'],
+    'agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+    'block_reason' => $block_reason,
+]);
 $rules = [['host' => ['$exists' => false]]];
 foreach (
     $m->{$config['sitedb']}->nfsecurityrules->find([
@@ -536,6 +536,7 @@ foreach (
 if ($attempts = $m->{$config['sitedb']}->nfuristats->count([
     'ip' => $ip,
     'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - (isset($config['windowSeconds']) ? $config['windowSeconds'] : 900)) * 1000)], // use DateTime for comparison; driver converts to BSON UTC datetime
+    'block_reason' => ['$ne' => ''],
     '$or' => $rules,
 ])) {
 } else {
