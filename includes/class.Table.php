@@ -216,11 +216,14 @@ class Table
         $cambios = [];
         $nuevos = [];
         $collection = $m->{$this->db}->{$this->collection};
-        foreach ($collection->aggregate($this->pipeline) as $d) {
+        $pileline = $this->pipeline;
+        $pileline[] = ['$project' => ['_id' => 1, 'position' => 1]];
+        $pileline[] = ['$sort' => ['position' => 1]];
+        foreach ($collection->aggregate($pileline) as $d) {
             if (!empty($d['position'])) {
                 $con++;
                 if ($d['position'] != $con) {
-                    $cambios[$d['_id']] = $con;
+                    $cambios[(string)$d['_id']] = $con;
                 }
             } else {
                 $nuevos[] = $d['_id'];
