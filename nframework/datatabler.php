@@ -1,11 +1,15 @@
 <?
 //Datatable reorder
-namespace nframework;
-
-require_once 'include.php';
-$data = \json_decode(file_get_contents('php://input'), true);
-
+require 'include.php';
 $datainfo = $_SESSION['datatable'][$_GET['id']];
+if (empty($datainfo)) {
+    echo 'error en session';
+    die();
+}
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+$data = \json_decode(file_get_contents('php://input'), true);
 
 foreach ($data as $row) {
 
