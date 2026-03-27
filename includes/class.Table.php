@@ -192,7 +192,7 @@ class Table
                             url: "/nframework/datatabler.php?id=' . $this->id . '",
                             method: "POST",
                             contentType: "application/json",
-                            data: JSON.stringify({ rows: updates }),
+                            data:  JSON.stringify({rows: updates}),
                             success: function(res){
                                 console.log("Saved order:", res);
                             },
