@@ -73,26 +73,27 @@ if (isset($_GET['range']) && in_array($_GET['range'], ['900', '3600', '86400']))
 }
 
 $datatablessuspicious = new Table();
-$datatablessuspicious->Ajax([
-	'id' => 'table_suspicious',
-	'db' => $config['sitedb'],
-	'collection' => 'nfuristats',
-	'header' => '<th>Fecha</th><th>IP</th><th>Host</th><th>Path</th><th>User Agent</th><th>id</th>',
-	'columns' => [
-		'created_at',
-		'ip',
-		'host',
-		'path',
-		'agent',
-		'_id'
-	],
-	'pipeline' => [
-		[
-			'$match' => [
-				'$or' => $rules,
-				'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - $range) * 1000)]
+$datatablessuspicious->Ajax(
+	[
+		'id' => 'table_suspicious',
+		'db' => $config['sitedb'],
+		'collection' => 'nfuristats',
+		'header' => '<th>Fecha</th><th>IP</th><th>Host</th><th>Path</th><th>User Agent</th><th>id</th>',
+		'columns' => [
+			'created_at',
+			'ip',
+			'host',
+			'path',
+			'agent',
+			'_id'
+		],
+		'pipeline' => [
+			[
+				'$match' => [
+					'$or' => $rules,
+					'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - $range) * 1000)]
+				]
 			]
-		]
 		],
 		[
 			'$sort' => [
@@ -100,7 +101,7 @@ $datatablessuspicious->Ajax([
 			]
 		]
 	]
-]);
+);
 
 
 $datatable = new Table();
