@@ -200,7 +200,7 @@ if ($nframework->isAjax()) {
 				</div>
 				<div class="row">
 					<div class="cell">
-						<select id="select_timeframe" name="range" class="input">
+						Rango:<select id="select_timeframe" name="range" class="input">
 							<option value="900">Last 15 minutes</option>
 							<option value="3600">Last hour</option>
 							<option value="86400">Last day</option>
