@@ -1085,6 +1085,7 @@ class inputCheckBoxs extends Select
     public $captionposition = 'right';
     public $horizontal = false;
     public $nometro = false;
+    public $type;
     public function __toString()
     {
         $result = '';
