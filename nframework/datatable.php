@@ -36,6 +36,8 @@ function modifyArray(&$array, $targetKey, $newKey, $newValue)
 		if (is_array($item)) {
 			modifyArray($item, $targetKey, $newKey, $newValue);
 		} elseif ($item instanceof \MongoDB\BSON\ObjectId) {
+		} elseif ($item instanceof \MongoDB\BSON\UTCDateTime) {
+			//no hacer nada
 		} elseif ($item instanceof \MongoDB\BSON\Regex) {
 			//no hacer nada		
 		} elseif (isset($item[$targetKey])) {
