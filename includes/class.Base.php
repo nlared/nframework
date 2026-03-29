@@ -293,6 +293,13 @@ class label extends baseInput
 {
     public function __toString()
     {
+        if ($this->value === null) {
+            if (isset($this->default)) {
+                $this->value = $this->default;
+            } else {
+                $this->value = '';
+            }
+        }
         return '<label' . $this->writetags() . ' id="' . $this->id . '"' . '>' . htmlspecialchars($this->value) . '</label>';
     }
 }
@@ -798,6 +805,13 @@ class textArea extends baseInput
     public $charscountertemplate;
     public function __toString()
     {
+        if ($this->value === null) {
+            if (isset($this->default)) {
+                $this->value = $this->default;
+            } else {
+                $this->value = '';
+            }
+        }
         return '
         	<textarea data-role="textarea" name="' . $this->name . '" id="' . $this->id . '"' .
             $this->inputtags() .
