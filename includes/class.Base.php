@@ -1125,7 +1125,7 @@ abstract class BaseFileInput extends baseInput
     public $delete = true;
     public $disabled;
     public $create_dir;
-    public $accept;    
+    public $accept;
     public $capture;
     public $mode = 'input'; // input,drop,button
     public $limit_time_start = '';
