@@ -201,11 +201,15 @@ if ($nframework->isAjax()) {
 				</div>
 				<div class="row">
 					<div class="cell">
-						Rango:<select id="select_timeframe" name="range" class="input">
-							<option value="900">Last 15 minutes</option>
-							<option value="3600">Last hour</option>
-							<option value="86400">Last day</option>
-						</select>
+						<form
+							Rango:<select id="select_timeframe" name="range" class="input" onchange="javascript:window.location.href='?range='+this.value;">
+							<option value="900" <?= ($range == 900 ? 'selected' : '') ?>>Last 15 minutes</option>
+							<option value="3600" <?= ($range == 3600 ? 'selected' : '') ?>>Last hour</option>
+							<option value="86400" <?= ($range == 86400 ? 'selected' : '') ?>>Last day</option>
+							<option value="604800" <?= ($range == 604800 ? 'selected' : '') ?>>Last week</option>
+							<option value="2592000" <?= ($range == 2592000 ? 'selected' : '') ?>>Last month</option>
+							</select>
+						</form>
 
 
 						<?= $datatablessuspicious ?>
