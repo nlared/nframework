@@ -929,6 +929,7 @@ class Select extends baseOptions
     public $invalid_feedback;
     public $options = [];
     public $canadd;
+    public $role;
     public $datafilter = true;
 
     public function __toString(): string
