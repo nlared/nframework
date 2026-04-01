@@ -247,16 +247,22 @@ class embededArray
 				cache: false,
 				data: formData
 			}).done(function(result) {
-				$('#{$this->containerid}').html(result.container);
-				
+				$('#{$this->containerid}').html(result.container);				
 				nfembededs['{$this->id}']=result.items.length;
+				{$this->onchange}	
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				errormsg='Error al guardar';
+				if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
+					errormsg = jqXHR.responseJSON.error;
+				}
+				alert(errormsg);
 			});
 			{$this->dialogid}.close();
 		}else{
 			//toast(errormsg,null,5000, "warning");
 			alert(errormsg);
 		}
-		{$this->onchange}	
+		
 	});
 	
 	
