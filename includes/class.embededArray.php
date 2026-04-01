@@ -165,8 +165,7 @@ class embededArray
 		});
 			
 	}
-	/*function {$this->id}_ok(){
-	
+	/*function {$this->id}_ok(){	
 	
 			formData = $("#{$this->dialogid}_form").serialize()+ '&t=' + $.now();
 			$.ajax({
