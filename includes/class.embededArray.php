@@ -20,6 +20,7 @@ class embededArray
 	public $target;
 	public $template;
 	public $nfchilds = [];
+	public $onchange = '';
 	public function addElement(&$object)
 	{
 		$this->elements[] = $object;
@@ -255,6 +256,7 @@ class embededArray
 			//toast(errormsg,null,5000, "warning");
 			alert(errormsg);
 		}
+		{$this->onchange}	
 	});
 	
 	
