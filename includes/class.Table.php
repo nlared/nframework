@@ -38,6 +38,8 @@ class Table
     public $pipeline;
     public $footerCallback;
     public $rowReorder = false;
+    public $selectStyle = 'single';
+    public $ordering = true;
 
     public function __construct($options = [])
     {
