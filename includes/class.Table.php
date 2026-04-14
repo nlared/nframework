@@ -132,6 +132,7 @@ class Table
             'lengthMenu' => $this->lengthMenu,
             'stateSave' => $this->stateSave,
             'order' => !empty($this->order) ? $this->order : [],
+            'ordering' => !empty($this->order) ? true : false,
         ];
 
         if (!empty($this->columnDefs)) {
