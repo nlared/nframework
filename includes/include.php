@@ -293,7 +293,7 @@ class class_nframework
         } else {
             $_SESSION['nf']['browser']['language'] = $languages[Locale::lookup(array_keys($languages), $_SERVER['HTTP_ACCEPT_LANGUAGE'], true, 'en-US')];
         }
-        $_SESSION['nf']['Anti-CSRF'] = uniqid();
+        $_SESSION['nf']['Anti-CSRF'] = bin2hex(random_bytes(16));
     }
 
     public function excelOut($spreadsheet, $filename)
