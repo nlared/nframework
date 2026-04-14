@@ -729,7 +729,7 @@ $router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].jpg', function (stri
 	}
 }, 'GET');
 
-$router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].jpg', function (string $route, array $p) {
+$router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].webp', function (string $route, array $p) {
 	global $nframework, $m, $config;
 	$options = $_SESSION['frompdf'][$p['id']];
 
