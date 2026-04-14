@@ -454,7 +454,7 @@ try {
     $config->loadfromdb();
 } catch (Exception $e) {
     echo 'Excepción capturada: ', $e->getMessage(), "\n";
-    phpinfo();
+    //phpinfo();
 }
 $block_reason = '';
 if (isset($config['security_user_agents_blacklist'])) {
