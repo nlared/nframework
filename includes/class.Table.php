@@ -129,6 +129,7 @@ class Table
             'responsive' => $this->responsive,
             'lengthMenu' => $this->lengthMenu,
             'stateSave' => $this->stateSave,
+            'order' => !empty($this->order) ? $this->order : [],
         ];
 
         if (!empty($this->columnDefs)) {
