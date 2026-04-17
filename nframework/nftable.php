@@ -1,20 +1,20 @@
 <?php
 $tabla = $m->{$config['sitedb']}->ntablas->findOne([
-    '_id' => tomongoid($p['collection'])
+    '_id' => tomongoid($p['nfcollection'])
 ]);
 
 
 if (!$tabla) {
     echo 'No se encontró la tabla';
 }
-if (!isset($tabla->campos) || count($tabla->campos) == 0) {
+if (!isset($tabla->nffields) || count($tabla->nffields) == 0) {
     echo 'La tabla no tiene campos definidos';
 }
 
 $headers = '';
-foreach ($tabla->campos as $campo) {
-    $headers .= '<th>' . $campo->descripcion_corta . '</th>';
-    $columns[] = $campo->nombre;
+foreach ($tabla->nffields as $field) {
+    $headers .= '<th>' . $field->descripcion_corta . '</th>';
+    $columns[] = $field->nombre;
 }
 
 
