@@ -1,6 +1,6 @@
 <?php
-$tabla = $m->{$config['sitedb']}->ntablas->findOne([
-    '_id' => tomongoid($p['nfcollection'])
+$tabla = $m->{$config['sitedb']}->nftables->findOne([
+    'nfcollection' => $p['nfcollection']
 ]);
 
 
