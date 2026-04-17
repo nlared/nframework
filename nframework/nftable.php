@@ -1,6 +1,6 @@
 <?php
 $tabla = $m->{$config['sitedb']}->nftables->findOne([
-    'nfcollection' => $p['nfcollection']
+    'nfcollection' => $p['collection']
 ]);
 
 
