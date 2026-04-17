@@ -5,13 +5,14 @@ $tabla = $m->{$config['sitedb']}->nftables->findOne([
 
 
 if (!$tabla) {
-    echo 'No se encontró la tabla';
+    echo 'No se encontró la tabla' . $config['sitedb'] . '.nftables con nfcollection ' . $p['collection'];
 }
 if (!isset($tabla->nffields) || count($tabla->nffields) == 0) {
     echo 'La tabla no tiene campos definidos';
 }
 
 $headers = '';
+$columns = [];
 foreach ($tabla->nffields as $field) {
     $headers .= '<th>' . $field->descripcion_corta . '</th>';
     $columns[] = $field->nombre;
