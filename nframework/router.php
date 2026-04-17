@@ -1152,11 +1152,11 @@ $router->addRoute('/nftables/[s:collection]/[s:id]', function (string $route, ar
 	global $m, $config, $nframework, $javas, $result;
 	require 'nfdialog.php';
 }, ['GET', 'POST']);
-$router->addRoute('/nftables/[s:collection]/[s:id]/delete', function (string $route, array $p) {
+$router->addRoute('/nftables/[s:collection]/[s:id]', function (string $route, array $p) {
 	global $m, $config;
 	$tabla = $m->{$config['sitedb']}->nftables->findOne(['nfcollection' => $p['collection']]);
-	$m->{$config['sitedb']}->{$tabla->nfcollection}->deleteOne(['_id' => tomongoid($_POST['_id'])]);
-},  'POST');
+	$m->{$config['sitedb']}->{$tabla->nfcollection}->deleteOne(['_id' => tomongoid($p['id'])]);
+},  'DELETE');
 
 $router->addRoute('/cachetest.png', function ($route, $arg) {
 	global $m;
