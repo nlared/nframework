@@ -22,7 +22,7 @@ $headers .= '<th>Acciones</th>';
 
 $datatable = new Table();
 $datatable->Ajax([
-    'id' => 'testid',
+    'id' => 'nftable_' . $tabla->nfcollection,
     'db' => $config['sitedb'],
     'collection' => $tabla->nfcollection,
     'header' => $headers,
@@ -58,15 +58,11 @@ if ($nframework->isAjax()) {
 		}).then((result) => {
 			if (result.isConfirmed) {
 				$.ajax({
-					url: \"/nftables/" . $tabla->nfcollection . "/delete\",
-					method: 'post',
-					cache: false, 
-					data:{
-						op: 'delete',
-						_id: id
-					}
+					url: \"/nftables/" . $tabla->nfcollection ."/"+id,
+					method: 'DELETE',
+					cache: false 					
 				}).done(function() {
-					datatable=$('#testid').DataTable();
+					datatable=$('#nftable_" . $tabla->nfcollection . "').DataTable();
 					datatable.clearPipeline();
 					datatable.draw();
 					Swal.fire(
