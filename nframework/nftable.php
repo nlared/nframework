@@ -38,14 +38,14 @@ $datatable->Ajax([
     ]
 ]);
 
-
 if ($nframework->isAjax()) {
     if ($_POST['op'] == 'delete') {
         $m->{$config['sitedb']}->{$tabla->nfcollection}->deleteOne(['_id' => tomongoid($_POST['_id'])]);
     }
 } else {
     $nframework->usecommon = true;
-    $javas->addjs("
+    $javas->addjs(
+        <<<jss
 	function removeid(id){
 		Swal.fire({
 			title: 'Estas seguro?',
@@ -58,11 +58,11 @@ if ($nframework->isAjax()) {
 		}).then((result) => {
 			if (result.isConfirmed) {
 				$.ajax({
-					url: \"/nftables/" . $tabla->nfcollection ."/"+id,
+					url: "/nftables/{$tabla->nfcollection}/"+id,
 					method: 'DELETE',
 					cache: false 					
 				}).done(function() {
-					datatable=$('#nftable_" . $tabla->nfcollection . "').DataTable();
+					datatable=$('#nftable_{$tabla->nfcollection}').DataTable();
 					datatable.clearPipeline();
 					datatable.draw();
 					Swal.fire(
@@ -74,8 +74,8 @@ if ($nframework->isAjax()) {
 			}
 		})
 	}
-	
-	");
+jss
+    );
 ?>
     <div class="container p-5">
         <div class="box shadow-large">
