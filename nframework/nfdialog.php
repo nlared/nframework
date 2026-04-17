@@ -1,8 +1,6 @@
 <?
 
-use FontLib\Table\Type\head;
-
-$tabla = $m->{$config['sitedb']}->ntablas->findOne([
+$tabla = $m->{$config['sitedb']}->nftables->findOne([
     'nfcollection' => $p['collection']
 ]);
 
@@ -10,7 +8,7 @@ $tabla = $m->{$config['sitedb']}->ntablas->findOne([
 if (!$tabla) {
     echo 'No se encontró la tabla';
 }
-if (!isset($tabla->campos) || count($tabla->campos) == 0) {
+if (!isset($tabla->nfflieds) || count($tabla->nfflieds) == 0) {
     echo 'La tabla no tiene campos definidos';
 }
 
