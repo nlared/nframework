@@ -58,7 +58,7 @@ if ($nframework->isAjax()) {
 		}).then((result) => {
 			if (result.isConfirmed) {
 				$.ajax({
-					url: \"$_SERVER[PHP_SELF]\",
+					url: \"/nftables/" . $tabla->nfcollection . "/delete\",
 					method: 'post',
 					cache: false, 
 					data:{
