@@ -1142,6 +1142,17 @@ foreach ($m->{$config['sitedb']}->pages->distinct('path') as $d) {
 		}, 'GET'); // this handler will be called for POST requests
 	}
 }
+$router->addRoute('/nftables/[s:collection]/', function ($route, $arg) {
+	
+	require 'nftable.php';
+}, ['GET', 'POST']);
+
+$router->addRoute('/nftables/[s:collection]/[s:id]', function ($route, $arg) {
+
+	require 'nfdialog.php';
+}, ['GET', 'POST']);
+
+
 $router->addRoute('/cachetest.png', function ($route, $arg) {
 	global $m;
 	//$developermode=true;
