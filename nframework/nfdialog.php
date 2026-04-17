@@ -16,7 +16,7 @@ if ($p['_id'] == 'create') {
     header('Location: /nftables/' . $p['collection'] . '/' . newid());
     exit;
 }
-
+$elements = [];
 $dataset = new dataset(
     [
         'collection' => $m->{$config['sitedb']}->{$tabla->nfcollection},
