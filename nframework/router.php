@@ -1142,12 +1142,12 @@ foreach ($m->{$config['sitedb']}->pages->distinct('path') as $d) {
 		}, 'GET'); // this handler will be called for POST requests
 	}
 }
-$router->addRoute('/nftables/[s:collection]/', function ($route, $arg) {
+$router->addRoute('/nftables/[s:collection]/', function (string $route, array $p) {
 	global $m, $config, $nframework;
 	require 'nftable.php';
 }, ['GET', 'POST']);
 
-$router->addRoute('/nftables/[s:collection]/[s:id]', function ($route, $arg) {
+$router->addRoute('/nftables/[s:collection]/[s:id]', function (string $route, array $p) {
 	global $m, $config, $nframework;
 	require 'nfdialog.php';
 }, ['GET', 'POST']);
