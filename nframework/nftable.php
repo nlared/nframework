@@ -82,10 +82,9 @@ if ($nframework->isAjax()) {
 	");
 ?>
     <div class="container p-5">
-        <div class=" p-5">
-            <h2><?= $tabla->plural ?></h2>
-        </div>
-        <div class="p-5">
+        <div class="box shadow-large">
+            <div class="box-title"><?= $tabla->plural ?></div>
+            <a href="/nftables/<?= $tabla->nfcollection ?>/create" class="button"><span class="mif-plus"></span> Nuevo</a>
             <?= $datatable; ?>
         </div>
     </div>

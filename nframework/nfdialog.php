@@ -65,7 +65,7 @@ if ($nframework->isAjax()) {
                 }
                 ?>
                 <div class="row">
-                    <div class="cell-md-2 offset-md-8"><a href="/nftable/" class="button primary btn btn-primary w-100"><span class="mif-exit"></span>&nbsp;<?= $lng['close']  ?>?></a></div>
+                    <div class="cell-md-2 offset-md-8"><a href="/nftables/<?= $tabla->nfcollection ?>" class="button primary btn btn-primary w-100"><span class="mif-exit"></span>&nbsp;<?= $lng['close']  ?>?></a></div>
                     <div class="cell-md-2"><button class="button success btn btn-success secureop  w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;<?= $lng['save']  ?>?></button></div>
                 </div>
             </div>
