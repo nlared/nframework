@@ -32,6 +32,7 @@ foreach ($tabla->nffields as $field) {
     $className = $field->tipo;
     $elements[] = new $className([
         'field' => $field->nombre,
+        'dataset' => &$dataset,
         'caption' => $field->descripcion_corta,
         'required' => $field->required
     ]);
