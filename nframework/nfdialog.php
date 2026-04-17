@@ -8,7 +8,7 @@ $tabla = $m->{$config['sitedb']}->nftables->findOne([
 if (!$tabla) {
     echo 'No se encontró la tabla';
 }
-if (!isset($tabla->nfflieds) || count($tabla->nfflieds) == 0) {
+if (!isset($tabla->nffields) || count($tabla->nffields) == 0) {
     echo 'La tabla no tiene campos definidos';
 }
 
@@ -26,7 +26,7 @@ $dataset = new dataset(
     ]
 );
 
-foreach ($tabla->nfflieds as $field) {
+foreach ($tabla->nffields as $field) {
     $className = $field->tipo;
     $elements[] = new $className([
         'field' => $field->nombre,
