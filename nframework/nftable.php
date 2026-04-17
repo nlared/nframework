@@ -33,7 +33,7 @@ $datatable->Ajax([
     	]],*/
     'columns' => $columns,
     'columnDefs' => [
-        count($columns) => ['render' => "'<a href=\"/nftables/ " . $tabla->nfcollection . "/'+data+'\" class=\"square button small primary\"><span class=\"mif-pencil\"></span></a>'+		
+        count($columns) - 1 => ['render' => "'<a href=\"/nftables/ " . $tabla->nfcollection . "/'+data+'\" class=\"square button small primary\"><span class=\"mif-pencil\"></span></a>'+		
 		'<a href=\"javascript:removeid(\\''+data+'\\');\" class=\"square small button alert\"><span class=\"mif-bin\"></span></a>'"], // data $row[0]
     ]
 ]);
