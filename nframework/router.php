@@ -1143,7 +1143,8 @@ foreach ($m->{$config['sitedb']}->pages->distinct('path') as $d) {
 	}
 }
 $router->addRoute('/nftables/[s:collection]/', function (string $route, array $p) {
-	global $m, $config, $nframework;
+	global $m, $config, $nframework, $javas;
+
 	require 'nftable.php';
 }, ['GET', 'POST']);
 
