@@ -1,8 +1,11 @@
 <?
 
+use FontLib\Table\Type\head;
+
 $tabla = $m->{$config['sitedb']}->ntablas->findOne([
-    '_id' => tomongoid($p['collection'])
+    'nfcollection' => $p['collection']
 ]);
+
 
 if (!$tabla) {
     echo 'No se encontró la tabla';
@@ -11,22 +14,26 @@ if (!isset($tabla->campos) || count($tabla->campos) == 0) {
     echo 'La tabla no tiene campos definidos';
 }
 
+if ($p['_id'] == 'create') {
+    header('Location: /nftables/' . $p['collection'] . '/' . newid());
+    exit;
+}
 
 $dataset = new dataset(
     [
         'collection' => $m->{$config['sitedb']}->{$tabla->nfcollection},
-        '_id' => $_GET['_id'],
+        '_id' => $p['_id'],
         'simpleid' => false,
         'nameprefix' => 'data'
     ]
 );
 
-foreach ($tabla->campos as $campo) {
-    $className = $campo->tipo;
+foreach ($tabla->nfflieds as $field) {
+    $className = $field->tipo;
     $elements[] = new $className([
-        'field' => $campo->nombre,
-        'caption' => $campo->descripcion_corta,
-        'required' => $campo->required
+        'field' => $field->nombre,
+        'caption' => $field->descripcion_corta,
+        'required' => $field->required
     ]);
 }
 
