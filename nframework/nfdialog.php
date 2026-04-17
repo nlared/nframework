@@ -22,7 +22,7 @@ $elements = [];
 $dataset = new dataset(
     [
         'collection' => $m->{$config['sitedb']}->{$tabla->nfcollection},
-        '_id' => $p['_id'],
+        '_id' => $p['id'],
         'simpleid' => false,
         'nameprefix' => 'data'
     ]
