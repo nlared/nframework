@@ -39,6 +39,7 @@ foreach ($tabla->nffields as $field) {
 }
 
 if ($nframework->isAjax()) {
+    $nframework->usecommon = false;
     if ($_POST['op'] == 'save') {
         try {
             $result = [
@@ -50,7 +51,6 @@ if ($nframework->isAjax()) {
             ];
         }
     }
-    $nframework->usecommon = false;
 } else {
     $nframework->usecommon = true;
 
