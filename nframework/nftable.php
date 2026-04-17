@@ -17,7 +17,8 @@ foreach ($tabla->nffields as $field) {
     $headers .= '<th>' . $field->descripcion_corta . '</th>';
     $columns[] = $field->nombre;
 }
-$columns[] = 'Options';
+$columns[] = '_id';
+$headers .= '<th>Acciones</th>';
 
 $datatable = new Table();
 $datatable->Ajax([
