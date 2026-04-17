@@ -12,10 +12,12 @@ if (!isset($tabla->nffields) || count($tabla->nffields) == 0) {
     echo 'La tabla no tiene campos definidos';
 }
 
-if ($p['_id'] == 'create') {
-    header('Location: /nftables/' . $p['collection'] . '/' . newid());
+if ($p['id'] == 'create') {
+    $newid = new MongoDB\BSON\ObjectID();
+    header('Location: /nftables/' . $p['collection'] . '/' . $newid);
     exit;
 }
+
 $elements = [];
 $dataset = new dataset(
     [
