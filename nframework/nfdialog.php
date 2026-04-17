@@ -49,6 +49,7 @@ if ($nframework->isAjax()) {
             ];
         }
     }
+    $nframework->usecommon = false;
 } else {
     $nframework->usecommon = true;
 
