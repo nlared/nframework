@@ -1062,7 +1062,6 @@ $router->addRoute('/privacy', function (string $route, array $p) {
 		echo $body;
 	} else {
 		echo $page['html'];
-
 	}
 }, 'GET');
 
