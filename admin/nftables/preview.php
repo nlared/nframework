@@ -9,7 +9,8 @@ if (!$tabla) {
 if (!isset($tabla->fields) || count($tabla->fields) == 0) {
     echo 'La tabla no tiene campos definidos';
 }
-foreach ($tabla->fields as $field) {
+$columns = [];
+foreach ($tabla->nffields as $field) {
     $columns[] = $field->field;
 }
 $result['columns'] = $columns;
