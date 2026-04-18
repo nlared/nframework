@@ -29,7 +29,7 @@ $dataset = new dataset(
 );
 
 foreach ($tabla->nffields as $field) {
-    $className = $field->tipo;
+    $className = $field->type;
     $elements[] = new $className([
         'field' => $field->field,
         'dataset' => &$dataset,
