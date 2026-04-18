@@ -31,9 +31,9 @@ $dataset = new dataset(
 foreach ($tabla->nffields as $field) {
     $className = $field->tipo;
     $elements[] = new $className([
-        'field' => $field->nombre,
+        'field' => $field->field,
         'dataset' => &$dataset,
-        'caption' => $field->descripcion_corta,
+        'caption' => $field->short_description,
         'required' => $field->required
     ]);
 }
