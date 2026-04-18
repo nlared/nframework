@@ -1,51 +1,51 @@
 <?php
 $tabla = $m->{$config['sitedb']}->nftables->findOne([
-    'nfcollection' => $p['collection']
+	'nfcollection' => $p['collection']
 ]);
 
 
 if (!$tabla) {
-    echo 'No se encontró la tabla' . $config['sitedb'] . '.nftables con nfcollection ' . $p['collection'];
+	echo 'No se encontró la tabla' . $config['sitedb'] . '.nftables con nfcollection ' . $p['collection'];
 }
 if (!isset($tabla->nffields) || count($tabla->nffields) == 0) {
-    echo 'La tabla no tiene campos definidos';
+	echo 'La tabla no tiene campos definidos';
 }
 
 $headers = '';
 $columns = [];
 foreach ($tabla->nffields as $field) {
-    $headers .= '<th>' . $field->descripcion_corta . '</th>';
-    $columns[] = $field->nombre;
+	$headers .= '<th>' . $field->short_description . '</th>';
+	$columns[] = $field->field;
 }
 $columns[] = '_id';
 $headers .= '<th>Acciones</th>';
 
 $datatable = new Table();
 $datatable->Ajax([
-    'id' => 'nftable_' . $tabla->nfcollection,
-    'db' => $config['sitedb'],
-    'collection' => $tabla->nfcollection,
-    'header' => $headers,
-    /*'pipeline'=>[[
+	'id' => 'nftable_' . $tabla->nfcollection,
+	'db' => $config['sitedb'],
+	'collection' => $tabla->nfcollection,
+	'header' => $headers,
+	/*'pipeline'=>[[
     	'$addFields'=>[
     		'addfield'=>'add'
     		]
     	]],*/
-    'columns' => $columns,
-    'columnDefs' => [
-        count($columns) - 1 => ['render' => "'<a href=\"/nftables/" . $tabla->nfcollection . "/'+data+'\" class=\"square button small primary\"><span class=\"mif-pencil\"></span></a>'+		
+	'columns' => $columns,
+	'columnDefs' => [
+		count($columns) - 1 => ['render' => "'<a href=\"/nftables/" . $tabla->nfcollection . "/'+data+'\" class=\"square button small primary\"><span class=\"mif-pencil\"></span></a>'+		
 		'<a href=\"javascript:removeid(\\''+data+'\\');\" class=\"square small button alert\"><span class=\"mif-bin\"></span></a>'"], // data $row[0]
-    ]
+	]
 ]);
 
 if ($nframework->isAjax()) {
-    if ($_POST['op'] == 'delete') {
-        $m->{$config['sitedb']}->{$tabla->nfcollection}->deleteOne(['_id' => tomongoid($_POST['_id'])]);
-    }
+	if ($_POST['op'] == 'delete') {
+		$m->{$config['sitedb']}->{$tabla->nfcollection}->deleteOne(['_id' => tomongoid($_POST['_id'])]);
+	}
 } else {
-    $nframework->usecommon = true;
-    $javas->addjs(
-        <<<jss
+	$nframework->usecommon = true;
+	$javas->addjs(
+		<<<jss
 	function removeid(id){
 		Swal.fire({
 			title: 'Estas seguro?',
