@@ -54,7 +54,7 @@ use Microsoft\Graph\Connect\Constants;
 
 require 'src/Constants.php';
 
-print_r($config);
+//print_r($config);
 
 $provider = new \League\OAuth2\Client\Provider\GenericProvider([
 	'clientId'                => $config['microsoft_oauth_client_id'],
