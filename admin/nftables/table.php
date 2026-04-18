@@ -30,7 +30,7 @@ $dialogCampo = new Dialog([
 $arrayCampos = new embededArray([
     //'action'=>'items.php?_id='.$dataset->_id,
     'dataset' => &$dataset,
-    'field' => 'campos',
+    'field' => 'nffields',
     'containerid' => 'lista_campos',
     'onchange' => 'refrescarColumnas()',
     'dialogid' => 'dialogs_0',
