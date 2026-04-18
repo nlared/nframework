@@ -128,7 +128,7 @@ if ($nframework->isAjax()) {
 	}
 	function refrescarColumnas(){
 		$.ajax({
-			url:'tabla_preview.php?_id={$dataset->_id}',
+			url:'preview.php?_id={$dataset->_id}',
 			success:function(data){
 				var html='<table><thead><tr><th>'+
 				data.columns.join('</th><th>')+
