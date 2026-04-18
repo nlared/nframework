@@ -19,7 +19,7 @@ $dataset = new dataset(
 $tabla_singular = new inputtext(['dataset' => &$dataset, 'field' => 'singular', 'caption' => 'Singular:', 'required' => true]);
 $tabla_plural = new inputtext(['dataset' => &$dataset, 'field' => 'plural', 'caption' => 'Plural:', 'required' => true]);
 $tabla_descripcion = new textarea(['dataset' => &$dataset, 'field' => 'nfdescription', 'caption' => 'Descripción:', 'required' => true]);
-$tabla_coleccion = new inputtext(['dataset' => &$dataset, 'field' => 'nfcollection', 'caption' => 'collection:', 'required' => true]);
+$tabla_coleccion = new inputtext(['dataset' => &$dataset, 'field' => 'nfcollection', 'caption' => 'Collection:', 'required' => true]);
 
 
 
@@ -60,7 +60,7 @@ $arrayCampos = new embededArray([
 		</tbody>
         </table>
 	{% else %}
-	Sin Hechos
+	Vacío
 	{% endif %}
 T
 ]);
