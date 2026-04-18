@@ -212,13 +212,13 @@ class embededArray
 					nfembededs['{$this->id}']=result.items.length;
 					{$this->onchange}
 					{$childs}
-				}.fail(function(jqXHR, textStatus, errorThrown) {
+				}).fail(function(jqXHR, textStatus, errorThrown) {
 					let errormsg='Error al eliminar';
 					if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
 						errormsg = jqXHR.responseJSON.error;
 					}
 					alert(errormsg);
-				}));
+				});
 
 			}
 		});
