@@ -7,7 +7,7 @@ if (empty($_GET['_id'])) {
 require 'include.php';
 $dataset = new dataset(
     [
-        'collection' => $m->{$config['sitedb']}->ntablas,
+        'collection' => $m->{$config['sitedb']}->nftables,
         '_id' => $_GET['_id'],
         'simpleid' => false,
         'nameprefix' => 'data'
