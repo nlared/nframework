@@ -13,9 +13,22 @@ if (!isset($tabla->nffields) || count($tabla->nffields) == 0) {
 
 $headers = '';
 $columns = [];
+$filtertypes = [
+	'string' => 'string',
+	'integer' => 'integer',
+	'date' => 'date',
+
+];
+
 foreach ($tabla->nffields as $field) {
 	$headers .= '<th>' . $field->short_description . '</th>';
 	$columns[] = $field->field;
+	$filters[] = [
+		'id' => $field->field,
+		'field' => $field->field,
+		'label' => $field->short_description,
+		'type' => $filtertypes[$field->type],
+	];
 }
 $columns[] = '_id';
 $headers .= '<th>Acciones</th>';
@@ -37,6 +50,14 @@ $datatable->Ajax([
 		'<a href=\"javascript:removeid(\\''+data+'\\');\" class=\"square small button alert\"><span class=\"mif-bin\"></span></a>'"], // data $row[0]
 	]
 ]);
+
+$tablef = new Tablef([
+	//'excelFile'=>__DIR__.'/alumnos.xlsx',
+	//'excelCell'=>'A2',
+	'table' => &$datatable,
+	'filters' => $filters
+]);
+
 
 if ($nframework->isAjax()) {
 	if ($_POST['op'] == 'delete') {
@@ -81,6 +102,7 @@ jss
 		<div class="box shadow-large">
 			<div class="box-title"><?= $tabla->plural ?></div>
 			<a href="/nftables/<?= $tabla->nfcollection ?>/create" class="button"><span class="mif-plus"></span> Nuevo</a>
+			<?= $tablef; ?>
 			<?= $datatable; ?>
 		</div>
 	</div>
