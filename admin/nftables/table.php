@@ -78,7 +78,7 @@ $campo_tipo = new select(['nfembeded' => &$arrayCampos, 'field' => 'type', 'capt
     'inputcheckbox' => 'Cuadro',
     'inputcheckboxes' => 'Multicuadro',
     'inputfile' => 'Archivo',
-    'mark' => 'Mapa'
+    'mapmarker' => 'Mapa'
 ]]);
 $campo_requerido = new inputcheckbox(['nfembeded' => &$arrayCampos, 'field' => 'required', 'caption' => 'Requerido']);
 
