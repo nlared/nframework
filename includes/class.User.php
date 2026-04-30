@@ -30,7 +30,7 @@ class User implements ArrayAccess
                 $this->info = mongotoarray($info);
                 $this->info['_id'] = $id;
                 if (! empty($this->info['activationcode']) && $this->info['activationcode'] != $info['activationcode']) {
-                    header('Location: /account/activate.php');
+                    header('Location: /account/activate');
                     exit();
                 }
             }
@@ -45,7 +45,7 @@ class User implements ArrayAccess
     {
         $_SESSION['nframework']['logiopage'] = $_SERVER['DOCUMENT_URI'];
         if ($this->info['username'] == 'guest') {
-            header('location: /account/login.php');
+            header('location: /account/login');
             exit();
         }
     }
