@@ -284,6 +284,26 @@ class baseInput
     {
         return $this->pattern ? ' data-mask-pattern="' . $this->pattern . '"' : '';
     }
+    public function getAutocompleteAttr(): string
+    {
+        return $this->autocomplete ? ' autocomplete="' . $this->autocomplete . '"' : '';
+    }
+    public function getDataValidateAttr(): string
+    {
+        return $this->data_validate();
+    }
+    public function getClassAttr(): string
+    {
+        return $this->addclass ? ' class="' . $this->addclass . '"' : '';
+    }
+    public function render(): string
+    {
+        return $this->__toString();
+    }
+    public function getValue()
+    {
+        return $this->value;
+    }
 }
 class baseOptions extends baseInput
 {
