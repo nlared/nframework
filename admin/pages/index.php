@@ -59,9 +59,9 @@ function removeid(id){
 ");
 ?>
 <div class="container p-5">
-	<div class="bg-cyan fg-white p-3"><h4><?=$nframework->language['pages']?></h4></div>
-	<div class="bg-white p-3">
-	<a href="page.php" class="button"><span class="mif-plus"></span>&nbsp;<?=$nframework->language['new']?></a>		
-	<?=$datatable;?>
-</div>
+	<div class="box shadow-large">
+		<div class="box-title"><?= $nframework->language['pages'] ?></div>
+		<a href="page.php" class="button"><span class="mif-plus"></span>&nbsp;<?= $nframework->language['new'] ?></a>
+		<?= $datatable; ?>
+	</div>
 </div>

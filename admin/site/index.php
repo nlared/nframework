@@ -125,8 +125,8 @@ if ($nframework->isAjax()) {
 	$nframework->usecommon = true;
 
 ?>
-	<div class="container p-5">
-		<div class="mt-4 mb-4">
+	<div class="container">
+		<div class="bo">
 			<h1 class="text-weight-10 text-center gradient gr-text-blue"><?= $nframework->language['siteconfig'] ?></h1>
 		</div>
 		<div class="box shadow-large-extra p-5">
