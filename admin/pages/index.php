@@ -1,26 +1,25 @@
 <?php
 require '../common2.php';
-$developermode=true;
+$developermode = true;
 
 
 if ($nframework->isAjax()) {
-	if ($_POST['op']=='delete') {
-		$m->{$config['sitedb']}->pages->deleteone(['_id'=>tomongoid($_POST['_id'])]); 
+	if ($_POST['op'] == 'delete') {
+		$m->{$config['sitedb']}->pages->deleteone(['_id' => tomongoid($_POST['_id'])]);
 	}
-	
 }
 
-$nframework->usecommon=true;
-$datatable=new Table();
-$datatable->header='<th>'.$nframework->language['title'].'</th><th>'.$nframework->language['path'].'</th><th>'.$nframework->language['language'].'</th><th>'.$nframework->language['options'].'</th>';
+$nframework->usecommon = true;
+$datatable = new Table();
+$datatable->header = '<th>' . $nframework->language['title'] . '</th><th>' . $nframework->language['path'] . '</th><th>' . $nframework->language['language'] . '</th><th>' . $nframework->language['options'] . '</th>';
 foreach ($m->{$config['sitedb']}->pages->find() as $doc) {
-    $datatable->data[]=[
-        $doc['title'],
-        $doc['path'],
-        $doc['lang'],
-        '<a href="page.php?_id='.$doc['_id'].'" class="button primary"><spam class="mif-pencil"></spam></a>
-        <a href="javascript:removeid(\''.$doc['_id'].'\')" class="button alert"><spam class="mif-cross"></spam></a>'
-        ];
+	$datatable->data[] = [
+		$doc['title'],
+		$doc['path'],
+		$doc['lang'],
+		'<a href="page.php?_id=' . $doc['_id'] . '" class="button primary"><spam class="mif-pencil"></spam></a>
+        <a href="javascript:removeid(\'' . $doc['_id'] . '\')" class="button alert"><spam class="mif-cross"></spam></a>'
+	];
 }
 
 
