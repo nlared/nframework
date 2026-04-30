@@ -101,10 +101,10 @@ jss
 	<div class="container p-5">
 		<div class="box shadow-large">
 			<div class="box-title"><?= $tabla->plural ?></div>
-			<a href="/nftables/<?= $tabla->nfcollection ?>/create" class="button"><span class="mif-plus"></span> Nuevo</a>
 			<?= $tablef; ?>
+			<a href="/nftables/<?= $tabla->nfcollection ?>/create" class="button"><span class="mif-plus"></span> Nuevo</a>
+			<a href="/nftables/<?= $tabla->nfcollection ?>/import" class="button"><span class="mif-file-import"></span> Importar</a>
 			<?= $datatable; ?>
 		</div>
 	</div>
-<?php
-}
+<? }
