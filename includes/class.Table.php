@@ -121,7 +121,7 @@ class Table
                 $columnDefs = json_encode($this->columnDefs);
             }
         }
-order":
+
 
 
         $json = [
