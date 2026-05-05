@@ -83,6 +83,22 @@ class Table
         addVarToGarbage('datatable\\' . $this->id, time() + (60 * 60));
         $this->ajax = true;
     }
+    public function nftable($options = [])
+    {
+        global $nframework;
+        foreach ($options as $option => $value) {
+            $this->{$option} = $value;
+        }
+        $_SESSION['datatable'][$this->id] = [
+            'db' => $this->db,
+            'collection' => $this->collection,
+            'query' => $this->query,
+            'projection' => $this->projection,
+            'columns' => $this->columns,
+            'pipeline' => $this->pipeline,
+        ];
+        addVarToGarbage('datatable\\' . $this->id, time() + (60 * 60));
+    }
 
     public function __toString()
     {
