@@ -8,5 +8,9 @@
             "/home/quique/Documentos/gitkraken/nframework/includes",
             "/home/quique/Documentos/gitkraken/nframework/includes/vendor/autoload.php"
         ],
-        "intelephense.diagnostics.undefinedTypes": false
+        "intelephense.diagnostics.undefinedTypes": false,
+        "intelephense.environment.includePaths": [
+            "/home/quique/Documentos/gitkraken/nframework/includes",
+            "/home/quique/Documentos/gitkraken/nframework/includes/vendor/autoload.php"
+        ]
     }
