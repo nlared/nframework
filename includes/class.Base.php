@@ -944,7 +944,7 @@ function nflistoptions($options, $selected = []): string
 
 enum DataformatSelectType: string
 {
-    case String = 'string';    
+    case String = 'string';
     case MongoID = 'mongoid';
 }
 class Select extends baseOptions
@@ -956,7 +956,7 @@ class Select extends baseOptions
     public $canadd;
     public $role;
     public $datafilter = true;
-    public $format;// mongoid    
+    public $format; // mongoid    
     public function __construct($options = [])
     {
         $options['class'] = 'select';
@@ -1566,7 +1566,7 @@ class datasetpdo
         unset($this->info['']);
     }
 
-    
+
     public function save()
     {
         $errores = '';
