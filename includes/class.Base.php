@@ -956,7 +956,35 @@ class Select extends baseOptions
     public $canadd;
     public $role;
     public $datafilter = true;
+    public $format;// mongoid    
+    public function __construct($options = [])
+    {
+        $options['class'] = 'select';
+        parent::__construct($options);
+    }
 
+    public function tomongo()
+    {
+        if ($this->multiple) {
+            return (array) $this->value;
+        } else {
+            if($this->format==DataformatSelectType::MongoID ){
+                return new MongoDB\BSON\ObjectID($this->value);
+            }
+            return $this->value;
+        }
+    }
+    public function tophp()
+    {
+        if ($this->multiple) {
+            return (array) $this->value;
+        } else {
+            if($this->format==DataformatSelectType::MongoID ){
+                return (string) new MongoDB\BSON\ObjectID($this->value);
+            }
+            return $this->value;
+        }
+    }
     public function __toString(): string
     {
         $result = '';
