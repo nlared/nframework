@@ -1763,19 +1763,21 @@ class dataset
 
         return true;
     }
-    public function tonfTables($id):void
-    {    
+    public function tonfTables($id): void
+    {
         global $m, $config;
         foreach ($this->elements as $element) {
             $m->{$config['sitedb']}->nftables->updateOne(
                 ['_id' => $id],
-                ['$addToSet' => [
-                    'type' =>  get_class($element),
-                    'field'=>$element->field,                    
+                [
+                    '$addToSet' => [
+                        'type' =>  get_class($element),
+                        'field' => $element->field,
                     ],
-                ['upsert' => true]
+                    ['upsert' => true]
+                ]
             );
-        }        
+        }
     }
     public function __get($name)
     {
