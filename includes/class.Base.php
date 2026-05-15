@@ -942,6 +942,11 @@ function nflistoptions($options, $selected = []): string
     return $result;
 }
 
+enum DataformatSelectType: string
+{
+    case String = 'string';    
+    case MongoID = 'mongoid';
+}
 class Select extends baseOptions
 {
     public $combobox;
