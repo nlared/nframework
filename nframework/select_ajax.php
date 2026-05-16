@@ -12,7 +12,7 @@ header("Pragma: no-cache");
 $options = [];
 $result = [];
 foreach ($datainfo['columns'] as $cno => $co) {
-    $matchs[][$co] = MongoDB\BSON\Regex($_GET['q'], "i");
+    $matchs[][$co] = new MongoDB\BSON\Regex($_GET['q'], "i");
 }
 $pipeline[] = ['$match' => ['$or' => $matchs]];
 $pipeline = array_merge($datainfo['pipeline'], $pipeline);
