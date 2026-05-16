@@ -968,6 +968,9 @@ class Select extends baseOptions
     public $role;
     public $datafilter = true;
     public $format; // mongoid    
+
+    public $ajax;
+
     public function __construct($options = [])
     {
         $options['class'] = 'select';
