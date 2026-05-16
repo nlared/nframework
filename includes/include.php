@@ -93,7 +93,7 @@ class class_config implements ArrayAccess
         }
 
         $this->contenedor = $conf;
-    }datatables[
+    }
 
     public function offsetSet(mixed $offset, mixed $valor): void
     {
@@ -150,7 +150,7 @@ class class_nframework
     public bool $usecommon = false;
     public string $include_path;
     public string $api_path;
-    public string $body_addtag = '';datatables[
+    public string $body_addtag = '';
     public string $html_addtag = '';
     public array $onces = [];
     public UIManager $ui;
@@ -174,7 +174,7 @@ class class_nframework
             if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') {
                 $this->https = true;
             }
-        }datatables[
+        }
         $this->ui = new UIManager();
 
         if (
@@ -303,7 +303,7 @@ class class_nframework
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $filename . '.xlsx"');
         $writer->save('php://output');
-    }datatables[
+    }
 
     public function excelOutPdf($spreadsheet, $filename, $converter = 'Dompdf', $disposition = 'inline') // attachment
     {
@@ -353,7 +353,7 @@ class class_nframework
             $writer->save('php://output');
         } else {
             $tmpfname = tempnam(sys_get_temp_dir(), 'docxtpdf');
-            $word->saveAs($tmpfname . '.docx');datatables[
+            $word->saveAs($tmpfname . '.docx');
             if ($config['word_pdf_converter'] == 'unoconv') {
                 shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
             } else {
@@ -374,7 +374,7 @@ class class_nframework
     }
     public function wordTemplateOutPdf(PhpOffice\PhpWord\TemplateProcessor $template, $filename)
     {
-        global $config;datatables[
+        global $config;
         $filename = clean_filename($filename);
         $tmpfname = tempnam(sys_get_temp_dir(), 'templatepdf');
         $template->saveAs($tmpfname . '.docx');
@@ -480,7 +480,7 @@ if (isset($config['security_ip_blacklist'])) {
                 if (time() < $tmp['end']->toDateTime()->getTimestamp()) {
                     $block_reason = 'IP is blacklisted until ' . $tmp['end']->toDateTime()->format('Y-m-d H:i:s');
                 } else {
-                    // remove expireddatatables[
+                    // remove expired IP from blacklist
                     $m->{$config['sitedb']}->configs->updateOne(['_id' => 'site'], ['$pull' => ['security_ip_blacklist' => ['ip' => $tmp['ip']]]]);
                 }
             } else {
@@ -502,7 +502,7 @@ if (isset($config['security_path_blacklist'])) {
             $block_reason = 'Path is blacklisted';
         }
     }
-}datatables[
+}
 
 if (!empty($config['timezone'])) {
     date_default_timezone_set($config['timezone']);
@@ -529,7 +529,7 @@ foreach (
     ]) as $rule
 ) {
     //if (!empty($rule->rule) && !empty($rule->enabled) && $rule->enabled === true) {
-    $rules[] = fixSingleQuery(json_decode($datatables[rule->rule, true));
+    $rules[] = fixSingleQuery(json_decode($rule->rule, true));
     //}
 }
 
@@ -606,7 +606,7 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
                     $mail->addAddress('quique@nlared.com', 'Enrique Flores'); // Add a recipient
                     $mail->WordWrap = 50;                                 // Set word wrap to 50 characters
                     $mail->IsHTML(true);
-                    $mail->Body    = 'A ocurrido una idatatables[ncidencia critica #'.$result['upserted'];
+                    $mail->Body    = 'A ocurrido una incidencia critica #'.$result['upserted'];
                     $mail->AltBody = 'A ocurrido una incidencia critica #'.$result['upserted'];
                     if(!$mail->send()) {
                        echo 'Error enviando correo';
@@ -629,7 +629,7 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
 }
 $original = set_error_handler('nferrorhandler');
 function nframework_autoload($class_name): bool
-{datatables[
+{
     $ipaths = get_include_path();
     $iarray = array_merge([(string) __DIR__], explode(PATH_SEPARATOR, $ipaths));
     foreach ($iarray as $ipath) {
