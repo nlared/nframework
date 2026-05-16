@@ -983,7 +983,7 @@ class Select extends baseOptions
             return (array) $val;
         } else {
             if ($this->format == DataformatSelectType::MongoID) {
-                return new MongoDB\BSON\ObjectID($val);
+                return (string) $val;
             }
             return $val;
         }
@@ -994,7 +994,7 @@ class Select extends baseOptions
             return (array) $val;
         } else {
             if ($this->format == DataformatSelectType::MongoID) {
-                return (string) new MongoDB\BSON\ObjectID($val);
+                return  new MongoDB\BSON\ObjectID($val);
             }
             return $val;
         }
