@@ -11,12 +11,17 @@ header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 $options = [];
 $result = [];
-foreach ($datainfo['columns'] as $cno => $co) {
-    $matchs[][$co] = new MongoDB\BSON\Regex($_GET['q'], "i");
+if (empty($_GET['qid'])) {
+    foreach ($datainfo['columns'] as $cno => $co) {
+        $matchs[][$co] = new MongoDB\BSON\Regex($_GET['q'], "i");
+    }
+    $pipeline[] = ['$match' => ['$or' => $matchs]];
 }
-$pipeline[] = ['$match' => ['$or' => $matchs]];
 $pipeline = array_merge($datainfo['pipeline'], $pipeline);
 $pipeline[] = ['$addFields' => ['label' => $datainfo['label'], 'value' => $datainfo['value']]];
+if (!empty($_GET['q'])) {
+    $pipeline[] = ['$match' => ['value' => $_GET['qid']]];
+}
 $pipeline[] = ['$project' => ['_id' => 0, 'label' => 1, 'value' => 1]];
 
 
