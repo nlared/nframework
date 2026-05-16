@@ -93,7 +93,7 @@ class class_config implements ArrayAccess
         }
 
         $this->contenedor = $conf;
-    }
+    }datatables[
 
     public function offsetSet(mixed $offset, mixed $valor): void
     {
@@ -150,7 +150,7 @@ class class_nframework
     public bool $usecommon = false;
     public string $include_path;
     public string $api_path;
-    public string $body_addtag = '';
+    public string $body_addtag = '';datatables[
     public string $html_addtag = '';
     public array $onces = [];
     public UIManager $ui;
@@ -174,7 +174,7 @@ class class_nframework
             if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') {
                 $this->https = true;
             }
-        }
+        }datatables[
         $this->ui = new UIManager();
 
         if (
