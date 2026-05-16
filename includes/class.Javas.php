@@ -117,7 +117,7 @@ function syscalls() {
 
 
 $(window).scroll(function(){
-'.$this->js['scroll'].'
+' . $this->js['scroll'] . '
 });
 
 
@@ -202,7 +202,7 @@ $(document).ready(function() {
 			type: "post",
 			url: url,
 			beforeSend: function(xhr) { 
-    		  xhr.setRequestHeader("X-CSRF-Token", "'.$csrftoken.'"); 
+    		  xhr.setRequestHeader("X-CSRF-Token", "' . $csrftoken . '"); 
 			}, 
 			data: form.serialize(), // serializes the forms elements.
 			success: function(data){
@@ -241,13 +241,13 @@ $(document).ready(function() {
 		var op = $(this).closest("form").find("input[name=\"op\"]");
 		op.val($(this).val());
 	});
-	 '.implode("\r\n", $nframework->javasonce).$this->js['initializecomponent'].'
-	 '.$this->js['ready'].'
+	 ' . implode("\r\n", $nframework->javasonce) . $this->js['initializecomponent'] . '
+	 ' . $this->js['ready'] . '
 	 nfWindowResize();
 });
 ';
 
-            /*
+			/*
 
             jQuery.datetimepicker.setLocale(\''.$nframework->langshort.'\');
                $(\'.datetimepicker2date\').datetimepicker({
