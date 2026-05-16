@@ -1001,6 +1001,7 @@ class Select extends baseOptions
     }
     public function __toString(): string
     {
+        global $nframework, $javas;
         $result = '';
         if ($this->combobox && $this->value != '' && !array_search($this->value, $this->options)) {
             $this->options += [$this->value];
@@ -1027,6 +1028,39 @@ class Select extends baseOptions
 
         // onfocus=\"Autoformonfocus(this)\" onblur=\"Autoformonblur(this)\">\n";
         // $_SESSION['ANTIXSS'][$this->name]=[FILTER_VALIDATE_SELE];
+
+
+        if ($this->ajax) {
+
+            $nframework->csss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css";
+            $nframework->jss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js";
+
+            $_SESSION['selectajax'][$this->id] = $this->ajax;
+            addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
+
+
+
+            $javas->addjs(
+                <<<js
+	new TomSelect('#{$this->id}',{
+		valueField:'value',
+		labelField:'label',
+		searchField:'label',
+		load:function(query,callback){
+			if(!query.length)return callback();
+			fetch('/nframework/select_ajax.php?q='+encodeURIComponent(query))
+			.then(res=>res.json())
+			.then(json=>{
+				callback(json);
+			}).catch(()=>{
+				callback();
+			});
+		}
+	});
+js
+            );
+        }
+
         return
             '<select name="' . $this->name . ($this->multiple ? '[]" multiple="multiple"' : '"') .
             ' id="' . $this->id . '"' . ' data-role="' . $this->role . '" ' .
