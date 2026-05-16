@@ -1042,7 +1042,7 @@ class Select extends baseOptions
 
             $javas->addjs(
                 <<<js
-	new TomSelect('#{$this->id}',{
+	tomselects['{$this->id}'] = new TomSelect('#{$this->id}',{
 		valueField:'value',
 		labelField:'label',
 		searchField:'label',
