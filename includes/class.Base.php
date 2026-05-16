@@ -947,6 +947,17 @@ enum DataformatSelectType: string
     case String = 'string';
     case MongoID = 'mongoid';
 }
+
+class SelectAjaxOptions
+{
+    public $db;
+    public $collection;
+    public $pipeline = [];
+    public $columns = [];
+    public $fields = [];
+    public $label;
+    public $value;
+}
 class Select extends baseOptions
 {
     public $combobox;
