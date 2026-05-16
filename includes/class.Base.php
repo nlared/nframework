@@ -1059,6 +1059,22 @@ class Select extends baseOptions
 	});
 js
             );
+
+
+            if (!empty($this->value)) {
+                $javas->addjs(
+                    <<<js
+fetch('/nframework/select_ajax.php?id={$this->id}&qid='+encodeURIComponent('{$this->value}'))
+    .then(res => res.json())
+    .then(items => {
+        items.forEach(item => {
+            tomselects['{$this->id}'].addOption(item);
+            tomselects['{$this->id}'].addItem(item.value);
+        });
+    });
+js
+                );
+            }
         }
 
         return
