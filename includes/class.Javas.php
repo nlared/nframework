@@ -2,42 +2,43 @@
 
 class Javas
 {
-    public array $js; // =['general'=>'','resize'=>'','ready'=>''];
+	public array $js; // =['general'=>'','resize'=>'','ready'=>''];
 
-    public bool $flushed = false;
+	public bool $flushed = false;
 
-    public array $docend = [];
+	public array $docend = [];
 
-    public function __construct()
-    {
-        $this->js = ['general' => '', 'resize' => '', 'ready' => '', 'scroll' => ''];
-        // $this->docend=[];
-    }
+	public function __construct()
+	{
+		$this->js = ['general' => '', 'resize' => '', 'ready' => '', 'scroll' => ''];
+		// $this->docend=[];
+	}
 
-    public function addjs($jss, $seccion = 'general')
-    {
-        $this->js[$seccion] .= $jss;
-    }
+	public function addjs($jss, $seccion = 'general')
+	{
+		$this->js[$seccion] .= $jss;
+	}
 
-    public function __toString(): string
-    {
-        global $nframework,$csrftoken;
-        if (! $this->flushed) {
-            $this->flushed = true;
+	public function __toString(): string
+	{
+		global $nframework, $csrftoken;
+		if (! $this->flushed) {
+			$this->flushed = true;
 
-            /*$("input[data-custom-buttons=\'customCalendarButton\']").datetimepicker({
+			/*$("input[data-custom-buttons=\'customCalendarButton\']").datetimepicker({
                   format:\'Y-m-d H:i\',mask:false,lang:\'es\'
               });*/
 
-            $js = '
+			$js = '
     		
     		var nbacklink="/";
-'.$this->js['general'].'
-var datatables=[];    
+' . $this->js['general'] . '
+var datatables=[];
+var tomselects=[];
 var ajaxdialogs=[];
 
 function nfWindowResize() {
-'.$this->js['resize'].'
+' . $this->js['resize'] . '
 };
 var nfWindowResizeTimer;
 $(window).resize(function() {
