@@ -281,7 +281,7 @@ class class_nframework
             'platform' => $b->getPlatform(),
             'mobile' => $b->isMobile(),
         ];
-        $languages = [datatables[
+        $languages = [
             'es' => 'es-MX',
             'es-ES' => 'es-MX',
             'es-MX' => 'es-MX',
