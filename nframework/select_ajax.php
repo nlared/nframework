@@ -27,8 +27,8 @@ try {
 }
 if ($error) {
     $result['error'] = $error;
-    if ($developermode) {
-        $result['pipeline'] = $pipeline;
-    }
+    //if ($developermode) {
+    $result['pipeline'] = $pipeline;
+    //}
 }
 echo json_encode($result);
