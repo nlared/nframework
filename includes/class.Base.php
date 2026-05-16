@@ -1072,7 +1072,8 @@ fetch('/nframework/select_ajax.php?id={$this->id}&qid='+encodeURIComponent('{$th
             tomselects['{$this->id}'].addItem(item.value);
         });
     });
-js
+js,
+                    'ready'
                 );
             }
         }
