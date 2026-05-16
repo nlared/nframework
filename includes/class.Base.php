@@ -1057,8 +1057,7 @@ class Select extends baseOptions
 			});
 		}
 	});
-js,
-                'ready'
+js
             );
 
 
