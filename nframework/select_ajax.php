@@ -21,7 +21,7 @@ if (empty($_GET['qid'])) {
 }
 $pipeline = array_merge($datainfo['pipeline'], $pipeline);
 $pipeline[] = ['$addFields' => ['label' => $datainfo['label'], 'value' => $datainfo['value']]];
-if (!empty($_GET['q'])) {
+if (!empty($_GET['qid'])) {
     $pipeline[] = ['$match' => ['value' => $_GET['qid']]];
 }
 $pipeline[] = ['$project' => ['_id' => 0, 'label' => 1, 'value' => 1]];
