@@ -16,6 +16,8 @@ if (empty($_GET['qid'])) {
         $matchs[][$co] = new MongoDB\BSON\Regex($_GET['q'], "i");
     }
     $pipeline[] = ['$match' => ['$or' => $matchs]];
+} else {
+    $pipeline = [];
 }
 $pipeline = array_merge($datainfo['pipeline'], $pipeline);
 $pipeline[] = ['$addFields' => ['label' => $datainfo['label'], 'value' => $datainfo['value']]];
