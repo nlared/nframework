@@ -266,14 +266,14 @@ $(document).ready(function() {
 
             */
 
-            // $packer = new Tholu\Packer\Packer($js, 'Normal', true, false, true);
-            // $packed_js = $packer->pack();
-            return implode("\r\n", array_reverse($this->docend)).'
+			// $packer = new Tholu\Packer\Packer($js, 'Normal', true, false, true);
+			// $packed_js = $packer->pack();
+			return implode("\r\n", array_reverse($this->docend)) . '
 <script>
-'.$js.' 
+' . $js . ' 
 </script>';
-        } else {
-            return '';
-        }
-    }
+		} else {
+			return '';
+		}
+	}
 }
