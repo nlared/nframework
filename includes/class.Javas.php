@@ -32,10 +32,11 @@ class Javas
 			$js = '
     		
     		var nbacklink="/";
-' . $this->js['general'] . '
-var datatables=[];
+			var datatables=[];
 var tomselects=[];
 var ajaxdialogs=[];
+' . $this->js['general'] . '
+
 
 function nfWindowResize() {
 ' . $this->js['resize'] . '
