@@ -977,26 +977,26 @@ class Select extends baseOptions
         parent::__construct($options);
     }
 
-    public function tomongo()
+    public function __toPhp($val)
     {
         if ($this->multiple) {
-            return (array) $this->value;
+            return (array) $val;
         } else {
             if ($this->format == DataformatSelectType::MongoID) {
-                return new MongoDB\BSON\ObjectID($this->value);
+                return new MongoDB\BSON\ObjectID($val);
             }
-            return $this->value;
+            return $val;
         }
     }
-    public function tophp()
+    public function __toMongo($val)
     {
         if ($this->multiple) {
-            return (array) $this->value;
+            return (array) $val;
         } else {
             if ($this->format == DataformatSelectType::MongoID) {
-                return (string) new MongoDB\BSON\ObjectID($this->value);
+                return (string) new MongoDB\BSON\ObjectID($val);
             }
-            return $this->value;
+            return $val;
         }
     }
     public function __toString(): string
