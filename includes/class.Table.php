@@ -40,6 +40,7 @@ class Table
     public $rowReorder = false;
     public $selectStyle = 'single';
     public $ordering = true;
+    public $mark = false;
 
     public function __construct($options = [])
     {
@@ -107,6 +108,11 @@ class Table
             $nframework->jss['0062'] = 'https://cdn.datatables.net/rowreorder/1.4.1/js/dataTables.rowReorder.min.js';
             $nframework->csss['0062'] = 'https://cdn.datatables.net/rowreorder/1.4.1/css/rowReorder.dataTables.min.css';
         }
+        if ($this->mark) {
+            $nframework->jss['0063'] = 'https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/jquery.mark.min.js';
+            $nframework->jss['0064'] = 'https://cdn.datatables.net/plug-ins/1.13.8/features/mark.js/datatables.mark.min.js';
+        }
+
         $class = [];
         if ($this->border) $class[] = 'table-border';
         if ($this->rowborder) $class[] = 'row-border';
@@ -147,6 +153,7 @@ class Table
             'responsive' => $this->responsive,
             'lengthMenu' => $this->lengthMenu,
             'stateSave' => $this->stateSave,
+            'mark' => $this->mark,
             // 'order' => !empty($this->order) ? $this->order : [],
             // 'ordering' => !empty($this->ordering) ? true : false,
         ];
