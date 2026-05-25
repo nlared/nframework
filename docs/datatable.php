@@ -1,24 +1,23 @@
 <?php
-require '../common2.php';
-$datatable=new Table();
-$datatable->header='<th>Titulo</th><th>Descripcion</th><th>Opciones</th>';
+require 'common.php';
+$datatable = new Table();
+$datatable->header = '<th>id</th><th>Data</th><th>Opciones</th>';
 foreach ($m->{$config['sitedb']}->exampledata->find() as $doc) {
-    $datatable->data[]=[
+    $datatable->data[] = [
         $doc['_id'],
         serialize($doc),
-        '<a href="databinding.php?_id='.$doc['_id'].'"><spam class="mif-pencil"></spam></a>
-        <a href="?eliminar='.$doc['_id'].'"><spam class="mif-cross"></spam></a>'
-        ];
+        '<a href="databinding.php?_id=' . $doc['_id'] . '"><span class="mif-pencil"></span></a>
+        <a href="?eliminar=' . $doc['_id'] . '"><span class="mif-cross"></span></a>'
+    ];
 }
 ?>
-<div class="container p-5">
-	<div class="bg-cyan fg-white p-3"><h4>DataTable</h4></div>
-	<div class="bg-white p-3">
-	<a href="databinding.php" class="button"><span class="mif-plus"></span> Nuevo</a>		
-	<?=$datatable;?>
+<div class="container">
+    <div class="box shadow-large">
+        <div class="box-title">DataTable</div>
+        <a href="databinding.php" class="button"><span class="mif-plus"></span> Nuevo</a>
+        <?= $datatable; ?>
+    </div>
 </div>
-</div>
-
 <pre><code class="html">
-<?=tocode(__file__) ?>
+<?= tocode(__file__) ?>
 </code></pre>

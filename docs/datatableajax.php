@@ -1,34 +1,40 @@
 <?php
 require 'common.php';
 
-$datatable=new Table();
+$datatable = new Table();
 $datatable->Ajax([
-    'id'=>'testid',
-    'db'=>$config['sitedb'],
-    'collection'=>'exampledata',
-    'header'=>'<th>Text</th><th>Number</th><th>Date</th><th>Checkbox</th><th>addexample</th><th>id</th>',
-    'pipeline'=>[[
-    	'$addFields'=>[
-    		'addfield'=>'add'
-    		]
-    	]],
-    'columns'=>[
-        'text','number','date','checkbox','addfield','_id'
-    ],
-    'columnDefs'=>[
-		'5'=>['render'=>"'<a href=\"databindingajax.php?_id='+data+'\" class=\"square button small primary\"><span class=\"mif-pencil\"></span></a>'+
+	'id' => 'testid',
+	'db' => $config['sitedb'],
+	'collection' => 'exampledata',
+	'mark' => true,
+	'header' => '<th>Text</th><th>Number</th><th>Date</th><th>Checkbox</th><th>addexample</th><th>id</th>',
+	'pipeline' => [[
+		'$addFields' => [
+			'addfield' => 'add'
+		]
+	]],
+	'columns' => [
+		'text',
+		'number',
+		'date',
+		'checkbox',
+		'addfield',
+		'_id'
+	],
+	'columnDefs' => [
+		'5' => ['render' => "'<a href=\"databindingajax.php?_id='+data+'\" class=\"square button small primary\"><span class=\"mif-pencil\"></span></a>'+
 		'<a href=\"arraylist.php?_id='+data+'\" class=\"square small button primary\"><span class=\"mif-list-bulleted\"></span></a>'+
-		'<a href=\"javascript:removeid(\\''+data+'\\');\" class=\"square small button alert\"><span class=\"mif-bin\"></span></a>'"],// data $row[0]
+		'<a href=\"javascript:removeid(\\''+data+'\\');\" class=\"square small button alert\"><span class=\"mif-bin\"></span></a>'"], // data $row[0]
 	]
 ]);
 
 
 if ($nframework->isAjax()) {
-	if ($_POST['op']=='delete') {
-		$m->{$config['sitedb']}->exampledata->deleteOne(['_id'=>tomongoid($_POST['_id'])]);
+	if ($_POST['op'] == 'delete') {
+		$m->{$config['sitedb']}->exampledata->deleteOne(['_id' => tomongoid($_POST['_id'])]);
 	}
-}else{
-	$nframework->usecommon=true;
+} else {
+	$nframework->usecommon = true;
 	$javas->addjs("
 	function removeid(id){
 		Swal.fire({
