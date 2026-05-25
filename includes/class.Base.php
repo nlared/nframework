@@ -506,7 +506,7 @@ class inputSpinner extends baseInput
             '<input type="text" data-role="spinner" id="' . $this->id .
             '" name="' . $this->name .
             '"' . $this->writetags() .
-            ' data-validate="' . $this->data_validate() . '" value="' . $this->value . '"' .
+             $this->data_validate() . ' value="' . $this->value . '"' .
             ($this->datasize ? ' data-size="' . $this->datasize . '"' : '') .
             ($this->required ? ' required="required"' : '') .
             ($this->readonly ? ' readonly="readonly"' : '') .
@@ -670,7 +670,7 @@ class inputDateTime extends baseInput
             //($this->readonly ? ' readonly="readonly"' : '') .
             ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
             ($this->disabled ? ' disabled' : '') . $this->inputtags()
-            . ' data-validate="' . $this->data_validate() . '"' .
+            . $this->data_validate() .
             $this->addtags . ' value="' . $this->__toPHP($this->value)
             . '" data-clear-button="false"  autocomplete="off"/>';
     }
@@ -859,8 +859,8 @@ class inputCheckBox extends baseOptions
     {
         return '<input type="checkbox" name="' . $this->name . '" id="' . $this->id . '" value="1"' .
             ' data-role="checkbox" data-caption="' . $this->caption . '"' .
-            ' labelid="' . $this->id . '"' .
-            ' data-ovalidate="' . $this->data_validate() . '"' .
+            ' labelid="' . $this->id . '" ' .
+            $this->data_validate() .
             ($this->onchange ? ' data-on-change="' . $this->onchange . '"' : '') .
             ($this->value ? ' checked ' : ' ') . '/>';
     }
@@ -914,7 +914,7 @@ class inputRadios extends baseOptions
         foreach ($this->options as $value => $text) {
             $result .= '<input type="radio" name="' . $this->name . '" id="' . $this->id . '_' . $contas . '" value="' . $value
                 . '" data-role="radio" data-caption="' . $text . '"' .
-                ' labelid="' . $this->id . '" data-ovalidate="' . $this->data_validate() . '"' .
+                ' labelid="' . $this->id . '" ' . $this->data_validate() .
                 ($this->onchange ? ' data-on-change="' . $this->onchange . '"' : '') .
                 ($this->value == $value ? ' checked ' : ' ') . '/>'; //&nbsp;<label for="'.$this->id.'_'.$contas.'">'.$text.'</label>';
             $contas++;
