@@ -958,7 +958,7 @@ class SelectAjaxOptions
     public $label;
     public $value;
     public $args = [];
-    public $load;
+    public String $load;
 }
 class Select extends baseOptions
 {
@@ -1039,7 +1039,7 @@ class Select extends baseOptions
 
 
 
-            if (!empty($this->ajax->load)) {
+            if ($this->ajax->load != '') {
                 $load = $this->ajax->load;
             } else {
                 $load = <<<js
