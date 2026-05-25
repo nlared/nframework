@@ -1037,8 +1037,7 @@ class Select extends baseOptions
             $nframework->csss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css";
             $nframework->jss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js";
 
-            $_SESSION['selectajax'][$this->id] = $this->ajax;
-            addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
+
 
             if (!empty($this->ajax->load)) {
                 $load = $this->ajax->load;
@@ -1056,6 +1055,9 @@ class Select extends baseOptions
                 }
 js;
             }
+            unset($this->ajax->load);
+            $_SESSION['selectajax'][$this->id] = $this->ajax;
+            addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
 
             $javas->addjs(
                 <<<js
