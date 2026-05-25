@@ -1062,8 +1062,7 @@ js;
 	tomselects['{$this->id}'] = new TomSelect('#{$this->id}',{
 		valueField:'value',
 		labelField:'label',
-		searchField:'label',
-        args:{$this->ajax->args},
+		searchField:'label',        
 		load:{$load}
 	});
 js
