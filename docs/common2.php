@@ -22,7 +22,7 @@ if (!$nframework->isAjax()) {
 		return htmlentities(substr($code, 0, $pos));
 	}
 	$sidebar = new Sidebar([
-		'title' => 'nf5',
+		'title' => 'dev',
 		'sidemenu' => '<li class="item-header">Introducction</li>
 	            <li>
 	                <a href="/" class="side-menu__item">
