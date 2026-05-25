@@ -1096,6 +1096,7 @@ js,
             ($this->canadd ? ' canadd="canadd"' : '') .
             ($this->onChange ? ' onChange="' . $this->onChange . '"' : '') .
             (!$this->datafilter ? ' data-filter="false"' : '') .
+            ($this->addclass ? ' class="' . $this->addclass . '"' : '') .
             ' data-filter="true" data-filter-placeholder="' . $this->placeholder . '">' . $result . '</select>';
     }
 
