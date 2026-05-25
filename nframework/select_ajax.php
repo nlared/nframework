@@ -21,11 +21,11 @@ if (empty($_GET['qid'])) {
 }
 $filter = [];
 foreach ($datainfo['args'] as $arg) {
-    $filter[][$arg] = $_GET[$arg];
+    $filter[$arg] = $_GET[$arg];
 }
 
 if (!empty($filter)) {
-    $pipeline[] = ['$match' => ['$and' => $filter]];
+    $pipeline[] = ['$match' =>  $filter];
 }
 
 
