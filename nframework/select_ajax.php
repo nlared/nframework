@@ -15,13 +15,21 @@ if (empty($_GET['qid'])) {
     foreach ($datainfo['columns'] as $cno => $co) {
         $matchs[][$co] = new MongoDB\BSON\Regex($_GET['q'], "i");
     }
-    foreach ($datainfo['args'] as $arg) {
-        $matchs[][$arg] = $_GET[$arg];
-    }
     $pipeline[] = ['$match' => ['$or' => $matchs]];
 } else {
     $pipeline = [];
 }
+$filter = [];
+foreach ($datainfo['args'] as $arg) {
+    $filter[][$arg] = $_GET[$arg];
+}
+
+if (!empty($filter)) {
+    $pipeline[] = ['$match' => ['$and' => $filter]];
+}
+
+
+
 $pipeline = array_merge($datainfo['pipeline'], $pipeline);
 $pipeline[] = ['$addFields' => ['label' => $datainfo['label'], 'value' => $datainfo['value']]];
 if (!empty($_GET['qid'])) {
