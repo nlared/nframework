@@ -1097,7 +1097,7 @@ js,
             ($this->onChange ? ' onChange="' . $this->onChange . '"' : '') .
             (!$this->datafilter ? ' data-filter="false"' : '') .
             ($this->addclass ? ' class="' . $this->addclass . '"' : '') .
-            ' data-filter="true" data-filter-placeholder="' . $this->placeholder . '">' . $result . '</select>';
+            'autocomplete="off" data-filter="true" data-filter-placeholder="' . $this->placeholder . '">' . $result . '</select>';
     }
 
     public function is_valid($newval)
