@@ -1038,7 +1038,7 @@ class Select extends baseOptions
             $nframework->jss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js";
 
             $this->addclass = ($this->addclass ? $this->addclass . ' ' : '') . ' tomselect';
-            $this->role = 'tomselect';
+            //$this->role = 'tomselect';
 
             if ($this->ajax->load != '') {
                 $load = $this->ajax->load;
