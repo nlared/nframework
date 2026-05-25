@@ -1053,7 +1053,7 @@ class Select extends baseOptions
                     }).catch(()=>{
                         callback();
                     });
-                };
+                }
 js;
             }
 
