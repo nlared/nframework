@@ -80,6 +80,7 @@ if ($_POST['op']=='Guardar') {
 <div class="container p-5">
 	<div class=" p-3"><h4>ACTUALIZACIÓN DE DATOS DE EMPLEADOS PARA AUDITORIAS</h4></div>
 	<div class="bg-white p-3">
+	<?=secureform()?>ite p-3">
 	<?=secureform()?>
 		<div class="grid">
 			<div class="row">
