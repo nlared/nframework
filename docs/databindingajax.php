@@ -76,11 +76,9 @@ if ($nframework->isAjax()) {
 	$nframework->usecommon = true;
 ?>
 
-	<div class="container p-5">
-		<div class="p-3 mb-3 ">
-			<h4>Ajax Databinding</h4>
-		</div>
-		<div class="p-3">
+	<div class="container">
+		<div class="box shadow-large">
+			<div class="box-title">Ajax Databinding</div>
 			<?= secureform() ?>
 			<div class="grid">
 				<div class="row">
@@ -123,8 +121,6 @@ if ($nframework->isAjax()) {
 				</div>
 			</div>
 			</form>
-
-
 			<pre class="stay-on"><code class="language-plaintext">
 <?= tocode(__file__) ?>
 </code></pre>

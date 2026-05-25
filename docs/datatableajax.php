@@ -65,14 +65,15 @@ if ($nframework->isAjax()) {
 	
 	");
 ?>
-<div class="container p-5">
-	<div class=" p-5"><h2>Ajax Datatable</h2></div>
-	<div class="p-5">
-		<?=$datatable;?>
+	<div class="container p-5">
+		<div class="box shadow-large">
+			<div class="box-title">Ajax Datatable</div>
+			<?= $datatable; ?>
+		</div>
 	</div>
-</div>
-<div class="container p-5">
-	<pre class="stay-on"><code class="html">
-<?=tocode(__file__) ?>
-</code></pre></div>
-<?}?>
+	<div class="container p-5">
+		<pre class="stay-on"><code class="html">
+<?= tocode(__file__) ?>
+</code></pre>
+	</div>
+<? } ?>
