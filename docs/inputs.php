@@ -127,7 +127,13 @@ $codes=[
 		'name'=>'select2',
 		'multiple'=>true,
 		'options'=>[''=>'Select....','1'=>'Option 1','2'=>'Option 2']]);",
+    ],
+    [
+        'title'=>'Select ajax',
+        'code'=>"new select(['name'=>'select3','caption'=>'Select ajax','ajax'=>['url'=>'ajax.php','data'=>['type'=>'select']]]);",
     ],/*
+
+   
     [
         'title'=>'html',
         'code'=>"new inputrte(['name'=>'html']);"

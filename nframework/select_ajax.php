@@ -15,6 +15,9 @@ if (empty($_GET['qid'])) {
     foreach ($datainfo['columns'] as $cno => $co) {
         $matchs[][$co] = new MongoDB\BSON\Regex($_GET['q'], "i");
     }
+    foreach ($datainfo['args'] as $arg) {
+        $matchs[][$arg] = $_GET[$arg];
+    }
     $pipeline[] = ['$match' => ['$or' => $matchs]];
 } else {
     $pipeline = [];

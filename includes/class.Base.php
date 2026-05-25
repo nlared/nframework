@@ -957,6 +957,8 @@ class SelectAjaxOptions
     public $fields = [];
     public $label;
     public $value;
+    public $args = [];
+    public $load;
 }
 class Select extends baseOptions
 {
@@ -1038,7 +1040,22 @@ class Select extends baseOptions
             $_SESSION['selectajax'][$this->id] = $this->ajax;
             addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
 
-
+            if (!empty($this->ajax->load)) {
+                $load = $this->ajax->load;
+            } else {
+                $load = <<<js
+                function($query, $callback){
+                    if(!query.length)return callback();
+                    fetch('/nframework/select_ajax.php?id={$this->id}&q='+encodeURIComponent(query))
+                    .then(res=>res.json())
+                    .then(json=>{
+                        callback(json);
+                    }).catch(()=>{
+                        callback();
+                    });
+                };
+js;
+            }
 
             $javas->addjs(
                 <<<js
@@ -1046,16 +1063,8 @@ class Select extends baseOptions
 		valueField:'value',
 		labelField:'label',
 		searchField:'label',
-		load:function(query,callback){
-			if(!query.length)return callback();
-			fetch('/nframework/select_ajax.php?id={$this->id}&q='+encodeURIComponent(query))
-			.then(res=>res.json())
-			.then(json=>{
-				callback(json);
-			}).catch(()=>{
-				callback();
-			});
-		}
+        args:{$this->ajax->args},
+		load:{$load}
 	});
 js
             );
