@@ -148,7 +148,7 @@ class Table
 
         $json = [
             'language' => $nframework->languages[$nframework->lang]['datatables'],
-            'destroy' => true,
+            'destroy' => true,osorchoa@outlook.com
             'scrollX' => $this->scrollX,
             'responsive' => $this->responsive,
             'lengthMenu' => $this->lengthMenu,
