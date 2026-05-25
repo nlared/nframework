@@ -20,7 +20,7 @@ if (empty($_GET['qid'])) {
     $pipeline = [];
 }
 $filter = [];
-foreach ($datainfo['args'] as $arg) {
+foreach ($datainfo['args'] as $noarg => $arg) {
     $filter[$arg] = $_GET[$arg];
 }
 
