@@ -1041,7 +1041,7 @@ class Select extends baseOptions
 
             if ($this->ajax->load != '') {
                 $load = $this->ajax->load;
-            } else {,
+            } else {
                 $load = <<<js
                 function(query, callback){
                     if(!query.length)return callback();
