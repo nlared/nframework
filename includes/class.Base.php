@@ -1020,7 +1020,7 @@ class Select extends baseOptions
     //if (!is_array($this->value) && get_class($this->value)!='MongoDB\\Model\\BSONArray')$this->value=[];
     foreach ($this->options as $value => $text) {
         $result.='<option value="' . $value . '"' .(in_array($value, $this->value) ? ' selected>' : '>') . $text . '</option>';
-    }
+    }&c_Estado=COA,
 } else {
     foreach ($this->options as $value => $text) {
         $result.='<option value="' . $value . '"' . ($value == $this->value ? ' selected>' : '>') . $text . '</option>';
@@ -1041,7 +1041,7 @@ class Select extends baseOptions
 
             if ($this->ajax->load != '') {
                 $load = $this->ajax->load;
-            } else {
+            } else {&c_Estado=COA,
                 $load = <<<js
                 function(query, callback){
                     if(!query.length)return callback();
