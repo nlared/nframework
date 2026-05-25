@@ -1,5 +1,5 @@
 <?php
-require_once '../common2.php';
+require_once 'common.php';
 
 
 $codes=[

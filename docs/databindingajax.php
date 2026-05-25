@@ -4,7 +4,7 @@ if (empty($_GET['_id'])) {
 	header('Location: ?_id=' . $newid);
 	exit();
 }
-require '../common2.php';
+require 'common.php';
 $dataset = new dataset(
 	[
 		'collection' => $m->{$config['sitedb']}->exampledata,

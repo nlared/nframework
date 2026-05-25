@@ -1,5 +1,5 @@
 <?
-require '../common2.php';
+require 'common.php';
 	$dialog=new AjaxDialog(['url'=>'/robots.txt']);
 	$nframework->usecommon=true;
 ?>

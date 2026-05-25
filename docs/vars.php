@@ -1,5 +1,5 @@
 <?php
-require_once '../linkstree.php';
+require_once 'common.php';
 ?>
 <div class="container-fluid">
 
