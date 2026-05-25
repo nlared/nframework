@@ -1,5 +1,5 @@
 <?php
-require_once '../common2.php';
+require 'common2.php';
 ?>
 <div class="container">
 	toMongoId
