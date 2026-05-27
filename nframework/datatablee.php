@@ -1,6 +1,6 @@
 <?
 require 'include.php';
-
+ini_set('memory_limit', '4196M'); // 4g
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
