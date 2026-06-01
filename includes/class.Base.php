@@ -1486,6 +1486,7 @@ class inputFiles extends BaseFileInput
                     {$this->getCaptureAttr()}
                     {$this->getDropAttr()}
                     {$this->getAcceptAttr()}
+                    multiple
                     data-sequential-uploads="true" 
                     placeholder="{$lng['Drag files here to upload']}"
                     data-drop-icon="{$this->dropIcon}"
