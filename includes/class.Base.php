@@ -506,7 +506,7 @@ class inputSpinner extends baseInput
             '<input type="text" data-role="spinner" id="' . $this->id .
             '" name="' . $this->name .
             '"' . $this->writetags() .
-             $this->data_validate() . ' value="' . $this->value . '"' .
+            $this->data_validate() . ' value="' . $this->value . '"' .
             ($this->datasize ? ' data-size="' . $this->datasize . '"' : '') .
             ($this->required ? ' required="required"' : '') .
             ($this->readonly ? ' readonly="readonly"' : '') .
