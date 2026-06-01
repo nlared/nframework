@@ -622,6 +622,7 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
             'file' => $errfile,
             'number' => $errline,
             'desc' => $errstr,
+            'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
         ];
 
         return false;
