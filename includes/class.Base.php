@@ -178,7 +178,6 @@ class baseInput
                         $current = $this->default; // Retorna null si la clave no existe
                     }
                 }
-
                 $this->value = $current;
             } else {
 
