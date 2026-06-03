@@ -29,17 +29,19 @@ class Javas
                   format:\'Y-m-d H:i\',mask:false,lang:\'es\'
               });*/
 
-			$js = '
-    		
-    		var nbacklink="/";
+			$javasonce = implode("\r\n", array_reverse($nframework->javasonce));
+
+			$js = <<<JS
+	    		
+	    		var nbacklink="/";
 			var datatables=[];
 var tomselects=[];
 var ajaxdialogs=[];
-' . $this->js['general'] . '
+{$this->js['general']}
 
 
 function nfWindowResize() {
-' . $this->js['resize'] . '
+{$this->js['resize']}
 };
 var nfWindowResizeTimer;
 $(window).resize(function() {
@@ -242,17 +244,22 @@ $(document).ready(function() {
 		var op = $(this).closest("form").find("input[name=\"op\"]");
 		op.val($(this).val());
 	});
-	 ' . implode("\r\n", $nframework->javasonce) . $this->js['initializecomponent'] . '
-	 ' . $this->js['ready'] . '
+	 {$javasonce}
+	 {$this->js['initializecomponent']}
+	 {$this->js['ready']}
 	 nfWindowResize();
 });
-';
+JS;
 
 			/*
 
             jQuery.datetimepicker.setLocale(\''.$nframework->langshort.'\');
                $(\'.datetimepicker2date\').datetimepicker({
               timepicker:false,
+function onFormError(form, errors) {
+    console.log("Form has errors:", errors);
+}
+
               format:\'Y-m-d\',
                i18n:{
               '.$nframework->langshort.':{
