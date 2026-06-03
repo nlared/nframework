@@ -32,20 +32,17 @@ class Javas
 
 			$javasonce = implode("\r\n", array_reverse($nframework->javasonce));
 
-			$errorCaptureText = json_encode($lng['error_capture'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-			$patternText = json_encode($lng['pattern'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-			$requiredText = json_encode($lng['required'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 			$js = <<<JS
 	    		
 	    		var nbacklink="/";
 			var datatables=[];
 var tomselects=[];
 var ajaxdialogs=[];
-{$generalJs}
+{$this->js['general']}
 
 
 function nfWindowResize() {
-{$resizeJs}
+{$this->js['resize']}
 };
 var nfWindowResizeTimer;
 $(window).resize(function() {
@@ -90,62 +87,38 @@ if (darkContainer) {
 }
 
 
-function nfonFormError(log) {
-	const items = Array.isArray(log) ? log : Object.values(log || {});
-	const messages = [];
-
-	$.each(items, function() {
-		const row = this || {};
-		const input = row.input || row.element || row;
-		let label = row.name || '';
-
-		if (input && typeof input.getAttribute === 'function') {
-			const labelId = input.getAttribute('labelid');
-			if (labelId) {
-				label = $('#'+labelId).text() || label;
-			}
-
-			if (!label && input.id) {
-				label = $('label[for="' + input.id + '"]').text() || label;
-			}
-
-			if (!label) {
-				label = $(input).data('label') || input.name || input.id || '';
-			}
+function nfonFormError(errors) {
+    //console.log("Form has errors:", errors);	
+	var msg='';	
+	var labels={};
+	
+	$.each(errors, function(){				
+		console.log(this);		
+		var minput=this.input;
+		console.log(minput);
+		if (minput.hasAttribute("labelid")){
+			var label=$('"#'+minput.getAttribute('labelid')+'"').text();
+		}else{
+			var label=$('label[for=\''+minput.id+'\']').text();
 		}
 
-		let msg = label ? label + '<br>' : '';
-		const rowErrors = Array.isArray(row.errors) ? row.errors : [];
-
-		$.each(rowErrors, function() {
-			switch (this) {
-				case 'pattern': {
-					const patternRule = Array.isArray(row.funcs)
-						? row.funcs.find(function(rule) {
-							return typeof rule === 'string' && rule.indexOf('pattern=') === 0;
-						})
-						: '';
-					msg += '-' + {$patternText} + (patternRule ? ' ' + patternRule.substring(8) : '') + '<br>';
+		msg=label  +'<br>';
+		for (const [i, value] of this.errors.entries()){
+			console.log(value);			
+			switch(value){
+				case 'pattern':
+					msg+='-{$lng['pattern']} ' + minput.pattern + '<br>';
 					break;
-				}
 				case 'required':
-					msg += '-' + {$requiredText} + '<br>';
-					break;
-				default:
-					msg += '- ' + this + '<br>';
+					msg+='-{$lng['required']}<br>';
 					break;
 			}
-		});
-
-		if (msg) {
-			messages.push(msg);
-		}
-	});
-
-	if (messages.length > 0) {
-		toast({$errorCaptureText} + ' <br>' + messages.join('<br>'), null, 5000);
+		};
+		labels[label]=msg;		
+	});	
+	msg='{$lng['error_capture']} <br>' + Object.values(labels).join("<br>");
+	toast(msg,null,5000);
 }
-
 function nfHide(element){
 	element.hide();
 	if (element.hasAttribute("required")){
