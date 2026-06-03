@@ -88,16 +88,17 @@ if (darkContainer) {
 
 
 function nfonFormError(form, errors) {
-    console.log("Form has errors:", errors);	
+    //console.log("Form has errors:", errors);	
 	var msg='';	
 	var labels={};
-	var label='';
-	$.each(form, function(){		
+	
+	$.each(form, function(){				
 		var minput=this.input;
+		console.log(minput);
 		if (minput.hasAttribute("labelid")){
-			label=$('"#'+minput.getAttribute('labelid')+'"').text();
+			var label=$('"#'+minput.getAttribute('labelid')+'"').text();
 		}else{
-			label=$('label[for=\''+minput.id+'\']').text();
+			var label=$('label[for=\''+minput.id+'\']').text();
 		}
 
 		msg=label  +'<br>';
