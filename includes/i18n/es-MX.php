@@ -153,7 +153,6 @@ $nframework->languages['es-MX'] = [
     'noindex' => 'No indexar',
     'nofollow' => 'No seguir',
     'background' => 'Fondo',
-
     'siteconfig' => 'Configuración del sitio',
     'logo' => 'Logo',
     'webmasteremail' => 'Webmaster Correo electrónico',
