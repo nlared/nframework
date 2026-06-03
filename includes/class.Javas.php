@@ -90,15 +90,17 @@ if (darkContainer) {
 function nfonFormError(form, errors) {
     console.log("Form has errors:", errors);	
 	var msg=' {$lng['error_capture']} <br>';		
-	$.each(form, function(){		
-		console.log(this);
+	let labelsids={};
+	$.each(form, function(){				
 		var minput=this.input;
 		var label=$('label[for=\''+minput.id+'\']').text();
+		var labelid=minput.id;
 		if (minput.hasAttribute("labelid")){
 			label=$('label[id=\''+minput.getAttribute('labelid')+'\']').text();
+			labelid=minput.getAttribute('labelid');
 		}
 		console.log(label);
-		msg+=label  +'<br>';
+		msg=label  +'<br>';
 		for (const [i, value] of this.errors.entries()){
 			console.log(value);			
 			switch(value){
@@ -110,8 +112,11 @@ function nfonFormError(form, errors) {
 					break;
 			}
 		};
-		msg+='<br>';
+		if(!labelsids.hasOwnProperty(labelid)){			
+			labelsids[labelid]=msg;
+		}
 	});	
+	msg=Object.values(labelsids).join("<br>");
 	toast(msg,null,5000);
 }
 function nfHide(element){
