@@ -1716,6 +1716,8 @@ class dataset
     public $position = ''; // se va
     public $fieldprefix; // se va
     public $historic = false;
+    public $allUpper = false;
+    public $allLower = false;
     private $nfprotected;
     public function addElement(&$element)
     {
