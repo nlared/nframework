@@ -87,22 +87,17 @@ if (darkContainer) {
 }
 
 
-function nfonFormError(errors) {
-    //console.log("Form has errors:", errors);	
-	var msg='';	
-	var labels={};
-	
-	$.each(errors, function(){				
-		console.log(this);		
+function nfonFormError(form, errors) {
+    console.log("Form has errors:", errors);	
+	var msg=' {$lng[error_capture]} <br>';		
+	$.each(form, function(){		
 		var minput=this.input;
-		console.log(minput);
+		var label=$('label[for=\''+minput.id+'\']').text();
 		if (minput.hasAttribute("labelid")){
-			var label=$('"#'+minput.getAttribute('labelid')+'"').text();
-		}else{
-			var label=$('label[for=\''+minput.id+'\']').text();
+			label=$('label[id=\''+minput.getAttribute('labelid')+'\']').text();
 		}
-
-		msg=label  +'<br>';
+		console.log(label);
+		msg+=label  +'<br>';
 		for (const [i, value] of this.errors.entries()){
 			console.log(value);			
 			switch(value){
@@ -114,9 +109,8 @@ function nfonFormError(errors) {
 					break;
 			}
 		};
-		//labels[label]=msg;		
+		msg+='<br>';
 	});	
-	msg='{$lng['error_capture']} <br>' + Object.values(labels).join("<br>");
 	toast(msg,null,5000);
 }
 function nfHide(element){
