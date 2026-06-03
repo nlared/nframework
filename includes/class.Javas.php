@@ -96,7 +96,7 @@ function nfonFormError(form, errors) {
 		if (minput.hasAttribute("labelforvalidate")){
 			label=$('label[id=\''+$(minput).attr('labelforvalidate')+'\']').text();
 		}
-		msg+=label  +\'<br>\';
+		msg+=label  +'<br>';
 		for (const [i, value] of this.errors.entries()){
 			console.log(value);			
 			switch(value){
