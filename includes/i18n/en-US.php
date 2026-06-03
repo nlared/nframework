@@ -257,5 +257,8 @@ $nframework->languages['en-US'] = [
     'signature_empty' => 'Please sign before sending.',
     'upload_success' => 'Upload successful.',
     'error' => 'Error',
-    
+    'required' => 'This field is required',
+    'pattern' => 'Invalid format',
+    'error_validation' => 'Validation error',
+
 ];  // End of translations

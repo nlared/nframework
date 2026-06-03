@@ -280,4 +280,7 @@ $nframework->languages['es-MX'] = [
     'signature_empty' => 'Por favor firma antes de enviar.',
     'upload_success' => 'Carga exitosa.',
     'error' => 'Error',
+    'required' => 'Este campo es obligatorio',
+    'pattern' => 'Formato inválido',
+    'error_validation' => 'Error de validación',
 ];
