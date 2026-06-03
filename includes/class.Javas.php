@@ -22,6 +22,7 @@ class Javas
 	public function __toString(): string
 	{
 		global $nframework, $csrftoken;
+		$lng = $nframework->language;
 		if (! $this->flushed) {
 			$this->flushed = true;
 
@@ -86,6 +87,45 @@ if (darkContainer) {
 }
 
 
+function nfonFormError(form, errors) {
+    console.log("Form has errors:", errors);	
+	var msg=' {$lng['error_capture']} <br>';	
+	$.each(form, function(){
+		var label=$('label[for=\'+this.input.id+\']').text();
+		var minput=this.input;
+		if (minput.hasAttribute("labelforvalidate")){
+			label=$('label[id=\''+$(minput).attr('labelforvalidate')+'\']').text();
+		}
+		msg+=label  +\'<br>\';
+		for (const [i, value] of this.errors.entries()){
+			console.log(value);			
+			switch(value){
+				case 'pattern':
+					msg+='-{$lng['pattern']} ' + minput.pattern + '<br>';
+					break;
+				case 'required':
+					msg+='-{$lng['required']}<br>';
+					break;
+			}
+		};
+		msg+='<br>';
+	});	
+	toast(msg,null,5000);
+}
+function nfHide(element){
+	element.hide();
+	if (element.hasAttribute("required")){
+		element.removeAttribute("required");	
+		metro.validation.reset(element);
+	}
+}
+function nfShow(element){
+	element.show();
+	if (element.hasAttribute("data-required")){
+		element.setAttribute("required",true);	
+
+	}
+}
 
 function syscalls() {
     $.ajax({
