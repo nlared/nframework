@@ -918,7 +918,7 @@ class inputRadios extends baseOptions
         $contas = 0;
         $result = '';
         foreach ($this->options as $value => $text) {
-            $result .= '<input type="radio" labelforvalidate="' . $this->id . '" name="' . $this->name . '" id="' . $this->id . '_' . $contas . '" value="' . $value
+            $result .= '<input type="radio" name="' . $this->name . '" id="' . $this->id . '_' . $contas . '" value="' . $value
                 . '" data-role="radio" data-caption="' . $text . '"' .
                 ' labelid="' . $this->id . '" ' . $this->data_validate() .
                 ($this->onchange ? ' data-on-change="' . $this->onchange . '"' : '') .
@@ -1230,7 +1230,7 @@ class inputCheckBoxs extends Select
             $this->type = 'checkbox';
         }
         foreach ($this->options as $value => $text) {
-            $result .= ($this->horizontal ? '<br>' : '') . '<input labelforvalidate="' . $this->id . '" type="checkbox" data-role="checkbox" id="' . $this->id . '_' . $value . '" name="' .
+            $result .= ($this->horizontal ? '<br>' : '') . '<input labelid="' . $this->id . '" type="checkbox" data-role="checkbox" id="' . $this->id . '_' . $value . '" name="' .
                 $this->name . "[$value]\"" .
                 ($tempcheck[$value] === true ? ' checked' : '') .
                 " data-caption=\"$text\" data-caption-position=\"" . $this->captionposition . '">' .
