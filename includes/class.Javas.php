@@ -91,6 +91,7 @@ function nfonFormError(form, errors) {
     console.log("Form has errors:", errors);	
 	var msg=' {$lng['error_capture']} <br>';		
 	$.each(form, function(){		
+		console.log(this);
 		var minput=this.input;
 		var label=$('label[for=\''+minput.id+'\']').text();
 		if (minput.hasAttribute("labelid")){
