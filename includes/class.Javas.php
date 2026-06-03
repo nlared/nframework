@@ -51,26 +51,26 @@ $(window).resize(function() {
 
 
 const lightThemeVars = {
-    \'--button-background\': \'##ebebeb\',
-    \'--button-background-hover\': \'#dadada\',
-    \'--button-color\': \'#ebebeb\',
-    \'--button-border-color\': \'#191919\',
+    '--button-background': '##ebebeb',
+    '--button-background-hover': '#dadada',
+    '--button-color': '#ebebeb',
+    '--button-border-color': '#191919',
     
-    \'--logo-background\': \'#f6f6f6\',
-    \'--logo-color\': \'#292826\',
-    \'accent-color\': \'292826\',
-    \'caret-color\': \'292826\'
+    '--logo-background': '#f6f6f6',
+    '--logo-color': '#292826',
+    'accent-color': '292826',
+    'caret-color': '292826'
 }
 //.dark-side {
 const darkThemeVars = {
-    \'--button-background\': \'#2b2d30\',
-    \'--button-background-hover\': \'#333439\',
-    \'--button-color\': \'#f3fcff\',
-    \'--button-border-color\': \'#4e5157\',
-    \'--logo-background\': \'#2c2d30\',
-    \'--logo-color\': \'#faf5f5\',
-    \'accent-color\': \'292826\',
-    \'caret-color\': \'292826\'
+    '--button-background': '#2b2d30',
+    '--button-background-hover': '#333439',
+    '--button-color': '#f3fcff',
+    '--button-border-color': '#4e5157',
+    '--logo-background': '#2c2d30',
+    '--logo-color': '#faf5f5',
+    'accent-color': '292826',
+    'caret-color': '292826'
 }
 
 Object.entries(lightThemeVars).forEach(([key, value]) => {
@@ -78,7 +78,7 @@ Object.entries(lightThemeVars).forEach(([key, value]) => {
 });
 
 // Apply to .dark-side (dark theme container)
-const darkContainer = document.querySelector(\'.dark-side\');
+const darkContainer = document.querySelector('.dark-side');
 if (darkContainer) {
   Object.entries(darkThemeVars).forEach(([key, value]) => {
 	//darkContainer.style.setProperty(key, value);
@@ -93,9 +93,9 @@ function syscalls() {
       type: "GET", // Type of request (GET or POST)
       success: function(result){
 	      console.log(result);
-    	if (result.hasOwnProperty("pids")){
-        	console.log("pids");
-        	$(".bg_process").each(function() {
+	    if (result.hasOwnProperty("pids")){
+	        console.log("pids");
+	        $(".bg_process").each(function() {
 				var pid=$(this).attr("id").substring(10);
 				if (!result.pids.hasOwnProperty(pid)){
 					var icon = $(this).find("span");
@@ -103,13 +103,13 @@ function syscalls() {
 					icon.addClass("mif-play");
 				}
 			});	
-    	}else{
+	    }else{
 			$(".bg_process").each(function() {
 				var icon = $(this).find("span");
 				icon.removeClass("mif-stop");
 				icon.addClass("mif-play");
 			});
-    	}
+	    }
       },
       error: function(xhr, status, error){
         console.error("Error: " + error); // Handle any errors
@@ -120,31 +120,31 @@ function syscalls() {
 
 
 $(window).scroll(function(){
-' . $this->js['scroll'] . '
+{$this->js['scroll']}
 });
 
 
 function speak(text,callback){
-  	if (\'speechSynthesis\' in window) {
+	  if ('speechSynthesis' in window) {
 	  	var u = new SpeechSynthesisUtterance();
-	    u.text = text;
-	    u.lang = \'es-MX\';
-	    u.onend = function () {
-	        if (callback) {
-	            callback();
-	        }
-	    };
-	    u.onerror = function (e) {
-	        if (callback) {
-	            callback(e);
-	        }
-	    };
-	    speechSynthesis.speak(u);
-  	} else {
-    	console.log("Oops! Your browser does not support HTML SpeechSynthesis.")
-  	}
+    u.text = text;
+    u.lang = 'es-MX';
+    u.onend = function () {
+        if (callback) {
+            callback();
+        }
+    };
+    u.onerror = function (e) {
+        if (callback) {
+            callback(e);
+        }
+    };
+    speechSynthesis.speak(u);
+	  } else {
+	    console.log("Oops! Your browser does not support HTML SpeechSynthesis.")
+	  }
 }
-const dialogLoading = document.querySelector("#dialogLoading");
+const dialogLoading = document.querySeleector("#dialogLoading");
 //const showButton = document.querySelector("dialog + button");
 
 $("#dialogCancel").on("click", function(){
@@ -155,42 +155,42 @@ $(document).ready(function() {
 
 
 	$.extend(jQuery.expr.pseudos, {
-	  \'containsi\': function(elem, i, match, array)
+	  'containsi': function(elem, i, match, array)
 	  {
-	    return (elem.textContent || elem.innerText || \'\').toLowerCase()
+	    return (elem.textContent || elem.innerText || '').toLowerCase()
 	    .indexOf((match[3] || "").toLowerCase()) >= 0;
 	  }
 	});
     window.addEventListener("keyup", function(e){
-    	if(e.keyCode == 27)
-    	window.location.href=nbacklink;
+	    if(e.keyCode == 27)
+	    window.location.href=nbacklink;
     }, false);
     
-    $("input[data-role=\'spiner\']").spinner();
-    $("div[data-role-aux=\'file-progress-bar\']").hide();
-    $("input[data-sequential-uploads=\'true\']").each(function( index ) {
+    $("input[data-role='spiner']").spinner();
+    $("div[data-role-aux='file-progress-bar']").hide();
+    $("input[data-sequential-uploads='true']").each(function( index ) {
 		var mid=$(this).attr("id");
 	    $.ajax({
-			url: \'/nframework/uploadfile.php\',
+			url: '/nframework/uploadfile.php',
 			method:"POST",
 			data: "mid="+mid, 
-			dataType: \'json\',
+			dataType: 'json',
 			success: function(data) {
 				nfFileMakeTable(mid, data);
 				
 			}
 		});
     });
-    $("input[uppercase=\'true\']").each(function(index){
+    $("input[uppercase='true']").each(function(index){
       this.addEventListener("keypress", forceKeyPressUppercase, false);
     });
-     $("input[lowercase=\'true\']").each(function(index){
+     $("input[lowercase='true']").each(function(index){
       this.addEventListener("keypress", forceKeyPressLowercase, false);
     });
   
 	
-	$(\'.nfinfoicon\').click(function() {
-	 var content=$(this).attr(\'content\');
+	$('.nfinfoicon').click(function() {
+	 var content=$(this).attr('content');
 	  Metro.infobox.create(content);
 	});
 	
@@ -205,7 +205,7 @@ $(document).ready(function() {
 			type: "post",
 			url: url,
 			beforeSend: function(xhr) { 
-    		  xhr.setRequestHeader("X-CSRF-Token", "' . $csrftoken . '"); 
+		  	  xhr.setRequestHeader("X-CSRF-Token", "{$csrftoken}"); 
 			}, 
 			data: form.serialize(), // serializes the forms elements.
 			success: function(data){
