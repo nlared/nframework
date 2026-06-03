@@ -94,16 +94,18 @@ function nfonFormError(form, errors) {
 	
 	$.each(form, function(){				
 		var minput=this.input;
-		
+		var label="";
 		if (minput.hasAttribute("labelid")){
-			var label=$('"#'+minput.getAttribute('labelid')+'"').text();
+			label=$('"#'+minput.getAttribute('labelid')+'"').text();
 		}else{
-			var label=$('label[for=\''+minput.id+'\']').text();
+			label=$('label[for=\''+minput.id+'\']').text();
+		}
+		if (label==""){
+			label=minput.name;
 		}
 		console.log(minput);
 		console.log(label);
 		msg=label  +'<br>';
-
 
 		for (const [i, value] of this.errors.entries()){
 			console.log(value);			
