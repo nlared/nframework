@@ -95,13 +95,13 @@ function nfonFormError(form, errors) {
 	$.each(form, function(){				
 		var minput=this.input;
 		let label="";		
-		if (minput.hasAttribute("labelid")){
+		if (this.hasAttribute("labelid")){
 			label=$('"#'+minput.getAttribute('labelid')+'"').text();
 		}else{
-			label = $('label[for="' + minput.id + '"]').text();
+			label = $('label[for="' + this.id + '"]').text();
 		}
 		if (label==""){
-			label=minput.name;
+			label=this.name;
 		}
 		console.log(minput);
 		console.log(label);
@@ -113,7 +113,7 @@ function nfonFormError(form, errors) {
 			console.log(value);			
 			switch(value){
 				case 'pattern':
-					msg+='-{$lng['pattern']} ' + minput.pattern + '<br>';
+					msg+='-{$lng['pattern']} ' + this.pattern + '<br>';
 					break;
 				case 'required':
 					msg+='-{$lng['required']}<br>';
