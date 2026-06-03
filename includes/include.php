@@ -954,29 +954,7 @@ function secureform(
 
     return '<form method="POST" id="' . $id . '" data-role="validator" action="' . $action . '"' .
         $addEnctype . ' data-interactive-check="true" 
-data-on-error-form="
-var log = arguments[0];
-var msg=\'' . $lng['error_capture'] . '<br>\';
-console.log(log);
-$.each(log, function(){
-	var label=$(\'label[for=\\\'\'+this.input.id+\'\\\']\').text();
-	var minput=this.input;
-	msg+=label  +\'<br>\';
-	for (const [i, value] of this.errors.entries()){
-		console.log(value);
-		switch(value){
-			case \'pattern\':
-				msg+=\'-' . $lng['pattern'] . '\'+minput.pattern+\'<br>\';
-				break;
-			case \'required\':
-				msg+=\'-' . $lng['required'] . '<br>\';
-				break;
-		}
-	};
-	msg+=\'<br>\';
-});
-toast(msg,null,5000);
-"' . ($onbeforesubmit == '' ? '' : ' data-on-before-submit="' . $onbeforesubmit . '"') .
+        data-on-error-form="nfonFormError"' . ($onbeforesubmit == '' ? '' : ' data-on-before-submit="' . $onbeforesubmit . '"') .
         ($onvalidateform == '' ? '' : ' data-on-validate-form="' . $onvalidateform . '"') . ' class="' . $class . '">
 <input type="hidden" name="op" value="">
 <input type="hidden" name="CSRFToken" value="' . csrfToken($action) . '">';
