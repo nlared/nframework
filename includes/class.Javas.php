@@ -23,11 +23,6 @@ class Javas
 	{
 		global $nframework, $csrftoken;
 		$lng = $nframework->language;
-		$generalJs = $this->js['general'];
-		$resizeJs = $this->js['resize'];
-		$scrollJs = $this->js['scroll'];
-		$initializeComponentJs = $this->js['initializecomponent'];
-		$readyJs = $this->js['ready'];
 		if (! $this->flushed) {
 			$this->flushed = true;
 
@@ -199,7 +194,7 @@ function syscalls() {
 
 
 $(window).scroll(function(){
-{$scrollJs}
+{$this->js['scroll']}
 });
 
 
@@ -324,8 +319,8 @@ $(document).ready(function() {
 		op.val($(this).val());
 	});
 	 {$javasonce}
-	 {$initializeComponentJs}
-	 {$readyJs}
+	 {$this->js['initializecomponent']}
+	 {$this->js['ready']}
 	 nfWindowResize();
 });
 JS;
