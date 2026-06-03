@@ -116,7 +116,7 @@ function nfonFormError(form, errors) {
 					break;
 			}
 		};
-		labels[label]=msg;		
+		labels['"' + label + '"']=msg;		
 	});	
 	msg='{$lng['error_capture']} <br>' + Object.values(labels).join("<br>");
 	toast(msg,null,5000);
