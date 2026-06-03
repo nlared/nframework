@@ -152,6 +152,13 @@ class baseInput
                 $this->name = $this->field;
             }
             $this->name = $this->dataset->nameprefix . '[' . $this->name . ']';
+
+            if ($this->dataset->allUppercase && property_exists($this, 'uppercase')) {
+                $this->uppercase = true;
+            }
+            if ($this->dataset->allLowercase && property_exists($this, 'lowercase')) {
+                $this->lowercase = true;
+            }
             if (strpos($this->field, '.') !== false) {
                 $data = $this->dataset->info;
                 $keys = explode('.', str_replace(['$', '[', ']'], [$this->dataset->position, '.', ''], $this->field));
