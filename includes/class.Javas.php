@@ -37,17 +37,20 @@ class Javas
 
 			$javasonce = implode("\r\n", array_reverse($nframework->javasonce));
 
+			$errorCaptureText = json_encode($lng['error_capture'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+			$patternText = json_encode($lng['pattern'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+			$requiredText = json_encode($lng['required'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 			$js = <<<JS
 	    		
 	    		var nbacklink="/";
 			var datatables=[];
 var tomselects=[];
 var ajaxdialogs=[];
-{$this->js['general']}
+{$generalJs}
 
 
 function nfWindowResize() {
-{$this->js['resize']}
+{$resizeJs}
 };
 var nfWindowResizeTimer;
 $(window).resize(function() {
@@ -178,7 +181,7 @@ function syscalls() {
 
 
 $(window).scroll(function(){
-{$this->js['scroll']}
+{$scrollJs}
 });
 
 
@@ -303,8 +306,8 @@ $(document).ready(function() {
 		op.val($(this).val());
 	});
 	 {$javasonce}
-	 {$this->js['initializecomponent']}
-	 {$this->js['ready']}
+	 {$initializeComponentJs}
+	 {$readyJs}
 	 nfWindowResize();
 });
 JS;
