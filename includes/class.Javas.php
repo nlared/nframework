@@ -89,7 +89,7 @@ if (darkContainer) {
 
 function nfonFormError(form, errors) {
     console.log("Form has errors:", errors);	
-	var msg=' {$lng['error_capture']} <br>';		
+	var msg=' {$lng['error_validation']} <br>';		
 	let labelsids={};
 	$.each(form, function(){				
 		var minput=this.input;
