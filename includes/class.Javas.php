@@ -95,44 +95,62 @@ if (darkContainer) {
 }
 
 
-function nfonFormError(form, errors) {
-    //console.log("Form has errors:", errors);	
-	var msg='';	
-	var labels={};
-	
-	$.each(form, function(){				
-		var minput=this.input;
-		let label="";		
-		if (this.hasAttribute("labelid")){
-			label=$('"#'+minput.getAttribute('labelid')+'"').text();
-		}else{
-			label = $('label[for="' + this.id + '"]').text();
-		}
-		if (label==""){
-			label=this.name;
-		}
-		console.log(minput);
-		console.log(label);
-		console.log(this);
+function nfonFormError(log) {
+	const items = Array.isArray(log) ? log : Object.values(log || {});
+	const messages = [];
 
-		msg=label  +'<br>';
+	$.each(items, function() {
+		const row = this || {};
+		const input = row.input || row.element || row;
+		let label = row.name || '';
 
-		for (const [i, value] of this.errors.entries()){
-			console.log(value);			
-			switch(value){
-				case 'pattern':
-					msg+='-{$lng['pattern']} ' + this.pattern + '<br>';
+		if (input && typeof input.getAttribute === 'function') {
+			const labelId = input.getAttribute('labelid');
+			if (labelId) {
+				label = $('#'+labelId).text() || label;
+			}
+
+			if (!label && input.id) {
+				label = $('label[for="' + input.id + '"]').text() || label;
+			}
+
+			if (!label) {
+				label = $(input).data('label') || input.name || input.id || '';
+			}
+		}
+
+		let msg = label ? label + '<br>' : '';
+		const rowErrors = Array.isArray(row.errors) ? row.errors : [];
+
+		$.each(rowErrors, function() {
+			switch (this) {
+				case 'pattern': {
+					const patternRule = Array.isArray(row.funcs)
+						? row.funcs.find(function(rule) {
+							return typeof rule === 'string' && rule.indexOf('pattern=') === 0;
+						})
+						: '';
+					msg += '-' + {$patternText} + (patternRule ? ' ' + patternRule.substring(8) : '') + '<br>';
 					break;
+				}
 				case 'required':
-					msg+='-{$lng['required']}<br>';
+					msg += '-' + {$requiredText} + '<br>';
+					break;
+				default:
+					msg += '- ' + this + '<br>';
 					break;
 			}
-		};
-		labels[ label ]+=msg;		
-	});	
-	msg='{$lng['error_capture']} <br>' + Object.values(labels).join("<br>");
-	toast(msg,null,5000);
+		});
+
+		if (msg) {
+			messages.push(msg);
+		}
+	});
+
+	if (messages.length > 0) {
+		toast({$errorCaptureText} + ' <br>' + messages.join('<br>'), null, 5000);
 }
+
 function nfHide(element){
 	element.hide();
 	if (element.hasAttribute("required")){
