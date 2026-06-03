@@ -184,7 +184,7 @@ function speak(text,callback){
 	    console.log("Oops! Your browser does not support HTML SpeechSynthesis.")
 	  }
 }
-const dialogLoading = document.querySeleector("#dialogLoading");
+const dialogLoading = document.querySelector("#dialogLoading");
 //const showButton = document.querySelector("dialog + button");
 
 $("#dialogCancel").on("click", function(){
