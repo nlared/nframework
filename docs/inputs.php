@@ -84,53 +84,138 @@ $codes = [
 			'upload'=>true,
 			'caption'=>'inputmce',
         ]);",
-    
+
     ],
     [
-        'title'=>'Radios',
+        'title' => 'Radios',
     ],
     [
-        
-        'code'=>"new inputRadios(['name'=>'radio1','caption'=>'Simple radios', 'options'=>['1'=>'Option 1','2'=>'Option 2']]);",
-    
+
+        'code' => "new inputRadios(['name'=>'radio1','caption'=>'Simple radios', 'options'=>['1'=>'Option 1','2'=>'Option 2']]);",
+
     ],
-    
+
     [
-        'title'=>'Checkboxs',
-    ],
-    [
-        'code'=>"new inputCheckbox(['name'=>'checkbox1','caption'=>'Checkbox1']);",
-    
-    ],
-    
-    [
-        
-        'code'=>"new inputCheckboxs(['name'=>'checkboxArray1','caption'=>'Multiple Checkbox in array', 'options'=>['1'=>'Option 1','2'=>'Option 2']]);",
-    
-    ],
-    
-    [
-        'title'=>'Select',
-        'code'=>'',
+        'title' => 'Checkboxs',
     ],
     [
-        
-        'code'=>"new select([
+        'code' => "new inputCheckbox(['name'=>'checkbox1','caption'=>'Checkbox1']);",
+
+    ],
+
+    [
+
+        'code' => "new inputCheckboxs(['name'=>'checkboxArray1','caption'=>'Multiple Checkbox in array', 'options'=>['1'=>'Option 1','2'=>'Option 2']]);",
+
+    ],
+
+    [
+        'title' => 'Select',
+        'code' => '',
+    ],
+    [
+
+        'code' => "new select([
         'caption'=>'Simple',
 		'name'=>'select1',
 		'options'=>[''=>'Select....','1'=>'Option 1','2'=>'Option 2']]);",
     ],
-   
+
     [
-        'title'=>'Multiple selection',
-        'code'=>"new select([
+        'title' => 'Multiple selection',
+        'code' => "new select([
 		'name'=>'select2',
 		'multiple'=>true,
 		'options'=>[''=>'Select....','1'=>'Option 1','2'=>'Option 2']]);",
     ],
     [
-        'title'=>'Select ajax',
-        'code'=>"new select(['name'=>'select3','caption'=>'Select ajax','ajax'=>['url'=>'ajax.php','data'=>['type'=>'select']]]);",
+        'title' => 'Select ajax',
+        'code' => "new select(['name'=>'select3','caption'=>'Select ajax','ajax'=>['url'=>'ajax.php','data'=>['type'=>'select']]]);",
+    ],
+    [
+        'title' => 'InputText - mas propiedades',
+        'code' => '',
+    ],
+    [
+        'code' => "new inputText(['name'=>'inputext11','caption'=>'InputText email','type'=>'email','placeholder'=>'usuario@dominio.com','required'=>true]);",
+    ],
+    [
+        'code' => "new inputText(['name'=>'inputext12','caption'=>'InputText regex pattern','pattern'=>'^[A-Z]{3}-\\d{4}$','placeholder'=>'ABC-1234']);",
+    ],
+    [
+        'code' => "new inputText(['name'=>'inputext13','caption'=>'InputText lowercase + autotrim','lowercase'=>true,'autotrim'=>true,'value'=>'  TEXTO MIXTO  ']);",
+    ],
+    [
+        'code' => "new inputText(['name'=>'inputext14','caption'=>'InputText con validacion y titulo','validate'=>'required minlength=5','title'=>'Minimo 5 caracteres']);",
+    ],
+    [
+        'title' => 'Textarea',
+        'code' => '',
+    ],
+    [
+        'code' => "new textarea(['name'=>'textarea1','caption'=>'Textarea simple','placeholder'=>'Escribe aqui...']);",
+    ],
+    [
+        'code' => "new textarea(['name'=>'textarea2','caption'=>'Textarea uppercase + contador','uppercase'=>true,'charscounter'=>200,'charscountertemplate'=>'\$charsUsed/\$charsTotal']);",
+    ],
+    [
+        'title' => 'Fechas y tiempo',
+        'code' => '',
+    ],
+    [
+        'code' => "new inputDate(['name'=>'date3','caption'=>'InputDate con valor','value'=>'2026-06-03']);",
+    ],
+    [
+        'code' => "new inputTime(['name'=>'time2','caption'=>'InputTime con valor','value'=>'14:30']);",
+    ],
+    [
+        'code' => "new inputDateTime(['name'=>'datetime2','caption'=>'InputDateTime con prepend','prepend'=>'Programar','value'=>'2026-06-03T14:30']);",
+    ],
+    [
+        'title' => 'Controles visuales',
+        'code' => '',
+    ],
+    [
+        'code' => "new inputColor(['name'=>'color1','caption'=>'InputColor','value'=>'#ff8800']);",
+    ],
+    [
+        'code' => "new inputRating(['name'=>'rating1','caption'=>'InputRating','value'=>3,'data-values'=>'1,2,3,4,5']);",
+    ],
+    [
+        'code' => "new inputSpinner(['name'=>'spinner1','caption'=>'InputSpinner integer','value'=>10,'validate'=>'integer','datasize'=>'large']);",
+    ],
+    [
+        'title' => 'Checkboxs y radios - mas opciones',
+        'code' => '',
+    ],
+    [
+        'code' => "new inputCheckbox(['name'=>'checkbox2','caption'=>'Checkbox checked por defecto','value'=>true]);",
+    ],
+    [
+        'code' => "new inputCheckboxs(['name'=>'checkboxArray2','caption'=>'Checkboxs horizontal','horizontal'=>true,'options'=>['a'=>'Alpha','b'=>'Beta','c'=>'Gamma'],'value'=>['a'=>true,'c'=>true]]);",
+    ],
+    [
+        'code' => "new inputRadios(['name'=>'radio2','caption'=>'Radios con valor inicial','options'=>['low'=>'Low','medium'=>'Medium','high'=>'High'],'value'=>'medium']);",
+    ],
+    [
+        'title' => 'Select - mas propiedades',
+        'code' => '',
+    ],
+    [
+        'code' => "new select(['name'=>'select4','caption'=>'Select con grupos','options'=>['Frontend'=>['html'=>'HTML','css'=>'CSS'],'Backend'=>['php'=>'PHP','node'=>'Node.js']],'value'=>'php']);",
+    ],
+    [
+        'code' => "new select(['name'=>'select5','caption'=>'Select combobox','combobox'=>true,'canadd'=>true,'options'=>[''=>'Select....','one'=>'One','two'=>'Two'],'value'=>'two']);",
+    ],
+    [
+        'code' => "new select(['name'=>'select6','caption'=>'Select multiple preseleccionado','multiple'=>true,'options'=>['php'=>'PHP','js'=>'JavaScript','go'=>'Go'],'value'=>['php','js']]);",
+    ],
+    [
+        'title' => 'Otros',
+        'code' => '',
+    ],
+    [
+        'code' => "new inputHidden(['name'=>'hidden1','value'=>'token-demo-123']);",
     ],/*
 
    
