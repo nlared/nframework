@@ -326,7 +326,9 @@ class label extends baseInput
                 $this->value = '';
             }
         }
-        return '<label' . $this->writetags() . ' id="' . $this->id . '"' . '>' . htmlspecialchars($this->value) . '</label>';
+
+        return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') .
+            '<label class="input" ' . $this->writetags() . ' id="' . $this->id . '"' . '>' . htmlspecialchars($this->value) . '</label>';
     }
 }
 class inputHidden extends baseInput
