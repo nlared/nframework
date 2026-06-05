@@ -48,6 +48,14 @@ $('.item').click(function(e) {
         $nframework->docend[] = '</main></div></div>';
         $BreadCrumbs = new BreadCrumbs;
 
+        if (!empty($this->menuAddRight)) {
+            $menuAddRight = '<div class="app-bar-container mr-auto">' . $this->menuAddRight . '</div>';
+        }
+        if (!empty($this->menuAddCenter)) {
+            $menuAddCenter = '<div class="app-bar-container mx-auto">' . $this->menuAddCenter . '</div>';
+        }
+
+
         return <<<return
 <body class="m4-cloak h-vh-100">
 <div data-role="navview" data-expanded="md">
@@ -83,6 +91,8 @@ $('.item').click(function(e) {
     
     <div class="navview-content">
         <div data-role="appbar" class="container-query border-bottom bd-default app-bar app-bar-expand">
+            {$menuAddRight}
+            {$menuAddCenter}
             <div class="app-bar-container ml-auto">
             	{$this->menuAdd}
             </div>
