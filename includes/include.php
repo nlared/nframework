@@ -896,7 +896,7 @@ function nfshutdown()
         'session_id' => session_id(),
         'size_bytes' => ob_get_length(),
         'status_code' => http_response_code(),
-    ]);
+    ]]);
 }
 // $buffer='';
 if (php_sapi_name() != 'cli' && empty($nfshutdowndisable)) {
