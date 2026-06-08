@@ -89,6 +89,7 @@ function jsontofilters(json){
             valueGetter: f.valueGetter
         });
     }
+    console.log(filters);
     return filters;
 }
 $('#builder-basic').queryBuilder({
