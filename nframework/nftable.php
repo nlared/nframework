@@ -29,7 +29,7 @@ foreach ($tabla->nffields as $field) {
 		'id' => $field->field,
 		'field' => $field->field,
 		'label' => $field->short_description,
-		'type' => $filterdefs[$field->type],
+		'type' => $filterdefs[$field->type]['type'],
 		//'input' => str_replace('{label}', $field->short_description, $filterdefs[$field->type]['input'])
 	];
 }
