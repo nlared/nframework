@@ -86,6 +86,25 @@ if (darkContainer) {
   });
 }
 
+function toggleTheme() {
+  const body = document.body;
+  body.classList.toggle('dark-side');
+  // Optionally, you can also toggle a class on the button itself for styling
+  const themeToggleButton = document.getElementById('theme-toggle-button');
+  if (themeToggleButton) {
+	themeToggleButton.classList.toggle('active');
+  }
+}
+function StringtoJavaFunction(str) {
+	if(str.startsWith("function")){
+		return new Function("return " + str)();
+	}else{
+		return str;	
+	}
+}
+	
+
+
 
 function nfonFormError(form, errors) {
     console.log("Form has errors:", errors);	
