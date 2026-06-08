@@ -18,7 +18,7 @@ $filterdefs = [
 	'inputnumber' => [
 		'type' => 'integer',
 		'input' => '<input type="number" class="form-control form-control-sm" placeholder="Search {label}">',
-		'valueGetter' => 'nftablevaluetonumber' // function that converts the input value to a number for the filter	
+		'valueGetter' => 'function(rule){return number(rule.$el.find("input").val());}' // function that converts the input value to a number for the filter	
 	],
 	'inputdate' => ['type' => 'date', 'input' => '<input type="date" class="form-control form-control-sm" placeholder="Search {label}">'],
 	'inputdatetime' => ['type' => 'datetime', 'input' => '<input type="datetime-local" class="form-control form-control-sm" placeholder="Search {label}">'],
@@ -37,7 +37,7 @@ foreach ($tabla->nffields as $field) {
 		//'input' => str_replace('{label}', $field->short_description, $filterdefs[$field->type]['input'])
 	];
 	if (isset($filterdefs[$field->type]['valueGetter'])) {
-		$filter['valueGetter'] = $filterdefs[$field->type]['valueGetter'];
+		$filter['valueGetter'] = StringtoJavaFunction($filterdefs[$field->type]['valueGetter']);
 	}
 	$filters[] = $filter;
 }
