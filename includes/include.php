@@ -630,13 +630,12 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
     }
     http_response_code(500);
     $m->{$config['sitedb']}->nfuristats->updateOne(['_id' => $nfuristat->getInsertedId()], ['$set' => [
-            'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
-            'session_id' => session_id(),
-            'size_bytes' => ob_get_length(),
-            'status_code' => http_response_code(),
-        ]]);
-    return false;    
-
+        'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
+        'session_id' => tomongoid(session_id()),
+        'size_bytes' => ob_get_length(),
+        'status_code' => http_response_code(),
+    ]]);
+    return false;
 }
 $original = set_error_handler('nferrorhandler');
 function nframework_autoload($class_name): bool
@@ -901,7 +900,7 @@ function nfshutdown()
     }
     $m->{$config['sitedb']}->nfuristats->updateOne(['_id' => $nfuristat->getInsertedId()], ['$set' => [
         'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
-        'session_id' => session_id(),
+        'session_id' => tomongoid(session_id()),
         'size_bytes' => ob_get_length(),
         'status_code' => http_response_code(),
     ]]);
