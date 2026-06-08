@@ -49,7 +49,7 @@ if (!empty($_POST['pipelinequery'])) {
 				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], 'function($value) { return floatval($value); };');
 			} else if ($filter['phptype'] == 'date') {
 				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], 'function($value) { return new \MongoDB\BSON\UTCDateTime(strtotime($value) * 1000); };');
-			}		
+			}
 		}
 	}
 	$pipeline[] = [
