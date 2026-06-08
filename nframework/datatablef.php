@@ -15,26 +15,22 @@ $filters = $datainfo['filters'];
 function converttophptypepipeline($pipeline, $field, $phpfunction)
 {
 	foreach ($pipeline as $key => $value) {
-		if (is_array($value)) {
-			$pipeline[$key] = converttophptypepipeline($value, $field, $phpfunction);
-		} else if (is_object($value)) {
-			$pipeline[$key] = converttophptypepipeline((array)$value, $field, $phpfunction);
-		} else {
-			if ($key == $field) {
-				$fn = eval('return ' . $phpfunction);
-				if (!is_callable($fn)) {
-					throw new Exception("La función PHP no es válida: $phpfunction");
-				}
-				if (is_array($value)) {
-					foreach ($value as $k => $v) {
-						$value[$k] = $fn($v);
-					}
-					$pipeline[$key] = $value;
-					//continue;
-				} else {
-					$pipeline[$key] = $fn($value);
-				}
+		if ($key == $field) {
+			$fn = eval('return ' . $phpfunction);
+			if (!is_callable($fn)) {
+				throw new Exception("La función PHP no es válida: $phpfunction");
 			}
+			if (is_array($value)) {
+				foreach ($value as $k => $v) {
+					$value[$k] = $fn($v);
+				}
+				$pipeline[$key] = $value;
+				continue;
+			} else {
+				$pipeline[$key] = $fn($value);
+			}
+		} else {
+			$pipeline[$key] = converttophptypepipeline($value, $field, $phpfunction);
 		}
 	}
 	return $pipeline;
