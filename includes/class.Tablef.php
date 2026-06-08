@@ -77,17 +77,21 @@ function jsontofilters(json){
     for(var i in json){
         var f=json[i];
         if(f.valueGetter){
-            f.valueGetter=decodeStringToFunction(f.valueGetter);
+            if (typeof f.valueGetter === 'string'){
+                f.valueGetter = decodeStringToFunction(f.valueGetter);
+            }            
         }
-        filters.push({
-            id: f.id,
-            label: f.label,
-            type: f.type,
-            input: f.input,
-            values: f.values,
-            operators: f.operators,
-            valueGetter: f.valueGetter
-        });
+        if(f.id !=Null){
+            filters.push({
+                id: f.id,
+                label: f.label,
+                type: f.type,
+                input: f.input,
+                values: f.values,
+                operators: f.operators,
+                valueGetter: f.valueGetter
+            });
+        }
     }
     console.log(filters);
     return filters;
