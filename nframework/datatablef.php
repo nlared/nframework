@@ -16,12 +16,12 @@ function converttophptypepipeline($pipeline, $field, $phpfunction)
 {
 	foreach ($pipeline as $key => $value) {
 		if (is_array($value)) {
-			$pipeline[$key] = converttophptypepipeline($value, $field, $phptype);
+			$pipeline[$key] = converttophptypepipeline($value, $field, $phpfunction);
 		} else if (is_object($value)) {
-			$pipeline[$key] = converttophptypepipeline((array)$value, $field, $phptype);
+			$pipeline[$key] = converttophptypepipeline((array)$value, $field, $phpfunction);
 		} else {
 			if ($key == $field) {
-				$fn[$field] = eval("$phpfunction");
+				$fn[$field] = eval($phpfunction);
 				$pipeline[$key] = $fn[$field]($value);
 			}
 		}
