@@ -13,11 +13,13 @@ if (!isset($tabla->nffields) || count($tabla->nffields) == 0) {
 
 $headers = '';
 $columns = [];
-$filtertypes = [
-	'string' => 'string',
-	'integer' => 'integer',
-	'date' => 'date',
-
+$filterdefs = [
+	'inputtext' => ['type' => 'string',	'input' => '<input type="text" class="form-control form-control-sm" placeholder="Search {label}">'],
+	'inputnumber' => ['type' => 'integer', 'input' => '<input type="number" class="form-control form-control-sm" placeholder="Search {label}">'],
+	'inputdate' => ['type' => 'date', 'input' => '<input type="date" class="form-control form-control-sm" placeholder="Search {label}">'],
+	'inputdatetime' => ['type' => 'datetime', 'input' => '<input type="datetime-local" class="form-control form-control-sm" placeholder="Search {label}">'],
+	'inputcheckbox' => ['type' => 'boolean', 'input' => '<select class="form-control form-control-sm"><option value="">All</option><option value="true">True</option><option value="false">False</option></select>'],
+	'select' => ['type' => 'string', 'input' => '<select class="form-control form-control-sm"><option value="">All</option>{options}</select>'],
 ];
 
 foreach ($tabla->nffields as $field) {
@@ -27,7 +29,8 @@ foreach ($tabla->nffields as $field) {
 		'id' => $field->field,
 		'field' => $field->field,
 		'label' => $field->short_description,
-		'type' => $filtertypes[$field->type],
+		'type' => $filterdefs[$field->type],
+		//'input' => str_replace('{label}', $field->short_description, $filterdefs[$field->type]['input'])
 	];
 }
 $columns[] = '_id';
