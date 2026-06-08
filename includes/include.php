@@ -615,7 +615,7 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
             }
         }
 
-        return false;
+        //return false;
     } else {
         $nframework->errores[] = [
             'type' => $errno,
@@ -626,9 +626,17 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
                 return isset($trace['file'], $trace['line'], $trace['function']) ? "{$trace['file']}({$trace['line']}): {$trace['function']}()" : '';
             }, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))),
         ];
-
-        return false;
+        //return false;
     }
+    http_response_code(500);
+    $m->{$config['sitedb']}->nfuristats->updateOne(['_id' => $nfuristat->getInsertedId()], ['$set' => [
+            'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
+            'session_id' => tomongoid(session_id()),
+            'size_bytes' => ob_get_length(),
+            'status_code' => http_response_code(),
+        ]]);
+    return false;    
+
 }
 $original = set_error_handler('nferrorhandler');
 function nframework_autoload($class_name): bool
