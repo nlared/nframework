@@ -18,7 +18,9 @@ $filterdefs = [
 	'inputnumber' => [
 		'type' => 'integer',
 		'input' => '<input type="number" class="form-control form-control-sm" placeholder="Search {label}">',
-		'valueGetter' => 'parseInt(data)'
+		'valueGetter' => <<<rule
+function(rule)	return number( rule.\$el.find('input').val());			
+rule
 	],
 	'inputdate' => ['type' => 'date', 'input' => '<input type="date" class="form-control form-control-sm" placeholder="Search {label}">'],
 	'inputdatetime' => ['type' => 'datetime', 'input' => '<input type="datetime-local" class="form-control form-control-sm" placeholder="Search {label}">'],
