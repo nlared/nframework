@@ -21,7 +21,11 @@ $filterdefs = [
 		'valueGetter' => 'function(rule){return Number(rule.$el.find("input").val());}', // function that converts the input value to a number for the filter	
 		'phptype' => 'number'
 	],
-	'inputdate' => ['type' => 'date', 'input' => '<input type="date" class="form-control form-control-sm" placeholder="Search {label}">'],
+	'inputdate' => [
+		'type' => 'date',
+		'input' => '<input type="date" class="form-control form-control-sm" placeholder="Search {label}">',
+		'phptype' => 'date'
+	],
 	'inputdatetime' => ['type' => 'datetime', 'input' => '<input type="datetime-local" class="form-control form-control-sm" placeholder="Search {label}">'],
 	'inputcheckbox' => ['type' => 'boolean', 'input' => '<select class="form-control form-control-sm"><option value="">All</option><option value="true">True</option><option value="false">False</option></select>'],
 	'select' => ['type' => 'string', 'input' => '<select class="form-control form-control-sm"><option value="">All</option>{options}</select>'],
