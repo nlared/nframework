@@ -32,10 +32,10 @@ $pipeline = $_SESSION['datatable'][$_GET['id']]['original'];
 if (!empty($_POST['pipelinequery'])) {
 	$tmppipeline = $_POST['pipelinequery'];
 	foreach ($filters as $filter) {
-		if (isset($filter['field']) ){
-			if ($filter['type']=='inputnumber'){
+		if (isset($filter['field'])) {
+			if ($filter['type'] == 'inputnumber') {
 				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], 'number');
-			}		
+			}
 		}
 	}
 	$pipeline[] = [
