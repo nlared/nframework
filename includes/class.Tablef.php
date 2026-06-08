@@ -54,6 +54,43 @@ js,
 
         $javas->addjs("
 var rules_basic = {};
+function decodeStringToFunction(str) {
+    var fn;
+    try {
+        fn = new Function('return ' + str)();
+    } catch (e) {
+        console.error('Error decoding string to function:', e);
+    }
+    return fn;
+}
+function filterValueGetter(rule){
+    if(rule.filter.valueGetter){
+        var valueGetter = decodeStringToFunction(rule.filter.valueGetter);
+        return valueGetter(rule);
+    }else{
+        return rule.$el.find('input').val();
+    }
+}
+function loadfilters(){
+    rules_basic = {
+        condition: 'AND',
+        rules: []
+    };
+    var filters = " . json_encode($this->filters) . ";
+    filters.forEach(function(filter){
+        var rule = {
+            id: filter.field,
+            field: filter.field,
+            label: filter.label,
+            type: filter.type,
+            input: filter.input
+        };
+        if(filter.valueGetter){
+            rule.valueGetter = decodeStringToFunction(filter.valueGetter);
+        }
+        rules_basic.rules.push(rule);
+    });
+}
 
 $('#builder-basic').queryBuilder({
   icons:{
