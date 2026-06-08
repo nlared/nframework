@@ -746,7 +746,7 @@ function nfshutdown()
                 return $result;
             } else {
                 $datatable = new Table;
-                $datatable->header = '<th>Tipo</th><th>Archivo</th><th>Linea</th><th>Descripcion</th>';
+                $datatable->header = '<th>Tipo</th><th>Archivo</th><th>Linea</th><th>Descripcion</th><th>Traza</th>';
                 $datatable->data = $nframework->errores;
                 echo '<link rel="stylesheet" href="https://cdn.metroui.org.ua/v4.3.5/css/metro-all.min.css"/>
 <link rel="stylesheet" href="//cdn.nlared.com/datatables.net-responsive-dt/css/responsive.dataTables.min.css"/>
