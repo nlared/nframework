@@ -17,6 +17,8 @@ function converttophptypepipeline($pipeline, $field, $phptype)
 	foreach ($pipeline as $key => $value) {
 		if (is_array($value)) {
 			$pipeline[$key] = converttophptypepipeline($value, $field, $phptype);
+		} else if (is_object($value)) {
+			$pipeline[$key] = converttophptypepipeline((array)$value, $field, $phptype);
 		} else {
 			if ($key == $field) {
 				$pipeline[$key] = exec("return $phptype(\$value);");
