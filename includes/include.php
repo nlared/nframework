@@ -439,7 +439,7 @@ class class_nframework
         } else {
             throw new nFrameworkException("File not found: " . $filename);
         }
-    }nfuristat
+    }
 
     public function language()
     {
