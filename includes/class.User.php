@@ -45,6 +45,7 @@ class User implements ArrayAccess
     {
         $_SESSION['nframework']['logiopage'] = $_SERVER['DOCUMENT_URI'];
         if ($this->info['username'] == 'guest') {
+            http_response_code(401);
             header('location: /account/login');
             exit();
         }
