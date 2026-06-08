@@ -95,16 +95,6 @@ function toggleTheme() {
 	themeToggleButton.classList.toggle('active');
   }
 }
-function StringtoJavaFunction(str) {
-	if(str.startsWith("function")){
-		return new Function("return " + str)();
-	}else{
-		return str;	
-	}
-}
-	
-
-
 
 function nfonFormError(form, errors) {
     console.log("Form has errors:", errors);	
