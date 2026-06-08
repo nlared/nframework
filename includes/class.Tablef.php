@@ -15,6 +15,7 @@ class TableF
             $this->{$op} = $v;
         }
         $_SESSION['datatable'][$this->table->id]['original'] = $_SESSION['datatable'][$this->table->id]['pipeline'];
+        $_SESSION['datatable'][$this->table->id]['filters'] = $this->filters;
     }
 
     public function __toString()
