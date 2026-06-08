@@ -29,14 +29,17 @@ $filterdefs = [
 foreach ($tabla->nffields as $field) {
 	$headers .= '<th>' . $field->short_description . '</th>';
 	$columns[] = $field->field;
-	$filters[] = [
+	$filter = [
 		'id' => $field->field,
 		'field' => $field->field,
 		'label' => $field->short_description,
 		'type' => $filterdefs[$field->type]['type'],
-		'valueGetter' => (isset($filterdefs[$field->type]['valueGetter']) ? $filterdefs[$field->type]['valueGetter'] : null),
 		//'input' => str_replace('{label}', $field->short_description, $filterdefs[$field->type]['input'])
 	];
+	if (isset($filterdefs[$field->type]['valueGetter'])) {
+		$filter['valueGetter'] = $filterdefs[$field->type]['valueGetter'];
+	}
+	$filters[] = $filter;
 }
 $columns[] = '_id';
 $headers .= '<th>Acciones</th>';
