@@ -37,7 +37,7 @@ foreach ($tabla->nffields as $field) {
 		//'input' => str_replace('{label}', $field->short_description, $filterdefs[$field->type]['input'])
 	];
 	if (isset($filterdefs[$field->type]['valueGetter'])) {
-		$filter['valueGetter'] = StringtoJavaFunction($filterdefs[$field->type]['valueGetter']);
+		$filter['valueGetter'] = $filterdefs[$field->type]['valueGetter'];
 	}
 	$filters[] = $filter;
 }
