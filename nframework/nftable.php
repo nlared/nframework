@@ -18,9 +18,7 @@ $filterdefs = [
 	'inputnumber' => [
 		'type' => 'integer',
 		'input' => '<input type="number" class="form-control form-control-sm" placeholder="Search {label}">',
-		'valueGetter' => <<<rule
-function(rule)	return number( rule.\$el.find('input').val());			
-rule
+		'valueGetter' => 'nftablevaluetonumber' // function that converts the input value to a number for the filter	
 	],
 	'inputdate' => ['type' => 'date', 'input' => '<input type="date" class="form-control form-control-sm" placeholder="Search {label}">'],
 	'inputdatetime' => ['type' => 'datetime', 'input' => '<input type="datetime-local" class="form-control form-control-sm" placeholder="Search {label}">'],
@@ -80,6 +78,11 @@ if ($nframework->isAjax()) {
 	$nframework->usecommon = true;
 	$javas->addjs(
 		<<<jss
+
+	function nftablevaluetonumber(rule){
+		return number( rule.\$el.find('input').val());
+	}
+
 	function removeid(id){
 		Swal.fire({
 			title: 'Estas seguro?',
