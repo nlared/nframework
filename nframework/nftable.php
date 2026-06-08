@@ -79,10 +79,7 @@ if ($nframework->isAjax()) {
 	$javas->addjs(
 		<<<jss
 
-	function nftablevaluetonumber(rule){
-		return number( rule.\$el.find('input').val());
-	}
-
+	
 	function removeid(id){
 		Swal.fire({
 			title: 'Estas seguro?',
