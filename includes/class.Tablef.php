@@ -71,27 +71,26 @@ function filterValueGetter(rule){
         return rule.\$el.find('input').val();
     }
 }
-function loadfilters(){
-    rules_basic = {
-        condition: 'AND',
-        rules: []
-    };
-    var filters = " . json_encode($this->filters) . ";
-    filters.forEach(function(filter){
-        var rule = {
-            id: filter.field,
-            field: filter.field,
-            label: filter.label,
-            type: filter.type,
-            input: filter.input
-        };
-        if(filter.valueGetter){
-            rule.valueGetter = decodeStringToFunction(filter.valueGetter);
-        }
-        rules_basic.rules.push(rule);
-    });
-}
 
+function jsontofilters(json){
+    var filters=[];
+    for(var i in json){
+        var f=json[i];
+        if(f.valueGetter){
+            f.valueGetter=decodeStringToFunction(f.valueGetter);
+        }
+        filters.push({
+            id: f.id,
+            label: f.label,
+            type: f.type,
+            input: f.input,
+            values: f.values,
+            operators: f.operators,
+            valueGetter: f.valueGetter
+        });
+    }
+    return filters;
+}
 $('#builder-basic').queryBuilder({
   icons:{
   	add_group: 'mif-add',
@@ -103,7 +102,7 @@ $('#builder-basic').queryBuilder({
   templates: {
 	ruleValueSelect: templates_ruleValueSelect
   },
-  filters: loadfilters(),
+  filters: jsontofilters(" . json_encode($this->filters) . "),
   allow_empty :true,
   lang_code: 'es',
   mongoOperators: {
