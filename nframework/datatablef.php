@@ -33,7 +33,7 @@ if (!empty($_POST['pipelinequery'])) {
 	$tmppipeline = $_POST['pipelinequery'];
 	foreach ($filters as $filter) {
 		if (isset($filter['field'])) {
-			if ($filter['type'] == 'inputnumber') {
+			if ($filter['phptype'] == 'number') {
 				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], 'number');
 			}
 		}
