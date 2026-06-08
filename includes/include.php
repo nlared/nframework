@@ -580,7 +580,7 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
     global $developermode, $m, $nframework, $config;
     if (!$developermode) {
         if ($errno ^ E_NOTICE && $errno ^ E_WARNING) {
-
+nfuristat
             $result = $m->{$config['sitedb']}->errorlog->updateOne([
                 'desc' => $errstr,
             ], [
@@ -622,9 +622,11 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
             'file' => $errfile,
             'number' => $errline,
             'desc' => $errstr,
-            'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
+            'trace' => implode("\n", array_map(function ($trace) {
+                return isset($trace['file'], $trace['line'], $trace['function']) ? "{$trace['file']}({$trace['line']}): {$trace['function']}()" : '';
+            }, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))),
         ];
-
+nfuristat
         return false;
     }
 }
