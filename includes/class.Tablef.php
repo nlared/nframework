@@ -144,7 +144,6 @@ var pipelinequery=[];
 $('#btn-reset').on('click', function() {
   $('#builder-basic').queryBuilder('reset');
 });
-f'] = $t
 
 function fieldschange(){
   //var result = $('#builder-basic').queryBuilder('getRules',{ skip_empty: true });
