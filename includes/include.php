@@ -659,6 +659,8 @@ session_set_save_handler($handler);
 session_name(str_replace('.', '_', $config['cookie_domain']));
 session_set_cookie_params(0, '/', $config['cookie_domain'], $nframework->https, false);
 session_start();
+
+
 if (empty($_SESSION['nf']['browser']['language'])) {
     $nframework->loadBrowserInfo();
 }
