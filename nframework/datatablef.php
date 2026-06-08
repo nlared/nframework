@@ -35,7 +35,7 @@ if (!empty($_POST['pipelinequery'])) {
 	foreach ($filters as $filter) {
 		if (isset($filter['field'])) {
 			if ($filter['phptype'] == 'number') {
-				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], 'function($mixed $value): float {return floatval($value);};');
+				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], 'function(mixed $value): float {return floatval($value);};');
 			}
 		}
 	}
