@@ -25,7 +25,15 @@ function converttophptypepipeline($pipeline, $field, $phpfunction)
 				if (!is_callable($fn)) {
 					throw new Exception("La función PHP no es válida: $phpfunction");
 				}
-				$pipeline[$key] = $fn($value);
+				if (is_array($value)) {
+					foreach ($value as $k => $v) {
+						$value[$k] = $fn($v);
+					}
+					$pipeline[$key] = $value;
+					//continue;
+				} else {
+					$pipeline[$key] = $fn($value);
+				}
 			}
 		}
 	}
