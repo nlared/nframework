@@ -88,10 +88,15 @@ function jsontofilters(json){
         var f=json[i];
         if(f.valueGetter){
             if (typeof f.valueGetter === 'string'){
-                f.valueGetter = decodeStringToFunction(f.valueGetter);
+                var parsedValueGetter = decodeStringToFunction(f.valueGetter);
+                if (parsedValueGetter) {
+                    f.valueGetter = parsedValueGetter;
+                } else {
+                    delete f.valueGetter;
+                }
             }            
         }
-        if(f.id !=Null){
+        if(f.id !=null){
             filters.push({
                 id: f.id,
                 label: f.label,
