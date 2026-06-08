@@ -57,7 +57,7 @@ var rules_basic = {};
 function decodeStringToFunction(str) {
     var fn;
     try {
-        fn = new Function('return ' + str)();
+        fn = new Function('rule', 'return ' + str)();
     } catch (e) {
         console.error('Error decoding string to function:', e);
     }
