@@ -103,7 +103,7 @@ $('#builder-basic').queryBuilder({
   templates: {
 	ruleValueSelect: templates_ruleValueSelect
   },
-  filters:" . json_encode($this->filters) . " ,
+  filters: loadfilters(),
   allow_empty :true,
   lang_code: 'es',
   mongoOperators: {
