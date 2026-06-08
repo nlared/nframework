@@ -45,3 +45,7 @@ if (!empty($_POST['pipelinequery'])) {
 }
 
 $_SESSION['datatable'][$_GET['id']]['pipeline'] = $pipeline;
+$result = [
+	'pipeline' => $pipeline,
+	'errors' => error_get_last()
+];
