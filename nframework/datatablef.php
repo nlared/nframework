@@ -21,8 +21,8 @@ function converttophptypepipeline($pipeline, $field, $phpfunction)
 			$pipeline[$key] = converttophptypepipeline((array)$value, $field, $phpfunction);
 		} else {
 			if ($key == $field) {
-				$fn[$field] = eval($phpfunction);
-				$pipeline[$key] = $fn[$field]($value);
+				$fn = eval($phpfunction);
+				$pipeline[$key] = $fn($value);
 			}
 		}
 	}
