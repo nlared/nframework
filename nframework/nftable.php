@@ -15,7 +15,11 @@ $headers = '';
 $columns = [];
 $filterdefs = [
 	'inputtext' => ['type' => 'string',	'input' => '<input type="text" class="form-control form-control-sm" placeholder="Search {label}">'],
-	'inputnumber' => ['type' => 'integer', 'input' => '<input type="number" class="form-control form-control-sm" placeholder="Search {label}">'],
+	'inputnumber' => [
+		'type' => 'integer',
+		'input' => '<input type="number" class="form-control form-control-sm" placeholder="Search {label}">',
+		'valueGetter' => 'parseInt(data)'
+	],
 	'inputdate' => ['type' => 'date', 'input' => '<input type="date" class="form-control form-control-sm" placeholder="Search {label}">'],
 	'inputdatetime' => ['type' => 'datetime', 'input' => '<input type="datetime-local" class="form-control form-control-sm" placeholder="Search {label}">'],
 	'inputcheckbox' => ['type' => 'boolean', 'input' => '<select class="form-control form-control-sm"><option value="">All</option><option value="true">True</option><option value="false">False</option></select>'],
@@ -30,6 +34,7 @@ foreach ($tabla->nffields as $field) {
 		'field' => $field->field,
 		'label' => $field->short_description,
 		'type' => $filterdefs[$field->type]['type'],
+		'valueGetter' => (isset($filterdefs[$field->type]['valueGetter']) ? $filterdefs[$field->type]['valueGetter'] : null),
 		//'input' => str_replace('{label}', $field->short_description, $filterdefs[$field->type]['input'])
 	];
 }
