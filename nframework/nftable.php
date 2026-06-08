@@ -35,6 +35,7 @@ foreach ($tabla->nffields as $field) {
 		'field' => $field->field,
 		'label' => $field->short_description,
 		'type' => $filterdefs[$field->type]['type'],
+		'phptype' => isset($filterdefs[$field->type]['phptype']) ? $filterdefs[$field->type]['phptype'] : 'string',
 		//'input' => str_replace('{label}', $field->short_description, $filterdefs[$field->type]['input'])
 	];
 	if (isset($filterdefs[$field->type]['valueGetter'])) {
