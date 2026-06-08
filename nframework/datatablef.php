@@ -12,7 +12,7 @@ if (empty($datainfo)) {
 }
 
 $filters = $datainfo['filters'];
-function converttophptypepipeline($pipeline, $field, $phptype)
+function converttophptypepipeline($pipeline, $field, $phpfunction)
 {
 	foreach ($pipeline as $key => $value) {
 		if (is_array($value)) {
@@ -21,7 +21,8 @@ function converttophptypepipeline($pipeline, $field, $phptype)
 			$pipeline[$key] = converttophptypepipeline((array)$value, $field, $phptype);
 		} else {
 			if ($key == $field) {
-				$pipeline[$key] = exec("return $phptype(\$value);");
+				$fn[$field] = eval("$phpfunction");
+				$pipeline[$key] = $fn[$field]($value);
 			}
 		}
 	}
@@ -34,7 +35,7 @@ if (!empty($_POST['pipelinequery'])) {
 	foreach ($filters as $filter) {
 		if (isset($filter['field'])) {
 			if ($filter['phptype'] == 'number') {
-				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], 'floatval');
+				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], 'function($value){return floatval($value);}');
 			}
 		}
 	}
