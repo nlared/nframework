@@ -59,7 +59,7 @@ if ($nframework->isAjax()) {
 		'pipeline' => [
 			[
 				'$match' => [
-					'_id' => ['$in' => toMongoIds($dataset->sessions)]
+					'_id' => ['$in' => $dataset->sessions]
 				]
 			],
 			[
