@@ -513,13 +513,13 @@ if ($block_reason != "") {
     http_response_code(403);
     exit("Access denied.");
 }
-$m->{$config['sitedb']}->nfuristats->insertOne([
+$nfuristat=$m->{$config['sitedb']}->nfuristats->insertOne([
     'created_at' => new MongoDB\BSON\UTCDateTime(time() * 1000), // use PHP DateTime; the MongoDB driver will convert it to BSON UTC datetime
     'ip' => $ip,
     'host' => $_SERVER['HTTP_HOST'],
     'path' => $_SERVER['REQUEST_URI'],
     'agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
-    'block_reason' => $block_reason,
+    'block_reason' => $block_reason 
 ]);
 $rules = [['host' => ['$exists' => false]]];
 foreach (
@@ -733,7 +733,7 @@ function notify($title = 'nlared.com', $text = '', $options = [])
 
 function nfshutdown()
 {
-    global $nframework, $noobfuscate, $buffer, $developermode, $javas, $result, $config;
+    global $nframework, $noobfuscate, $buffer, $developermode, $javas, $result, $config, $m, $nfuristat;
     $last_error = error_get_last();
     if (!empty($last_error) && ($last_error['type'] === E_ERROR || $last_error['type'] === E_USER_ERROR)) {
         nferrorhandler(E_ERROR, $last_error['message'], $last_error['file'], $last_error['line']);
@@ -887,6 +887,12 @@ function nfshutdown()
             echo $buffer . $javasstr;
         }
     }
+    $m->{$config['sitedb']}->nfuristats->updateOne(['_id' => $nfuristat->getInsertedId()], ['$set' => [
+        'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
+        'session_id' => session_id(),
+        'size_bytes' => ob_get_length(),
+        'status_code' => http_response_code(),
+    ]);
 }
 // $buffer='';
 if (php_sapi_name() != 'cli' && empty($nfshutdowndisable)) {
