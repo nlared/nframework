@@ -21,7 +21,7 @@ function converttophptypepipeline($pipeline, $field, $phpfunction)
 			$pipeline[$key] = converttophptypepipeline((array)$value, $field, $phpfunction);
 		} else {
 			if ($key == $field) {
-				$fn = eval($phpfunction);
+				$fn = eval('return ' . $phpfunction);
 				if (!is_callable($fn)) {
 					throw new Exception("La función PHP no es válida: $phpfunction");
 				}
