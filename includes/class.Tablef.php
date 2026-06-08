@@ -55,14 +55,23 @@ js,
         $javas->addjs("
 var rules_basic = {};
 function decodeStringToFunction(str) {
-    var fn;
+    if (typeof str !== 'string') {
+        return null;
+    }
+
+    var normalized = str.trim().replace(/\bNull\b/g, 'null');
+    var looksLikeFunction = /^function\s*\(/.test(normalized) || /^\(?\s*[\w$,\s]*\)?\s*=>/.test(normalized);
+    if (!looksLikeFunction) {
+        return null;
+    }
 
     try {
-        fn = new Function('rule', 'return ' + str)();
+        var fn = new Function('return (' + normalized + ');')();
+        return (typeof fn === 'function') ? fn : null;
     } catch (e) {
-        console.error('Error decoding string to function:', e);
+        console.error('Error decoding string to function:', e, normalized);
+        return null;
     }
-    return fn;
 }
 function filterValueGetter(rule){
     if(rule.filter.valueGetter){
