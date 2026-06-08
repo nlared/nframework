@@ -43,7 +43,7 @@ use PhpOffice\PhpWord\Settings;
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
-
+use OpenTelemetry\SemConv\Incubating\Metrics\NfsIncubatingMetrics;
 
 class nFrameworkException extends Exception
 {
@@ -439,7 +439,7 @@ class class_nframework
         } else {
             throw new nFrameworkException("File not found: " . $filename);
         }
-    }
+    }nfuristat
 
     public function language()
     {
@@ -577,7 +577,7 @@ define('E_FATAL', E_ERROR | E_USER_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ER
 
 function nferrorhandler(int $errno, string $errstr, string $errfile, int $errline, array $errcontext = []): bool
 {
-    global $developermode, $m, $nframework, $config;
+    global $developermode, $m, $nframework, $config, $nfuristat;
     if (!$developermode) {
         if ($errno ^ E_NOTICE && $errno ^ E_WARNING) {
 
