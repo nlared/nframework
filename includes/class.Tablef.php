@@ -79,7 +79,7 @@ function filterValueGetter(rule){
         var valueGetter = decodeStringToFunction(rule.filter.valueGetter);
         return valueGetter(rule);
     }else{
-        return rule.\$el.find('input').val();filters
+        return rule.\$el.find('input').val();
     }
 }
 
