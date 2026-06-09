@@ -1,5 +1,5 @@
 <?
-require '../common.php';
+require '../common2.php';
 $nframework->usecommon = true;
 
 $today = date('Y-m-d');
