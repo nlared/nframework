@@ -151,7 +151,7 @@ $nframework->jss[] = "https://cdn.jsdelivr.net/npm/chart.js";
                             <label for="dateini">Fecha inicio</label>
                             <input type="date" id="dateini" value="<?= $weekAgo ?>">
                         </div>
-                padding: 9px 14px;
+                        padding: 9px 14px;
                         <div class="field">
                             <label for="dateend">Fecha fin</label>
                             <input type="date" id="dateend" value="<?= $today ?>">
