@@ -22,9 +22,9 @@ $nframework->jss[] = "https://cdn.jsdelivr.net/npm/chart.js";
                 --brand: #1264ff;
                 --accent: #00a884;
                 --border: #dbe3ef;
-            }<h1>Estadísticas de tráfico</h1>
+            }
 
-            * {
+            <h1>Estadísticas de tráfico</h1>* {
                 box-sizing: border-box;
             }
 
