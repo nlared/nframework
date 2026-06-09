@@ -19,7 +19,7 @@ $stats = [];
 foreach (
     $m->{$config['sitedb']}->nfuristats->aggregate([
         ['$match' => ['date' => ['$gte' => $dateini, '$lte' => $dateend]]],
-        ['group' => ['_id' => $group, 'count' => ['$sum' => 1], 'sessions_id' => ['$addToSet' => '$sessions_id'], 'uri' => ['$addToSet' => '$uri'], 'size_bytes' => ['$sum' => '$size_bytes'], 'response_time_ms' => ['$sum' => '$response_time_ms']]],
+        ['group' => ['_id' => $group]],
         ['$sort' => ['count' => -1]],
     ]) as $stat
 ) {
@@ -28,6 +28,12 @@ foreach (
     $stats[$groupstr]['uris'][] = $stat['uri'];
     $stats[$groupstr]['size_bytes'][] = $stat['size_bytes'];
     $stats[$groupstr]['response_time_ms'] += $stat['response_time_ms'];
+}
+foreach ($stats as $groupstr => $stat) {
+    $stats[$groupstr]['sessions'] = array_sum($stat['sessions']);
+    $stats[$groupstr]['uris'] = array_sum($stat['uris']);
+    $stats[$groupstr]['size_bytes'] = array_sum($stat['size_bytes']);
+    $stats[$groupstr]['response_time_ms'] = array_sum($stat['response_time_ms']);
 }
 
 echo json_encode($stats);
