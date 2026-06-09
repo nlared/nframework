@@ -13,17 +13,20 @@ if (empty($_GET['dateini']) || empty($_GET['dateend'])) {
 $dateini = new MongoDB\BSON\UTCDatetime(strtotime($dateini) * 1000);
 $dateend = new MongoDB\BSON\UTCDatetime(strtotime($dateend) * 1000);
 
-$group = ['created_at' => ['$dateToString' => ['format' => '%Y-%m-%d', 'date' => '$created_at']]];
+$group = [
+    'year'  => ['$year'  => '$createdAt'],
+    'month' => ['$month' => '$createdAt'],
+    'day'   => ['$dayOfMonth' => '$createdAt'],
+];
 
 $stats = [];
 foreach (
     $m->{$config['sitedb']}->nfuristats->aggregate([
-        ['$match' => ['date' => ['$gte' => $dateini, '$lte' => $dateend]]],
-        ['group' => ['_id' => $group]],
-        ['$sort' => ['count' => -1]],
+        ['$match' => ['createdAt' => ['$gte' => $dateini, '$lte' => $dateend]]],
+        ['$group' => ['_id' => $group]],
     ]) as $stat
 ) {
-    $groupstr = $stat['_id']['created_at'];
+    $groupstr = "$stat[_id][year]-$stat[_id][month]-$stat[_id][day]";
     $stats[$groupstr]['sessions'][] = $stat['sessions_id'];
     $stats[$groupstr]['uris'][] = $stat['uri'];
     $stats[$groupstr]['size_bytes'][] = $stat['size_bytes'];
