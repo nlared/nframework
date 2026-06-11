@@ -901,6 +901,7 @@ function nfshutdown()
             $content = $buffer . $javasstr;
         }
     }
+    echo $content;
     $m->{$config['sitedb']}->nfuristats->updateOne(['_id' => $nfuristat->getInsertedId()], ['$set' => [
         'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
         'session_id' => session_id(),
