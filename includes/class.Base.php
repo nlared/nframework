@@ -1091,7 +1091,7 @@ js,
             if (!empty($this->value)) {
                 $javas->addjs(
                     <<<js
-fetch('/nframework/select_ajax.php?id={$this->id}&qid='+encodeURIComponent('{$this->value}'))
+fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax->args}&qid='+encodeURIComponent('{$this->value}'))
     .then(res => res.json())
     .then(items => {
         items.forEach(item => {
