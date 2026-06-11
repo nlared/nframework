@@ -1053,7 +1053,7 @@ class Select extends baseOptions
             } else {
 
                 if (!empty($this->value)) {
-                    
+
                     $items = 'tomselects["' . $this->id . '"].setValue(' . json_encode($this->value) . ');';
                 } else {
                     $items = '';
@@ -1078,7 +1078,7 @@ js;
             $_SESSION['selectajax'][$this->id] = $this->ajax;
             addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
 
-            
+
             $javas->addjs(
                 <<<js
 	tomselects['{$this->id}'] = new TomSelect('#{$this->id}',{
