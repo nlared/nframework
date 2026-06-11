@@ -1083,7 +1083,7 @@ js;
         {$items}
 		load:{$load}
 	});
-    js
+js
             , 'ready'
             );
 
