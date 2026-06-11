@@ -965,7 +965,7 @@ class SelectAjaxOptions
     public $fields = [];
     public $label;
     public $value;
-    public $args;
+    public $args=[];
     public String $load;
 }
 class Select extends baseOptions
@@ -1051,22 +1051,18 @@ class Select extends baseOptions
             if ($this->ajax->load != '') {
                 $load = $this->ajax->load;
             } else {
-
                 if (!empty($this->value)) {
-
                     $items = 'tomselects["' . $this->id . '"].setValue(' . json_encode($this->value) . ');';
                 } else {
                     $items = '';
-                }
-                $args = $this->ajax->args ?? '';
+                }                
                 $load = <<<js
 function(query, callback){
                     //if(!query.length&&  )return callback();
-                    fetch('/nframework/select_ajax.php?id={$this->id}{$args}&q='+encodeURIComponent(query))
+                    fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax->args}&q='+encodeURIComponent(query))
                     .then(res=>res.json())
                     .then(json=>{
-                        callback(json);
-                        
+                        callback(json);                        
                     }).catch(()=>{
                         callback();
                     });
