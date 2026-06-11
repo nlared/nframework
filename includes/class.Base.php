@@ -1040,8 +1040,8 @@ class Select extends baseOptions
         // $_SESSION['ANTIXSS'][$this->name]=[FILTER_VALIDATE_SELE];
 
 
-        if ($this->ajax) {
-
+        if (!empty($this->ajax)) {
+            $args = $this->ajax->args ?? '&o=2';
             $nframework->csss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css";
             $nframework->jss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js";
 
