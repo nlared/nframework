@@ -1066,7 +1066,7 @@ class Select extends baseOptions
                     .then(res=>res.json())
                     .then(json=>{
                         callback(json);
-                        {$items}
+                        
                     }).catch(()=>{
                         callback();
                     });
@@ -1084,8 +1084,7 @@ js;
 	tomselects['{$this->id}'] = new TomSelect('#{$this->id}',{
 		valueField:'value',
 		labelField:'label',
-		searchField:'label',
-        preload:true,
+		searchField:'label',        
 		load:{$load}
 	});
 js,
