@@ -1048,7 +1048,7 @@ class Select extends baseOptions
             $this->addclass = ($this->addclass ? $this->addclass . ' ' : '') . ' tomselect';
             //$this->role = 'tomselect';
 
-            if ($this->ajax->load != '') {
+            if (!empty($this->ajax->load) && $this->ajax->load != '') {
                 $load = $this->ajax->load;
             } else {
                 if (!empty($this->value)) {
@@ -1059,7 +1059,7 @@ class Select extends baseOptions
                 $load = <<<js
 function(query, callback){
                     //if(!query.length&&  )return callback();
-                    fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax->args}&q='+encodeURIComponent(query))
+                    fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['args']}&q='+encodeURIComponent(query))
                     .then(res=>res.json())
                     .then(json=>{
                         callback(json);                        
