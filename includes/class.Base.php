@@ -1105,18 +1105,17 @@ js,
                     'ready'
                 );
             }
-
-            return
-                '<select name="' . $this->name . ($this->multiple ? '[]" multiple="multiple"' : '"') .
-                ' id="' . $this->id . '"' . ' data-role="' . $this->role . '" ' .
-                $this->inputtags() .
-                ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
-                ($this->canadd ? ' canadd="canadd"' : '') .
-                ($this->onChange ? ' onChange="' . $this->onChange . '"' : '') .
-                (!$this->datafilter ? ' data-filter="false"' : '') .
-                ($this->addclass ? ' class="' . $this->addclass . '"' : '') .
-                'autocomplete="off" data-filter="true" data-filter-placeholder="' . $this->placeholder . '">' . $result . '</select>';
         }
+        return
+            '<select name="' . $this->name . ($this->multiple ? '[]" multiple="multiple"' : '"') .
+            ' id="' . $this->id . '"' . ' data-role="' . $this->role . '" ' .
+            $this->inputtags() .
+            ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
+            ($this->canadd ? ' canadd="canadd"' : '') .
+            ($this->onChange ? ' onChange="' . $this->onChange . '"' : '') .
+            (!$this->datafilter ? ' data-filter="false"' : '') .
+            ($this->addclass ? ' class="' . $this->addclass . '"' : '') .
+            'autocomplete="off" data-filter="true" data-filter-placeholder="' . $this->placeholder . '">' . $result . '</select>';
     }
 
     public function is_valid($newval)
