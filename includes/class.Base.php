@@ -1102,9 +1102,7 @@ fetch('/nframework/select_ajax.php?id={$this->id}&qid='+encodeURIComponent('{$th
 js,
                 'ready'
             );*/
-            }
         }
-    }
 
         return
             '<select name="' . $this->name . ($this->multiple ? '[]" multiple="multiple"' : '"') .
