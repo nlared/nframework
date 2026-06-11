@@ -1097,11 +1097,13 @@ fetch('/nframework/select_ajax.php?id={$this->id}&qid='+encodeURIComponent('{$th
         items.forEach(item => {
             tomselects['{$this->id}'].addOption(item);
             tomselects['{$this->id}'].addItem(item.value);
+            tomselects['{$this->id}'].refreshOptions(false);
+            tomselects['{$this->id}'].setValue(item.value);
         });
     });
 js,
                 'ready'
-            );*/
+            );
         }
 
         return
