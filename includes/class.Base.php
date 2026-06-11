@@ -1061,7 +1061,7 @@ class Select extends baseOptions
 
                 $load = <<<js
                 function(query, callback){
-                    if(!query.length)return callback();
+                    //if(!query.length&&  )return callback();
                     fetch('/nframework/select_ajax.php?id={$this->id}&q='+encodeURIComponent(query))
                     .then(res=>res.json())
                     .then(json=>{
@@ -1085,6 +1085,7 @@ js;
 		valueField:'value',
 		labelField:'label',
 		searchField:'label',
+        preload:true,
 		load:{$load}
 	});
 js,
