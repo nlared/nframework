@@ -1105,7 +1105,7 @@ fetch('/nframework/select_ajax.php?id={$this->id}&qid='+encodeURIComponent('{$th
     });
 js,
                 'ready'
-            );*/
+            );
         }
 
         return
