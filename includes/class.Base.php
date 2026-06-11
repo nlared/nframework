@@ -965,7 +965,7 @@ class SelectAjaxOptions
     public $fields = [];
     public $label;
     public $value;
-    public $args = [];
+    public $args;
     public String $load;
 }
 class Select extends baseOptions
@@ -1094,6 +1094,7 @@ js,
 fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax->args}&qid='+encodeURIComponent('{$this->value}'))
     .then(res => res.json())
     .then(items => {
+        console.log(items);
         items.forEach(item => {
             tomselects['{$this->id}'].addOption(item);
             tomselects['{$this->id}'].addItem(item.value);
