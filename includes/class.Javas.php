@@ -303,6 +303,7 @@ $(document).ready(function() {
 	 {$javasonce}
 	 {$this->js['initializecomponent']}
 	 {$this->js['ready']}
+	 {$this->js['ready2']}
 	 nfWindowResize();
 });
 JS;
