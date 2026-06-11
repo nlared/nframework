@@ -1084,7 +1084,7 @@ js;
 		load:{$load}
 	});
 js,
-                'ready'
+                'initializecomponent'
             );
 
             /*
