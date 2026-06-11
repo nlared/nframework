@@ -965,7 +965,7 @@ class SelectAjaxOptions
     public $fields = [];
     public $label;
     public $value;
-    public $args = [];
+    public $args;
     public String $load;
 }
 class Select extends baseOptions
@@ -1062,7 +1062,7 @@ class Select extends baseOptions
                 $load = <<<js
                 function(query, callback){
                     //if(!query.length&&  )return callback();
-                    fetch('/nframework/select_ajax.php?id={$this->id}&q='+encodeURIComponent(query))
+                    fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax->args}&q='+encodeURIComponent(query))
                     .then(res=>res.json())
                     .then(json=>{
                         callback(json);
