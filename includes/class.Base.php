@@ -1068,18 +1068,26 @@ js;
             $_SESSION['selectajax'][$this->id] = $this->ajax;
             addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
 
+            if(!empty($this->value)){
+                $valtoset = json_encode (is_array($this->value) ? $this->value : [$this->value]);                
+                $items = 'items:' . $valtoset.',';
+            }else{
+                $items = '';
+            }
             $javas->addjs(
                 <<<js
 	tomselects['{$this->id}'] = new TomSelect('#{$this->id}',{
 		valueField:'value',
 		labelField:'label',
-		searchField:'label',        
+		searchField:'label',
+        {$items}
 		load:{$load}
 	});
-js
+    js
+            , 'ready'
             );
 
-
+/*
             if (!empty($this->value)) {
                 $javas->addjs(
                     <<<js
@@ -1092,10 +1100,11 @@ fetch('/nframework/select_ajax.php?id={$this->id}&qid='+encodeURIComponent('{$th
         });
     });
 js,
-                    'ready'
-                );
+                'ready'
+            );*/
             }
         }
+    }
 
         return
             '<select name="' . $this->name . ($this->multiple ? '[]" multiple="multiple"' : '"') .
