@@ -1064,6 +1064,7 @@ class Select extends baseOptions
                 }
 js;
             }
+            $this->role = 'tomselect';
             unset($this->ajax->load);
             $_SESSION['selectajax'][$this->id] = $this->ajax;
             addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
@@ -1080,7 +1081,7 @@ js;
 		valueField:'value',
 		labelField:'label',
 		searchField:'label',
-        {$items}
+        {$items}input
 		load:{$load}
 	});
 js,
