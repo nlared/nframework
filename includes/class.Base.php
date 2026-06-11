@@ -1081,7 +1081,7 @@ js;
 		valueField:'value',
 		labelField:'label',
 		searchField:'label',
-        {$items}input
+        {$items}
 		load:{$load}
 	});
 js,
