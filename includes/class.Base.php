@@ -1058,11 +1058,11 @@ class Select extends baseOptions
                 } else {
                     $items = '';
                 }
-
+                $args = $this->ajax->args ?? '';
                 $load = <<<js
-                function(query, callback){
+function(query, callback){
                     //if(!query.length&&  )return callback();
-                    fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax->args}&q='+encodeURIComponent(query))
+                    fetch('/nframework/select_ajax.php?id={$this->id}{$args}&q='+encodeURIComponent(query))
                     .then(res=>res.json())
                     .then(json=>{
                         callback(json);
