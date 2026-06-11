@@ -1068,10 +1068,10 @@ js;
             $_SESSION['selectajax'][$this->id] = $this->ajax;
             addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
 
-            if(!empty($this->value)){
-                $valtoset = json_encode (is_array($this->value) ? $this->value : [$this->value]);                
-                $items = 'items:' . $valtoset.',';
-            }else{
+            if (!empty($this->value)) {
+                $valtoset = json_encode(is_array($this->value) ? $this->value : [$this->value]);
+                $items = 'items:' . $valtoset . ',';
+            } else {
                 $items = '';
             }
             $javas->addjs(
