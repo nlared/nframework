@@ -628,7 +628,9 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
         ];
         //return false;
     }
-    http_response_code(500);
+    if ($errno & E_FATAL) {
+        http_response_code(500);
+    }
     $m->{$config['sitedb']}->nfuristats->updateOne(['_id' => $nfuristat->getInsertedId()], ['$set' => [
         'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
         'session_id' => session_id(),
@@ -768,6 +770,7 @@ function nfshutdown()
 
     ob_end_flush();
     $javasstr = '';
+    $content = '';
     if (count($nframework->javas) > 0) {
         if (empty($noobfuscate)) {
             $packer = new Tholu\Packer\Packer(implode(";\n", $nframework->javas), 'Normal', true, false, true);
@@ -806,7 +809,7 @@ function nfshutdown()
     if ($nframework->isAjax()) {
         http_response_code(200);
         header('Content-Type: application/json');
-        echo json_encode($result);
+        $content = json_encode($result);
         // end();
     } else {
 
@@ -876,7 +879,7 @@ function nfshutdown()
             header('X-Frame-Options: SAMEORIGIN');
             header('X-XSS-Protection: 1;mode=block');
             header('Content-Type:text/html; charset=utf-8');
-            echo '<!DOCTYPE html>
+            $content = '<!DOCTYPE html>
 <html lang="' . $nframework->lang . '"' . $nframework->html_addtag . '>
 <link rel="apple-touch-icon" sizes="57x57" href="/images/config/57/logo.png" />
 <link rel="apple-touch-icon" sizes="144x144" href="/images/config/144/logo.png" />
@@ -895,13 +898,13 @@ function nfshutdown()
 </body>
 </html>';
         } else {
-            echo $buffer . $javasstr;
+            $content = $buffer . $javasstr;
         }
     }
     $m->{$config['sitedb']}->nfuristats->updateOne(['_id' => $nfuristat->getInsertedId()], ['$set' => [
         'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
         'session_id' => session_id(),
-        'size_bytes' => ob_get_length(),
+        'size_bytes' => strlen($content),
         'status_code' => http_response_code(),
     ]]);
 }
