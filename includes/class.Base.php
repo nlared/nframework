@@ -1091,7 +1091,7 @@ js,
                 'ready'
             );
 
-            /*         
+                     
             if (!empty($this->value)) {
                 $javas->addjs(
                     <<<js
