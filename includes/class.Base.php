@@ -1083,11 +1083,11 @@ js;
         {$items}
 		load:{$load}
 	});
-js
-            , 'ready'
+js,
+                'ready'
             );
 
-/*
+            /*
             if (!empty($this->value)) {
                 $javas->addjs(
                     <<<js
