@@ -1051,6 +1051,14 @@ class Select extends baseOptions
             if ($this->ajax->load != '') {
                 $load = $this->ajax->load;
             } else {
+
+                if (!empty($this->value)) {
+                    
+                    $items = 'tomselects["' . $this->id . '"].setValue(' . json_encode($this->value) . ');';
+                } else {
+                    $items = '';
+                }
+
                 $load = <<<js
                 function(query, callback){
                     if(!query.length)return callback();
@@ -1058,6 +1066,7 @@ class Select extends baseOptions
                     .then(res=>res.json())
                     .then(json=>{
                         callback(json);
+                        {$items}
                     }).catch(()=>{
                         callback();
                     });
@@ -1069,26 +1078,20 @@ js;
             $_SESSION['selectajax'][$this->id] = $this->ajax;
             addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
 
-            if (!empty($this->value)) {
-                $valtoset = json_encode(is_array($this->value) ? $this->value : [$this->value]);
-                $items = 'items:' . $valtoset . ',';
-            } else {
-                $items = '';
-            }
+            
             $javas->addjs(
                 <<<js
 	tomselects['{$this->id}'] = new TomSelect('#{$this->id}',{
 		valueField:'value',
 		labelField:'label',
 		searchField:'label',
-        {$items}
 		load:{$load}
 	});
 js,
                 'ready'
             );
 
-            /*
+            
             if (!empty($this->value)) {
                 $javas->addjs(
                     <<<js
