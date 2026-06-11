@@ -965,7 +965,7 @@ class SelectAjaxOptions
     public $fields = [];
     public $label;
     public $value;
-    public $args=[];
+    public $args = [];
     public String $load;
 }
 class Select extends baseOptions
@@ -1055,7 +1055,7 @@ class Select extends baseOptions
                     $items = 'tomselects["' . $this->id . '"].setValue(' . json_encode($this->value) . ');';
                 } else {
                     $items = '';
-                }                
+                }
                 $load = <<<js
 function(query, callback){
                     //if(!query.length&&  )return callback();
@@ -1087,7 +1087,7 @@ js,
                 'ready'
             );
 
-                     
+
             if (!empty($this->value)) {
                 $javas->addjs(
                     <<<js
