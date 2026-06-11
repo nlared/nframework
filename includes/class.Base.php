@@ -966,6 +966,7 @@ class SelectAjaxOptions
     public $label;
     public $value;
     public $args;
+    public $adduri;
     public String $load;
 }
 class Select extends baseOptions
@@ -1059,7 +1060,7 @@ class Select extends baseOptions
                 $load = <<<js
 function(query, callback){
                     //if(!query.length&&  )return callback();
-                    fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['args']}&q='+encodeURIComponent(query))
+                    fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['adduri']}&q='+encodeURIComponent(query))
                     .then(res=>res.json())
                     .then(json=>{
                         callback(json);                        
@@ -1091,7 +1092,7 @@ js,
             if (!empty($this->value)) {
                 $javas->addjs(
                     <<<js
-fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['args']}&qid='+encodeURIComponent('{$this->value}'))
+fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['adduri']}&qid='+encodeURIComponent('{$this->value}'))
     .then(res => res.json())
     .then(items => {
         console.log(items);
