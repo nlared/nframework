@@ -30,6 +30,372 @@ class XMLS implements ArrayAccess
         return htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 
+    private static function normalizeIdentifier(string $name): string
+    {
+        $normalized = preg_replace('/[^a-zA-Z0-9_]/', '_', $name) ?? '';
+        if ($normalized === '' || ctype_digit($normalized[0])) {
+            $normalized = 'n_' . $normalized;
+        }
+
+        return $normalized;
+    }
+
+    private static function normalizeClassName(string $name): string
+    {
+        $normalized = preg_replace('/[^a-zA-Z0-9]+/', ' ', $name) ?? '';
+        $normalized = str_replace(' ', '', ucwords(strtolower(trim($normalized))));
+        if ($normalized === '') {
+            return 'GeneratedElement';
+        }
+
+        if (ctype_digit($normalized[0])) {
+            return 'X' . $normalized;
+        }
+
+        return $normalized;
+    }
+
+    private static function parseComplexType(DOMElement $complexType, DOMXPath $xpath): array
+    {
+        $attributes = [];
+        $sequence = [];
+        $repeatable = [];
+
+        foreach ($xpath->query('./xs:attribute', $complexType) as $attributeNode) {
+            if (!($attributeNode instanceof DOMElement)) {
+                continue;
+            }
+
+            $attributeName = $attributeNode->getAttribute('name');
+            if ($attributeName === '') {
+                $attributeRef = $attributeNode->getAttribute('ref');
+                if ($attributeRef !== '') {
+                    $parts = explode(':', $attributeRef);
+                    $attributeName = end($parts) ?: '';
+                }
+            }
+
+            if ($attributeName !== '') {
+                $attributes[] = self::normalizeIdentifier($attributeName);
+            }
+        }
+
+        foreach ($xpath->query('./xs:sequence/xs:element', $complexType) as $elementNode) {
+            if (!($elementNode instanceof DOMElement)) {
+                continue;
+            }
+
+            $childName = $elementNode->getAttribute('name');
+            if ($childName === '') {
+                $childRef = $elementNode->getAttribute('ref');
+                if ($childRef !== '') {
+                    $parts = explode(':', $childRef);
+                    $childName = end($parts) ?: '';
+                }
+            }
+
+            if ($childName === '') {
+                continue;
+            }
+
+            $propertyName = self::normalizeIdentifier($childName);
+            $sequence[] = $propertyName;
+
+            $maxOccurs = $elementNode->getAttribute('maxOccurs');
+            if ($maxOccurs === 'unbounded' || ($maxOccurs !== '' && (int)$maxOccurs > 1)) {
+                $repeatable[$propertyName] = true;
+            }
+        }
+
+        return [
+            'attributes' => array_values(array_unique($attributes)),
+            'sequence' => $sequence,
+            'repeatable' => $repeatable,
+        ];
+    }
+
+    private static function elementNodeName(DOMElement $elementNode): string
+    {
+        $elementName = $elementNode->getAttribute('name');
+        if ($elementName !== '') {
+            return $elementName;
+        }
+
+        $elementRef = $elementNode->getAttribute('ref');
+        if ($elementRef !== '') {
+            $parts = explode(':', $elementRef);
+            return end($parts) ?: '';
+        }
+
+        return '';
+    }
+
+    private static function resolveComplexTypeForElement(
+        DOMElement $elementNode,
+        DOMXPath $xpath,
+        array $complexTypeMap
+    ): ?DOMElement {
+        foreach ($xpath->query('./xs:complexType', $elementNode) as $inlineComplexTypeNode) {
+            if ($inlineComplexTypeNode instanceof DOMElement) {
+                return $inlineComplexTypeNode;
+            }
+        }
+
+        $typeName = $elementNode->getAttribute('type');
+        if ($typeName !== '') {
+            $parts = explode(':', $typeName);
+            $localTypeName = end($parts) ?: $typeName;
+            if (isset($complexTypeMap[$localTypeName])) {
+                return $complexTypeMap[$localTypeName];
+            }
+        }
+
+        return null;
+    }
+
+    private static function collectElementDefinitions(
+        DOMElement $elementNode,
+        DOMXPath $xpath,
+        array $complexTypeMap,
+        array $parentPath,
+        array &$definitions,
+        int $depth,
+        int $maxDepth
+    ): void {
+        if ($depth > $maxDepth) {
+            return;
+        }
+
+        $elementName = self::elementNodeName($elementNode);
+        if ($elementName === '') {
+            return;
+        }
+
+        $currentPath = $parentPath;
+        $currentPath[] = $elementName;
+        $pathKey = implode('/', $currentPath);
+        if (isset($definitions[$pathKey])) {
+            return;
+        }
+
+        $complexTypeNode = self::resolveComplexTypeForElement($elementNode, $xpath, $complexTypeMap);
+        $parsed = [
+            'attributes' => [],
+            'sequence' => [],
+            'repeatable' => [],
+        ];
+
+        if ($complexTypeNode instanceof DOMElement) {
+            $parsed = self::parseComplexType($complexTypeNode, $xpath);
+        }
+
+        $definitions[$pathKey] = [
+            'elementName' => $elementName,
+            'classBaseName' => self::normalizeClassName(implode('_', $currentPath)),
+            'parsed' => $parsed,
+        ];
+
+        if (!($complexTypeNode instanceof DOMElement)) {
+            return;
+        }
+
+        foreach ($xpath->query('./xs:sequence/xs:element|./xs:choice/xs:element|./xs:all/xs:element', $complexTypeNode) as $childElementNode) {
+            if (!($childElementNode instanceof DOMElement)) {
+                continue;
+            }
+
+            self::collectElementDefinitions(
+                $childElementNode,
+                $xpath,
+                $complexTypeMap,
+                $currentPath,
+                $definitions,
+                $depth + 1,
+                $maxDepth
+            );
+        }
+    }
+
+    public static function generateClassesFromXsd(
+        string $xsdPath,
+        string $outputDir,
+        string $namespace = 'Generated\\XML',
+        array $options = []
+    ): array {
+        if (!is_file($xsdPath)) {
+            throw new InvalidArgumentException("XSD file not found: {$xsdPath}");
+        }
+
+        $overwrite = (bool)($options['overwrite'] ?? false);
+        $recursiveElements = (bool)($options['recursiveElements'] ?? false);
+        $maxDepth = (int)($options['maxDepth'] ?? 12);
+
+        if (!is_dir($outputDir) && !mkdir($outputDir, 0775, true) && !is_dir($outputDir)) {
+            throw new RuntimeException("Cannot create output directory: {$outputDir}");
+        }
+
+        $dom = new DOMDocument();
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
+
+        if (!$dom->load($xsdPath)) {
+            throw new RuntimeException("Cannot parse XSD file: {$xsdPath}");
+        }
+
+        $xpath = new DOMXPath($dom);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+
+        $complexTypeMap = [];
+        foreach ($xpath->query('/xs:schema/xs:complexType[@name]') as $complexTypeNode) {
+            if (!($complexTypeNode instanceof DOMElement)) {
+                continue;
+            }
+
+            $complexTypeName = $complexTypeNode->getAttribute('name');
+            if ($complexTypeName !== '') {
+                $complexTypeMap[$complexTypeName] = $complexTypeNode;
+            }
+        }
+
+        $definitions = [];
+        foreach ($xpath->query('/xs:schema/xs:element[@name]') as $rootElementNode) {
+            if (!($rootElementNode instanceof DOMElement)) {
+                continue;
+            }
+
+            if ($recursiveElements) {
+                self::collectElementDefinitions(
+                    $rootElementNode,
+                    $xpath,
+                    $complexTypeMap,
+                    [],
+                    $definitions,
+                    0,
+                    $maxDepth
+                );
+                continue;
+            }
+
+            $elementName = self::elementNodeName($rootElementNode);
+            if ($elementName === '') {
+                continue;
+            }
+
+            $complexTypeNode = self::resolveComplexTypeForElement($rootElementNode, $xpath, $complexTypeMap);
+            $parsed = [
+                'attributes' => [],
+                'sequence' => [],
+                'repeatable' => [],
+            ];
+
+            if ($complexTypeNode instanceof DOMElement) {
+                $parsed = self::parseComplexType($complexTypeNode, $xpath);
+            }
+
+            $definitions[$elementName] = [
+                'elementName' => $elementName,
+                'classBaseName' => self::normalizeClassName($elementName),
+                'parsed' => $parsed,
+            ];
+        }
+
+        $generatedFiles = [];
+        $usedClassNames = [];
+        foreach ($definitions as $definition) {
+            $elementName = $definition['elementName'];
+            $parsed = $definition['parsed'];
+
+            $className = $definition['classBaseName'];
+            if (isset($usedClassNames[$className])) {
+                $usedClassNames[$className]++;
+                $className .= (string)$usedClassNames[$className];
+            } else {
+                $usedClassNames[$className] = 1;
+            }
+
+            $filePath = rtrim($outputDir, '/') . '/' . $className . '.php';
+
+            if (is_file($filePath) && !$overwrite) {
+                continue;
+            }
+
+            $propertyLines = [];
+            foreach ($parsed['attributes'] as $attributeName) {
+                $propertyLines[] = "    public \${$attributeName} = '';";
+            }
+
+            foreach ($parsed['sequence'] as $elementPropertyName) {
+                if (isset($parsed['repeatable'][$elementPropertyName])) {
+                    $propertyLines[] = "    public \${$elementPropertyName} = [];";
+                } else {
+                    $propertyLines[] = "    public \${$elementPropertyName} = '';";
+                }
+            }
+
+            $attributesExport = var_export(array_values($parsed['attributes']), true);
+            $sequenceExport = var_export(array_values($parsed['sequence']), true);
+            $propertyBlock = empty($propertyLines) ? '' : implode("\n", $propertyLines) . "\n\n";
+
+            $code = "<?php\n\n";
+            $code .= "namespace {$namespace};\n\n";
+            $code .= "class {$className} extends \\XMLS\n";
+            $code .= "{\n";
+            $code .= "    public \$tagName = '{$elementName}';\n";
+            $code .= "    public \$attributes = {$attributesExport};\n";
+            $code .= "    public \$_sequence = {$sequenceExport};\n\n";
+            $code .= $propertyBlock;
+            $code .= "    public function __construct(array \$ops = [])\n";
+            $code .= "    {\n";
+            $code .= "        parent::__construct(\$ops);\n";
+            $code .= "    }\n";
+            $code .= "}\n";
+
+            file_put_contents($filePath, $code);
+            $generatedFiles[] = $filePath;
+        }
+
+        return $generatedFiles;
+    }
+
+    public function toXmlDocument(): DOMDocument
+    {
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
+
+        $xml = (string)$this;
+        if ($xml === '' || !$dom->loadXML($xml)) {
+            throw new RuntimeException('Cannot generate DOMDocument from XML string');
+        }
+
+        return $dom;
+    }
+
+    public function validateWithXsd(string $xsdPath, array &$errors = []): bool
+    {
+        if (!is_file($xsdPath)) {
+            throw new InvalidArgumentException("XSD file not found: {$xsdPath}");
+        }
+
+        $previousUseInternalErrors = libxml_use_internal_errors(true);
+        libxml_clear_errors();
+
+        try {
+            $dom = $this->toXmlDocument();
+            $isValid = $dom->schemaValidate($xsdPath);
+
+            $errors = [];
+            foreach (libxml_get_errors() as $error) {
+                $errors[] = trim($error->message);
+            }
+            libxml_clear_errors();
+
+            return $isValid;
+        } finally {
+            libxml_use_internal_errors($previousUseInternalErrors);
+        }
+    }
+
     public function __toString(): string
     {
         $attributes = [];
@@ -37,20 +403,30 @@ class XMLS implements ArrayAccess
         $data = get_object_vars($this);
 
         $specialVars = [
-            'attributes',
-            'className',
-            'tagName',
-            'addattributes',
-            'containervar',
-            '_sequence'
+            'attributes' => true,
+            'className' => true,
+            'tagName' => true,
+            'addattributes' => true,
+            'containervar' => true,
+            '_sequence' => true,
         ];
 
+        $attributeLookup = [];
+        foreach ($this->attributes as $attributeName) {
+            $attributeLookup[$attributeName] = true;
+        }
+
+        $sequenceLookup = [];
+        foreach ($this->_sequence as $sequenceIndex => $sequenceName) {
+            $sequenceLookup[$sequenceName] = $sequenceIndex;
+        }
+
         foreach ($data as $name => $value) {
-            if (in_array($name, $specialVars)) {
+            if (isset($specialVars[$name])) {
                 continue;
             }
 
-            if (in_array($name, $this->attributes)) {
+            if (isset($attributeLookup[$name])) {
                 if ($value !== '' && $value !== null) {
                     $attributes[] = $name . '="' . $this->encodeSpecial((string)$value) . '"';
                 }
@@ -58,12 +434,11 @@ class XMLS implements ArrayAccess
                 if ($value !== '' && $value !== null) {
                     $elementValue = is_array($value) ? implode("\n", $value) : (string)$value;
 
-                    if (empty($this->_sequence)) {
+                    if (empty($sequenceLookup)) {
                         $elements[] = $elementValue;
                     } else {
-                        $sequenceIndex = array_search($name, $this->_sequence, true);
-                        if ($sequenceIndex !== false) {
-                            $elements[$sequenceIndex] = $elementValue;
+                        if (isset($sequenceLookup[$name])) {
+                            $elements[$sequenceLookup[$name]] = $elementValue;
                         } else {
                             $elements[] = $elementValue;
                         }
@@ -72,7 +447,9 @@ class XMLS implements ArrayAccess
             }
         }
 
-        ksort($elements, SORT_NUMERIC);
+        if (!empty($sequenceLookup) && count($elements) > 1) {
+            ksort($elements, SORT_NUMERIC);
+        }
 
         $attributeString = '';
         if (!empty($this->addattributes)) {
@@ -94,6 +471,8 @@ class XMLS implements ArrayAccess
     public function deserialize(DOMElement $xml, array $namespaceTranslations = [], array $classTranslations = []): void
     {
         $this->tagName = $xml->tagName;
+        $resolvedClassCache = [];
+        $canDeserializeCache = [];
 
         // Set attributes
         foreach ($xml->attributes as $attribute) {
@@ -106,22 +485,32 @@ class XMLS implements ArrayAccess
                 continue;
             }
 
-            $className = '\\' . str_replace(':', '\\', $node->nodeName);
+            if (isset($resolvedClassCache[$node->nodeName])) {
+                $className = $resolvedClassCache[$node->nodeName];
+            } else {
+                $className = '\\' . str_replace(':', '\\', $node->nodeName);
 
-            // Apply namespace translations
-            foreach ($namespaceTranslations as $from => $to) {
-                if (str_starts_with($className, $from)) {
-                    $className = str_replace($from, $to, $className);
-                    break;
+                // Apply namespace translations
+                foreach ($namespaceTranslations as $from => $to) {
+                    if (str_starts_with($className, $from)) {
+                        $className = str_replace($from, $to, $className);
+                        break;
+                    }
                 }
-            }
 
-            // Apply class translations
-            $className = $classTranslations[$className] ?? $className;
+                // Apply class translations
+                $className = $classTranslations[$className] ?? $className;
+                $resolvedClassCache[$node->nodeName] = $className;
+            }
 
             if (class_exists($className)) {
                 $object = new $className();
-                if (method_exists($object, 'deserialize')) {
+
+                if (!isset($canDeserializeCache[$className])) {
+                    $canDeserializeCache[$className] = method_exists($object, 'deserialize');
+                }
+
+                if ($canDeserializeCache[$className]) {
                     $object->deserialize($node, $namespaceTranslations, $classTranslations);
                 }
 

@@ -1,0 +1,20 @@
+<?php
+
+namespace SAT\Generated\valesdedespensa;
+
+class ValesdedespensaConceptos extends \XMLS
+{
+    public $tagName = 'Conceptos';
+    public $attributes = array (
+);
+    public $_sequence = array (
+  0 => 'Concepto',
+);
+
+    public $Concepto = [];
+
+    public function __construct(array $ops = [])
+    {
+        parent::__construct($ops);
+    }
+}

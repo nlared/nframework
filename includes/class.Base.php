@@ -1081,7 +1081,7 @@ js;
 	tomselects['{$this->id}'] = new TomSelect('#{$this->id}',{
 		valueField:'value',
 		labelField:'label',
-		searchField:'label',        
+		searchField:'label',   
 		load:{$load}
 	});
 js,
@@ -1866,17 +1866,22 @@ class dataset
     {
         global $m, $config;
         foreach ($this->elements as $element) {
-            $m->{$config['sitedb']}->nftables->updateOne(
-                ['_id' => $id],
-                [
-                    '$addToSet' => [
-                        'type' =>  get_class($element),
-                        'field' => $element->field,
-                    ],
-                    ['upsert' => true]
-                ]
-            );
+            $fields[] = [
+                'type' =>  get_class($element),
+                'field' => $element->field,
+                'short_description' => $element->caption,
+            ];
         }
+        $m->{$config['sitedb']}->nftables->updateOne(
+            ['nfcollection' => $this->collection->getCollectionName()],
+            [
+                '$addToSet' => [
+                    'type' =>  get_class($element),
+                    'field' => $element->field,
+                ],
+                ['upsert' => true]
+            ]
+        );
     }
     public function __get($name)
     {
@@ -1925,6 +1930,9 @@ class dataset
 
         if (!empty($this->mongo_session)) {
             $options['session'] = $this->mongo_session;
+        }
+        if (!empty($this->nftable)) {
+            $nftableenable = true;
         }
         foreach ($this->elements as $element) {
             if ($element->disabled != false && !$element->is_valid($_POST[$this->nameprefix][$element->field])) {
