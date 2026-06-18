@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="LaravelPint">
+    <laravel_pint_settings>
+      <LaravelPintConfiguration tool_path="$PROJECT_DIR$/includes/vendor/bin/pint" />
+    </laravel_pint_settings>
+  </component>
+  <component name="MessDetectorOptionsConfiguration">
+    <option name="transferred" value="true" />
+  </component>
+  <component name="PHPCSFixerOptionsConfiguration">
+    <option name="transferred" value="true" />
+  </component>
+  <component name="PHPCodeSnifferOptionsConfiguration">
+    <option name="highlightLevel" value="WARNING" />
+    <option name="transferred" value="true" />
+  </component>
+  <component name="PhpIncludePathManager">
+    <include_path>
+      <path value="$PROJECT_DIR$/includes/vendor/mikehaertl/php-shellcommand" />
+      <path value="$PROJECT_DIR$/includes/vendor/mikehaertl/php-tmpfile" />
+      <path value="$PROJECT_DIR$/includes/vendor/markbaker/complex" />
+      <path value="$PROJECT_DIR$/includes/vendor/mikehaertl/php-pdftk" />
+      <path value="$PROJECT_DIR$/includes/vendor/markbaker/matrix" />
+      <path value="$PROJECT_DIR$/includes/vendor/ramsey/collection" />
+      <path value="$PROJECT_DIR$/includes/vendor/ramsey/uuid" />
+      <path value="$PROJECT_DIR$/includes/vendor/phenx/php-svg-lib" />
+      <path value="$PROJECT_DIR$/includes/vendor/phenx/php-font-lib" />
+      <path value="$PROJECT_DIR$/includes/vendor/twig/twig" />
+      <path value="$PROJECT_DIR$/includes/vendor/ralouphie/getallheaders" />
+      <path value="$PROJECT_DIR$/includes/vendor/web-token/jwt-key-mgmt" />
+      <path value="$PROJECT_DIR$/includes/vendor/web-token/jwt-signature-algorithm-ecdsa" />
+      <path value="$PROJECT_DIR$/includes/vendor/web-token/jwt-core" />
+      <path value="$PROJECT_DIR$/includes/vendor/web-token/jwt-util-ecc" />
+      <path value="$PROJECT_DIR$/includes/vendor/web-token/jwt-signature" />
+      <path value="$PROJECT_DIR$/includes/vendor/symfony/deprecation-contracts" />
+      <path value="$PROJECT_DIR$/includes/vendor/symfony/polyfill-ctype" />
+      <path value="$PROJECT_DIR$/includes/vendor/minishlink/web-push" />
+      <path value="$PROJECT_DIR$/includes/vendor/symfony/polyfill-php82" />
+      <path value="$PROJECT_DIR$/includes/vendor/symfony/polyfill-mbstring" />
+      <path value="$PROJECT_DIR$/includes/vendor/symfony/polyfill-php85" />
+      <path value="$PROJECT_DIR$/includes/vendor/fgrosse/phpasn1" />
+      <path value="$PROJECT_DIR$/includes/vendor/rkorebrits/htmltoopenxml" />
+      <path value="$PROJECT_DIR$/includes/vendor/microsoft/kiota-authentication-phpleague" />
+      <path value="$PROJECT_DIR$/includes/vendor/microsoft/kiota-serialization-json" />
+      <path value="$PROJECT_DIR$/includes/vendor/microsoft/kiota-abstractions" />
+      <path value="$PROJECT_DIR$/includes/vendor/microsoft/kiota-http-guzzle" />
+      <path value="$PROJECT_DIR$/includes/vendor/microsoft/kiota-serialization-text" />
+      <path value="$PROJECT_DIR$/includes/vendor/phpoffice/phpword" />
+      <path value="$PROJECT_DIR$/includes/vendor/bacon/bacon-qr-code" />
+      <path value="$PROJECT_DIR$/includes/vendor/phpoffice/phpspreadsheet" />
+      <path value="$PROJECT_DIR$/includes/vendor/phpoffice/math" />
+      <path value="$PROJECT_DIR$/includes/vendor/sabberworm/php-css-parser" />
+      <path value="$PROJECT_DIR$/includes/vendor/gasparesganga/php-shapefile" />
+      <path value="$PROJECT_DIR$/includes/vendor/open-telemetry/sem-conv" />
+      <path value="$PROJECT_DIR$/includes/vendor/open-telemetry/context" />
+      <path value="$PROJECT_DIR$/includes/vendor/open-telemetry/sdk" />
+      <path value="$PROJECT_DIR$/includes/vendor/open-telemetry/api" />
+      <path value="$PROJECT_DIR$/includes/vendor/php-http/discovery" />
+      <path value="$PROJECT_DIR$/includes/vendor/php-http/promise" />
+      <path value="$PROJECT_DIR$/includes/vendor/laminas/laminas-escaper" />
+      <path value="$PROJECT_DIR$/includes/vendor/league/oauth2-client" />
+      <path value="$PROJECT_DIR$/includes/vendor/league/oauth2-facebook" />
+      <path value="$PROJECT_DIR$/includes/vendor/masterminds/html5" />
+      <path value="$PROJECT_DIR$/includes/vendor/composer" />
+      <path value="$PROJECT_DIR$/includes/vendor/laravel/pint" />
+      <path value="$PROJECT_DIR$/includes/vendor/psr/http-factory" />
+      <path value="$PROJECT_DIR$/includes/vendor/psr/http-client" />
+      <path value="$PROJECT_DIR$/includes/vendor/psr/http-message" />
+      <path value="$PROJECT_DIR$/includes/vendor/mlocati/ocsp" />
+      <path value="$PROJECT_DIR$/includes/vendor/psr/cache" />
+      <path value="$PROJECT_DIR$/includes/vendor/brick/math" />
+      <path value="$PROJECT_DIR$/includes/vendor/psr/log" />
+      <path value="$PROJECT_DIR$/includes/vendor/psr/simple-cache" />
+      <path value="$PROJECT_DIR$/includes/vendor/psr/clock" />
+      <path value="$PROJECT_DIR$/includes/vendor/tbachert/spi" />
+      <path value="$PROJECT_DIR$/includes/vendor/phpseclib/phpseclib" />
+      <path value="$PROJECT_DIR$/includes/vendor/guzzlehttp/guzzle" />
+      <path value="$PROJECT_DIR$/includes/vendor/guzzlehttp/psr7" />
+      <path value="$PROJECT_DIR$/includes/vendor/guzzlehttp/promises" />
+      <path value="$PROJECT_DIR$/includes/vendor/doctrine/annotations" />
+      <path value="$PROJECT_DIR$/includes/vendor/doctrine/lexer" />
+      <path value="$PROJECT_DIR$/includes/vendor/spomky-labs/otphp" />
+      <path value="$PROJECT_DIR$/includes/vendor/spomky-labs/base64url" />
+      <path value="$PROJECT_DIR$/includes/vendor/tholu/php-packer" />
+      <path value="$PROJECT_DIR$/includes/vendor/monolog/monolog" />
+      <path value="$PROJECT_DIR$/includes/vendor/v-matsuk/time-overlap-calculator" />
+      <path value="$PROJECT_DIR$/includes/vendor/cocur/background-process" />
+      <path value="$PROJECT_DIR$/includes/vendor/stduritemplate/stduritemplate" />
+      <path value="$PROJECT_DIR$/includes/vendor/econea/nusoap" />
+      <path value="$PROJECT_DIR$/includes/vendor/nlared/mongo-session-handler" />
+      <path value="$PROJECT_DIR$/includes/vendor/intervention/image" />
+      <path value="$PROJECT_DIR$/includes/vendor/maennchen/zipstream-php" />
+      <path value="$PROJECT_DIR$/includes/vendor/dompdf/dompdf" />
+      <path value="$PROJECT_DIR$/includes/vendor/mezon/router" />
+      <path value="$PROJECT_DIR$/includes/vendor/flowjs/flow-php-server" />
+      <path value="$PROJECT_DIR$/includes/vendor/nyholm/psr7-server" />
+      <path value="$PROJECT_DIR$/includes/vendor/spatie/pdf-to-image" />
+      <path value="$PROJECT_DIR$/includes/vendor/mongodb/mongodb" />
+      <path value="$PROJECT_DIR$/includes/vendor/firebase/php-jwt" />
+      <path value="$PROJECT_DIR$/includes/vendor/ezyang/htmlpurifier" />
+      <path value="$PROJECT_DIR$/includes/vendor/picqer/php-barcode-generator" />
+      <path value="$PROJECT_DIR$/includes/vendor/mjaschen/phpgeo" />
+      <path value="$PROJECT_DIR$/includes/vendor/paragonie/random_compat" />
+      <path value="$PROJECT_DIR$/includes/vendor/paragonie/constant_time_encoding" />
+      <path value="$PROJECT_DIR$/includes/vendor/dasprid/enum" />
+      <path value="$PROJECT_DIR$/includes/vendor/grpc/grpc" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/longrunning" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/protobuf" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/grpc-gcp" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/cloud-storage" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/auth" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/apiclient-services" />
+      <path value="$PROJECT_DIR$/includes/vendor/endroid/qr-code" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/apiclient" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/recaptcha" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/cloud-core" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/common-protos" />
+      <path value="$PROJECT_DIR$/includes/vendor/google/gax" />
+      <path value="$PROJECT_DIR$/includes/vendor/phpmailer/phpmailer" />
+      <path value="$PROJECT_DIR$/includes/vendor/rize/uri-template" />
+    </include_path>
+  </component>
+  <component name="PhpProjectSharedConfiguration" php_language_level="8.0">
+    <option name="suggestChangeDefaultLanguageLevel" value="false" />
+  </component>
+  <component name="PhpStanOptionsConfiguration">
+    <option name="transferred" value="true" />
+  </component>
+  <component name="PsalmOptionsConfiguration">
+    <option name="transferred" value="true" />
+  </component>
+</project>
