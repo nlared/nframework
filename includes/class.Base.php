@@ -1070,7 +1070,7 @@ function(query, callback){
                 }
 js;
             }
-            $this->role = 'tomselect';
+            //$this->role = 'tomselect';
             unset($this->ajax->load);
             $_SESSION['selectajax'][$this->id] = $this->ajax;
             addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
