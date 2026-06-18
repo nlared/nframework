@@ -8,6 +8,7 @@ class XMLS implements ArrayAccess
     public $addattributes = '';
     public $containervar = '';
     public $_sequence = [];
+    public $lastSerializationError = '';
 
     public function __construct(array $ops = [])
     {
@@ -112,6 +113,168 @@ class XMLS implements ArrayAccess
             'sequence' => $sequence,
             'repeatable' => $repeatable,
         ];
+    }
+
+    private static function formatLibxmlErrors(array $errors): string
+    {
+        if (empty($errors)) {
+            return 'Unknown XML parsing error';
+        }
+
+        $lines = [];
+        foreach ($errors as $error) {
+            if (!($error instanceof LibXMLError)) {
+                continue;
+            }
+
+            $message = trim($error->message);
+            $line = (int)$error->line;
+            $column = (int)$error->column;
+            $lines[] = $message . " (line {$line}, column {$column})";
+        }
+
+        return empty($lines) ? 'Unknown XML parsing error' : implode('; ', $lines);
+    }
+
+    private static function sanitizeForXmlComment(string $message): string
+    {
+        $sanitized = trim($message);
+        if ($sanitized === '') {
+            return 'Unknown XML serialization error';
+        }
+
+        // XML comments cannot contain "--" and should avoid angle brackets from raw error text.
+        $sanitized = str_replace(['--', '<', '>'], ['- -', '[', ']'], $sanitized);
+
+        return $sanitized;
+    }
+
+    private function stringifyXmlValue($value, string $propertyName): string
+    {
+        if (is_array($value)) {
+            $items = [];
+            foreach ($value as $index => $item) {
+                if ($item === '' || $item === null) {
+                    continue;
+                }
+
+                $items[] = $this->stringifyXmlValue($item, $propertyName . '[' . $index . ']');
+            }
+
+            return implode("\n", $items);
+        }
+
+        if ($value instanceof DOMNode) {
+            $ownerDocument = $value->ownerDocument;
+            if (!($ownerDocument instanceof DOMDocument)) {
+                throw new RuntimeException("Property {$propertyName} contains a DOMNode without ownerDocument");
+            }
+
+            $nodeXml = $ownerDocument->saveXML($value);
+            if ($nodeXml === false) {
+                throw new RuntimeException("Property {$propertyName} contains a DOMNode that cannot be serialized");
+            }
+
+            return $nodeXml;
+        }
+
+        if (is_object($value)) {
+            if (!method_exists($value, '__toString')) {
+                $type = get_class($value);
+                throw new RuntimeException("Property {$propertyName} contains non-stringable object {$type}");
+            }
+        }
+
+        return (string)$value;
+    }
+
+    public function toXmlString(): string
+    {
+        $this->lastSerializationError = '';
+
+        if (trim((string)$this->tagName) === '') {
+            $this->lastSerializationError = 'tagName is empty, cannot build XML root element';
+            throw new RuntimeException($this->lastSerializationError);
+        }
+
+        $attributes = [];
+        $elements = [];
+        $data = get_object_vars($this);
+
+        $specialVars = [
+            'attributes' => true,
+            'className' => true,
+            'tagName' => true,
+            'addattributes' => true,
+            'containervar' => true,
+            '_sequence' => true,
+            'lastSerializationError' => true,
+        ];
+
+        $attributeLookup = [];
+        foreach ($this->attributes as $attributeName) {
+            $attributeLookup[$attributeName] = true;
+        }
+
+        $sequenceLookup = [];
+        foreach ($this->_sequence as $sequenceIndex => $sequenceName) {
+            $sequenceLookup[$sequenceName] = $sequenceIndex;
+        }
+
+        foreach ($data as $name => $value) {
+            if (isset($specialVars[$name])) {
+                continue;
+            }
+
+            if (isset($attributeLookup[$name])) {
+                if ($value !== '' && $value !== null) {
+                    if (is_array($value)) {
+                        $this->lastSerializationError = "Attribute {$name} cannot be an array";
+                        throw new RuntimeException($this->lastSerializationError);
+                    }
+
+                    $attributeValue = $this->stringifyXmlValue($value, $name);
+                    $attributes[] = $name . '="' . $this->encodeSpecial($attributeValue) . '"';
+                }
+            } else {
+                if ($value !== '' && $value !== null) {
+                    $elementValue = $this->stringifyXmlValue($value, $name);
+                    if ($elementValue === '') {
+                        continue;
+                    }
+
+                    if (empty($sequenceLookup)) {
+                        $elements[] = $elementValue;
+                    } else {
+                        if (isset($sequenceLookup[$name])) {
+                            $elements[$sequenceLookup[$name]] = $elementValue;
+                        } else {
+                            $elements[] = $elementValue;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!empty($sequenceLookup) && count($elements) > 1) {
+            ksort($elements, SORT_NUMERIC);
+        }
+
+        $attributeString = '';
+        if (!empty($this->addattributes)) {
+            $attributeString .= ' ' . $this->addattributes;
+        }
+        if (!empty($attributes)) {
+            $attributeString .= ' ' . implode(' ', $attributes);
+        }
+
+        if (empty($elements)) {
+            return "<{$this->tagName}{$attributeString}/>";
+        }
+
+        return "<{$this->tagName}{$attributeString}>\n" .
+            implode("\n", $elements) .
+            "\n</{$this->tagName}>";
     }
 
     private static function elementNodeName(DOMElement $elementNode): string
@@ -238,9 +401,16 @@ class XMLS implements ArrayAccess
         $dom->preserveWhiteSpace = false;
         $dom->formatOutput = true;
 
+        $previousUseInternalErrors = libxml_use_internal_errors(true);
+        libxml_clear_errors();
         if (!$dom->load($xsdPath)) {
-            throw new RuntimeException("Cannot parse XSD file: {$xsdPath}");
+            $parseErrors = self::formatLibxmlErrors(libxml_get_errors());
+            libxml_clear_errors();
+            libxml_use_internal_errors($previousUseInternalErrors);
+            throw new RuntimeException("Cannot parse XSD file: {$xsdPath}. {$parseErrors}");
         }
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousUseInternalErrors);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
@@ -350,8 +520,21 @@ class XMLS implements ArrayAccess
             $code .= "    }\n";
             $code .= "}\n";
 
-            file_put_contents($filePath, $code);
+            $bytesWritten = file_put_contents($filePath, $code);
+            if ($bytesWritten === false) {
+                $lastError = error_get_last();
+                $message = $lastError['message'] ?? 'Unknown filesystem error';
+                throw new RuntimeException("Cannot write generated class file: {$filePath}. {$message}");
+            }
+
             $generatedFiles[] = $filePath;
+        }
+
+        if (empty($generatedFiles)) {
+            throw new RuntimeException(
+                "No class files were generated from XSD: {$xsdPath}. " .
+                    "Check that the schema defines elements and that overwrite is enabled when files already exist."
+            );
         }
 
         return $generatedFiles;
@@ -363,10 +546,18 @@ class XMLS implements ArrayAccess
         $dom->preserveWhiteSpace = false;
         $dom->formatOutput = true;
 
-        $xml = (string)$this;
+        $xml = $this->toXmlString();
+
+        $previousUseInternalErrors = libxml_use_internal_errors(true);
+        libxml_clear_errors();
         if ($xml === '' || !$dom->loadXML($xml)) {
-            throw new RuntimeException('Cannot generate DOMDocument from XML string');
+            $parseErrors = self::formatLibxmlErrors(libxml_get_errors());
+            libxml_clear_errors();
+            libxml_use_internal_errors($previousUseInternalErrors);
+            throw new RuntimeException('Cannot generate DOMDocument from XML string: ' . $parseErrors);
         }
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousUseInternalErrors);
 
         return $dom;
     }
@@ -398,74 +589,15 @@ class XMLS implements ArrayAccess
 
     public function __toString(): string
     {
-        $attributes = [];
-        $elements = [];
-        $data = get_object_vars($this);
+        try {
+            return $this->toXmlString();
+        } catch (Throwable $e) {
+            $this->lastSerializationError = $e->getMessage();
+            $error = self::sanitizeForXmlComment($this->lastSerializationError);
+            error_log('XMLS serialization error: ' . $this->lastSerializationError);
 
-        $specialVars = [
-            'attributes' => true,
-            'className' => true,
-            'tagName' => true,
-            'addattributes' => true,
-            'containervar' => true,
-            '_sequence' => true,
-        ];
-
-        $attributeLookup = [];
-        foreach ($this->attributes as $attributeName) {
-            $attributeLookup[$attributeName] = true;
+            return "<!-- XMLS serialization error: {$error} -->";
         }
-
-        $sequenceLookup = [];
-        foreach ($this->_sequence as $sequenceIndex => $sequenceName) {
-            $sequenceLookup[$sequenceName] = $sequenceIndex;
-        }
-
-        foreach ($data as $name => $value) {
-            if (isset($specialVars[$name])) {
-                continue;
-            }
-
-            if (isset($attributeLookup[$name])) {
-                if ($value !== '' && $value !== null) {
-                    $attributes[] = $name . '="' . $this->encodeSpecial((string)$value) . '"';
-                }
-            } else {
-                if ($value !== '' && $value !== null) {
-                    $elementValue = is_array($value) ? implode("\n", $value) : (string)$value;
-
-                    if (empty($sequenceLookup)) {
-                        $elements[] = $elementValue;
-                    } else {
-                        if (isset($sequenceLookup[$name])) {
-                            $elements[$sequenceLookup[$name]] = $elementValue;
-                        } else {
-                            $elements[] = $elementValue;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!empty($sequenceLookup) && count($elements) > 1) {
-            ksort($elements, SORT_NUMERIC);
-        }
-
-        $attributeString = '';
-        if (!empty($this->addattributes)) {
-            $attributeString .= ' ' . $this->addattributes;
-        }
-        if (!empty($attributes)) {
-            $attributeString .= ' ' . implode(' ', $attributes);
-        }
-
-        if (empty($elements)) {
-            return "<{$this->tagName}{$attributeString}/>";
-        }
-
-        return "<{$this->tagName}{$attributeString}>\n" .
-            implode("\n", $elements) .
-            "\n</{$this->tagName}>";
     }
 
     public function deserialize(DOMElement $xml, array $namespaceTranslations = [], array $classTranslations = []): void
