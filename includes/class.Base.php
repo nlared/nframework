@@ -1070,7 +1070,7 @@ function(query, callback){
                 }
 js;
             }
-            //$this->role = 'tomselect';
+            $this->role = 'tomselect';
             unset($this->ajax->load);
             $_SESSION['selectajax'][$this->id] = $this->ajax;
             addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
@@ -1108,7 +1108,8 @@ js,
                 );
             }
         }
-        return
+
+        return ($this->caption != '' && $this->role == 'tomselect' ? '<label id="' . $this->id . '">' . $this->caption . '</label>' : '') .
             '<select name="' . $this->name . ($this->multiple ? '[]" multiple="multiple"' : '"') .
             ' id="' . $this->id . '"' . ' data-role="' . $this->role . '" ' .
             $this->inputtags() .
