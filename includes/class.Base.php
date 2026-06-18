@@ -1109,7 +1109,7 @@ js,
             }
         }
 
-        return ($this->caption != '' && $this->role == 'tomselect' ? '<label id="' . $this->id . '">' . $this->caption . '</label>' : '') .
+        return ($this->caption != '' && $this->role == 'tomselect' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') .
             '<select name="' . $this->name . ($this->multiple ? '[]" multiple="multiple"' : '"') .
             ' id="' . $this->id . '"' . ' data-role="' . $this->role . '" ' .
             $this->inputtags() .
