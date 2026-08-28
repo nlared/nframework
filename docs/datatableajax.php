@@ -76,8 +76,7 @@ if ($nframework->isAjax()) {
 			<div class="box-title">Ajax Datatable</div>
 			<?= $datatable; ?>
 		</div>
-	</div>
-	<div class="container p-5">
+	</div>	
 		<pre class="stay-on"><code class="html">
 <?= tocode(__file__) ?>
 </code></pre>

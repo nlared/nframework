@@ -140,7 +140,6 @@ if ($nframework->isAjax()) {
     ]);
 ?>
     <div class="container">
-        <? secureform(); ?>
         <div class="box shadow-large">
             <div class="box-title">Import Data</div>
             <div class="grid">
@@ -167,8 +166,49 @@ if ($nframework->isAjax()) {
                         <?= $import_file_range ?>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="cell">
+                        <button class="button primary" id="import_button">Import</button>
+                    </div>
+                </div>
+                <div>
+                    <div class="row">
+                        <div class="cell">
+                            <?= $datatable ?>
+                        </div>
+                    </div>
+                </div>
             </div>
-            </form>
         </div>
-    <?
+    </div>
+    <script>
+        function previewImport() {
+            var formData = new FormData();
+            formData.append('importfile', document.que<div class="row">
+				<div class="cell"><?=$nombre?></div>
+			</div>rySelector('input[name="importfile"]').files[0]);
+            formData.append('import_file_type', document.querySelector('select[name="import_file_type"]').value);
+            formData.append('import_file_separator', document.querySelector('input[name="import_file_separator"]').value);
+            formData.append('import_file_has_header', document.querySelector('select[name="import_file_has_header"]').value);
+            formData.append('import_file_range', document.querySelector('input[name="import_file_range"]').value);
+
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    datatable.ajax.reload(); // Refresh the datatable to show the imported data
+                    // Optionally, refresh the datatable or perform other actions
+                } else {
+                    alert('Error importing file: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while importing the file.');
+            });
+        }
+    </script>
 }
