@@ -9,7 +9,7 @@ class NominaReceptor extends \XMLS
   0 => 'Curp',
   1 => 'NumSeguridadSocial',
   2 => 'FechaInicioRelLaboral',
-  3 => 'Antig__edad',
+  3 => 'Antigüedad',
   4 => 'TipoContrato',
   5 => 'Sindicalizado',
   6 => 'TipoJornada',
@@ -32,7 +32,7 @@ class NominaReceptor extends \XMLS
     public $Curp = '';
     public $NumSeguridadSocial = '';
     public $FechaInicioRelLaboral = '';
-    public $Antig__edad = '';
+    public $Antigüedad = '';
     public $TipoContrato = '';
     public $Sindicalizado = '';
     public $TipoJornada = '';
