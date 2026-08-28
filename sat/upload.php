@@ -59,6 +59,8 @@ if ( 0 < $_FILES['file']['error'] ) {
 	exec("openssl x509 -inform DER -outform PEM -in $certfile -out $certpem",$consola3);
 	//echo '<br>openssl ocsp -issuer '.$vsatdir.'/ac2_4096.crt -cert '.$this->certpem.
 	//' -text -url https://cfdit.sat.gob.mx/edofiel -VAfile '.$vsatdir.'/OCSP_AC_4096_SHA256.crt';
+/*
+
 	exec('openssl ocsp -issuer '.$vsatdir.'/ac2_4096.crt -cert '.$certpem.
 	' -text -url https://cfdit.sat.gob.mx/edofiel -VAfile '.$vsatdir.'/OCSP_AC_4096_SHA256.crt',$consola4,$otro);
 	foreach($consola4 as $linea){
@@ -76,8 +78,9 @@ if ( 0 < $_FILES['file']['error'] ) {
 		$error='Certificado Revocado ante SAT';	
 	}else{
 		$info[]= "Certificado activo ante SAT";
-	}*/
+	}
 	$revocado=('good'!=trim(substr($res[0],$pos))?false:true);
+	*/
 	move_uploaded_file($_FILES['file']['tmp_name'], __DIR__.'/certs/' . $no_cert);
     
     //move_uploaded_file($_FILES['file']['tmp_name'], 'uploads/' . $_FILES['file']['name']);
