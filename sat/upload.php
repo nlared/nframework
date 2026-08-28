@@ -81,6 +81,7 @@ if ( 0 < $_FILES['file']['error'] ) {
 	}
 	$revocado=('good'!=trim(substr($res[0],$pos))?false:true);
 	*/
+	$revocado=false;
 	if(!file_exists(__DIR__.'/certs/' ))
 		mkdir(__DIR__.'/certs/');		
 	move_uploaded_file($_FILES['file']['tmp_name'], __DIR__.'/certs/' . $no_cert);
