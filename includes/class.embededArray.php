@@ -21,9 +21,79 @@ class embededArray
 	public $template;
 	public $nfchilds = [];
 	public $onchange = '';
+	private $documentKey;
+
+	private function buildFieldRules(): array
+	{
+		$fieldRules = [];
+		foreach ($this->elements as $element) {
+			if (!is_object($element) || empty($element->field)) {
+				continue;
+			}
+
+			$fieldName = (string) $element->field;
+			$fieldRules[$fieldName] = [
+				'required' => !empty($element->required),
+				'pattern' => $element->pattern ?? '',
+				'validate' => $element->validate ?? '',
+				'type' => $element->type ?? get_class($element),
+			];
+		}
+
+		return $fieldRules;
+	}
+
+	private function buildScopedIdentifier(string $prefix, ?string $base = null): string
+	{
+		$base = trim((string) ($base ?? ''));
+		if ($base === '') {
+			return $prefix . '_' . substr($this->documentKey, 0, 16) . '_' . md5(($this->field ?? '') . ($this->nameprefix ?? '') . ($this->dataset->_id ?? '') . $prefix);
+		}
+
+		return $base;
+	}
+
 	public function addElement(&$object)
 	{
 		$this->elements[] = $object;
+	}
+
+	private function buildDocumentKey(): string
+	{
+		if (!isset($this->dataset)) {
+			return 'anonymous';
+		}
+
+		$collection = $this->dataset->collection ?? null;
+		$database = $collection instanceof \MongoDB\Collection ? $collection->getDatabaseName() : ($this->database ?? '');
+		$collectionName = $collection instanceof \MongoDB\Collection ? $collection->getCollectionName() : ($this->collection ?? 'unknown');
+		$documentId = isset($this->dataset->_id) ? (string) $this->dataset->_id : 'new';
+		$page = $_SERVER['PHP_SELF'] ?? $_SERVER['REQUEST_URI'] ?? '';
+
+		return hash('sha256', $database . '.' . $collectionName . '.' . $documentId . '.' . $page);
+	}
+
+	private function cleanupSessionEntries(): void
+	{
+		if (empty($_SESSION['nfembeded']) || empty($this->documentKey)) {
+			return;
+		}
+
+		foreach ($_SESSION['nfembeded'] as $sessionId => $entry) {
+			if (!is_array($entry)) {
+				continue;
+			}
+
+			$sessionDocumentKey = $entry['document_key'] ?? null;
+			if ($sessionDocumentKey === $this->documentKey && $sessionId !== $this->id) {
+				unset($_SESSION['nfembeded'][$sessionId]);
+				continue;
+			}
+
+			if ($sessionDocumentKey !== null && $sessionDocumentKey !== $this->documentKey) {
+				unset($_SESSION['nfembeded'][$sessionId]);
+			}
+		}
 	}
 
 	public function __construct($options = [])
@@ -33,15 +103,23 @@ class embededArray
 			$this->{$option} = $value;
 		}
 
+		if (!isset($this->dataset) || !is_object($this->dataset)) {
+			throw new InvalidArgumentException('embededArray requires a valid dataset object.');
+		}
+
 		$this->database = $this->dataset->collection->getDatabaseName();
 		$this->collection = $this->dataset->collection->getCollectionName();
-		$this->nameprefix = $this->dataset->nameprefix;
-		$this->historic = $this->dataset->historic;
-		$this->simpleid = $this->dataset->simpleid;
-		$this->_id = $this->dataset->_id;
-		if (empty($this->id)) {
-			$this->id = 'ArrayFront_' . hash('crc32', $_SERVER['PHP_SELF'] . $this->_id) . '_' . $nframework->counters('ajaxdialog');
-		}
+		$this->nameprefix = $this->dataset->nameprefix ?? '';
+		$this->historic = $this->dataset->historic ?? false;
+		$this->simpleid = $this->dataset->simpleid ?? false;
+		$this->_id = $this->dataset->_id ?? null;
+		$this->documentKey = $this->buildDocumentKey();
+
+		$this->id = $this->buildScopedIdentifier('ArrayFront', $this->id ?? null);
+		$this->containerid = $this->buildScopedIdentifier('container', $this->containerid ?? null);
+		$this->dialogid = $this->buildScopedIdentifier('dialog', $this->dialogid ?? null);
+
+		$this->cleanupSessionEntries();
 	}
 
 	public function function_new()
@@ -59,6 +137,7 @@ class embededArray
 				//'options' => $e->getOptions()
 			];
 		}
+		$fieldRules = $this->buildFieldRules();
 		$_SESSION['nfembeded'][$this->id] = [
 			'database' => $this->database,
 			'collection' => $this->collection,
@@ -66,20 +145,24 @@ class embededArray
 			'historic' => $this->historic,
 			'simpleid' => $this->simpleid,
 			'_id' => $this->_id,
+			'page' => $_SERVER['PHP_SELF'] ?? $_SERVER['REQUEST_URI'] ?? '',
+			'document_key' => $this->documentKey,
 			'field' => $this->field,
 			'template' => $this->template,
 			'nfparent' => $this->nfparent,
 			'nfchilds' => $this->nfchilds,
 			'target' => $this->target,
+			'field_rules' => $fieldRules,
 		];
 
 		addVarToGarbage('nfembeded\\' . $this->id, time() + (60 * 60));
 
 
-		if (!$nframework->onces['embededArray']) {
+		if (empty($nframework->onces['embededArray'])) {
 			$javas->addjs('var nfembededs=[];');
 			$nframework->onces['embededArray'] = true;
 		}
+		$target = '';
 		if (!empty($this->target)) {
 			$target = 'target:"' . $this->target . '",';
 		}
@@ -91,9 +174,9 @@ class embededArray
 
 		$java = <<<JAVA
 	function {$this->id}_show(){
-		
+ 		
 		$.ajax({
-			url: "/nframework/embeded.php?_id={$this->id}",
+			url: "/nframework/embeded.php?_id={$this->id}&document_key={$this->documentKey}",
 			method: 'post',
 			cache: false,
 			headers: { 'Cache-Control': 'no-cache' },
@@ -113,7 +196,7 @@ class embededArray
 	
 	function {$this->id}_load(){
 		$.ajax({
-			url: "/nframework/embeded.php?_id={$this->id}",
+			url: "/nframework/embeded.php?_id={$this->id}&document_key={$this->documentKey}",
 			method: 'post',
 			cache: false,
 			headers: { 'Cache-Control': 'no-cache' },
@@ -127,7 +210,7 @@ class embededArray
 	}
 	function {$this->id}_get(pos){
 		$.ajax({
-			url: "/nframework/embeded.php?_id={$this->id}",
+			url: "/nframework/embeded.php?_id={$this->id}&document_key={$this->documentKey}",
 			method: 'post',
 			cache: false,
 			headers: { 'Cache-Control': 'no-cache' },
@@ -144,8 +227,6 @@ class embededArray
 			{$childs}
 			
 			Object.keys(result.item).forEach(key => {
-				console.log(key);
-				console.log(result.item[key]);
 			    var mo = Metro.getPlugin('#{$this->nameprefix}_'+key, "select");
 			    if (mo){
 			    	mo.val(result.item[key]);
@@ -198,7 +279,7 @@ class embededArray
 			if (result.isConfirmed) {
 				
 				$.ajax({
-					url: "/nframework/embeded.php?_id={$this->id}",
+					url: "/nframework/embeded.php?_id={$this->id}&document_key={$this->documentKey}",
 					method: 'post',
 					headers: { 'Cache-Control': 'no-cache' },
 					cache: false,
@@ -225,53 +306,56 @@ class embededArray
 	}
 	{$this->id}_load();
 	$('#{$this->dialogid}_btnAcept').on("click", function(){
-		//parentpos={$parent};
 		const validator = Metro.validator;
-		
-		let d= {
-            val: 0,
-            log: []
-        }
-		
-		let valid=true;
-		let errormsg='';
-		
-		$("#{$this->dialogid}_form").find("input[data-validate], select[data-validate], textarea[data-validate]").each(function () {
-			const label = $(this).data("label") || this.name || this.id;
-			Metro.validator.validate(this, d, 
-		    	() => console.log('valid'),
-		    	() => {valid=false;errormsg+='Error en '+label;},
-		    	true // requiredMode
-		  );
+		const form = $("#{$this->dialogid}_form");
+		let d = { val: 0, log: [] };
+		let valid = true;
+		let errormsg = '';
+
+		form.find("input[data-validate], select[data-validate], textarea[data-validate]").each(function () {
+			const \$input = $(this);
+			const label = \$input.data("label") || this.name || this.id;
+			\$input.removeClass('is-invalid');
+			validator.validate(this, d,
+				() => { /* valid */ },
+				() => {
+					valid = false;
+					\$input.addClass('is-invalid');
+					errormsg += (errormsg ? '\\n' : '') + 'Error en ' + label;
+				},
+				true
+			);
 		});
-		console.log(d);
-			
-		if(valid){	
-			console.log('here true');
-			formData = $("#{$this->dialogid}_form").serialize()+ '&t=' + $.now();;
+
+		if(valid){
+			const formData = form.serialize() + '&document_key=' + encodeURIComponent('{$this->documentKey}') + '&t=' + $.now();
 			$.ajax({
-				url: "/nframework/embeded.php?_id={$this->id}",
+				url: "/nframework/embeded.php?_id={$this->id}&document_key={$this->documentKey}",
 				method: 'post',
 				headers: { 'Cache-Control': 'no-cache' },
 				cache: false,
 				data: formData
 			}).done(function(result) {
-				$('#{$this->containerid}').html(result.container);				
-				nfembededs['{$this->id}']=result.items.length;
-				{$this->onchange}	
-			}).fail(function(jqXHR, textStatus, errorThrown) {
-				errormsg='Error al guardar';
-				if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
-					errormsg = jqXHR.responseJSON.error;
+				if (result && result.error) {
+					alert(result.error);
+					return;
 				}
-				alert(errormsg);
+				$('#{$this->containerid}').html(result.container);
+				nfembededs['{$this->id}']=result.items.length;
+				{$this->dialogid}.close();
+				{$this->onchange}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				let backendError = 'Error al guardar';
+				if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
+					backendError = jqXHR.responseJSON.error;
+				} else if (jqXHR.responseText) {
+					backendError = jqXHR.responseText;
+				}
+				alert(backendError);
 			});
-			{$this->dialogid}.close();
 		}else{
-			//toast(errormsg,null,5000, "warning");
 			alert(errormsg);
 		}
-		
 	});
 	
 	

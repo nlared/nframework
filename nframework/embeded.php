@@ -36,6 +36,52 @@ use Twig\Environment;
 use Twig\Extension\StringLoaderExtension;
 
 $result = ['status' => 'init'];
+
+function buildDocumentKey(array $info): string
+{
+    $database = $info['database'] ?? '';
+    $collection = $info['collection'] ?? '';
+    $documentId = isset($info['_id']) ? (string) $info['_id'] : '';
+    $page = $info['page'] ?? $info['source_page'] ?? ($_SERVER['PHP_SELF'] ?? $_SERVER['REQUEST_URI'] ?? '');
+
+    return hash('sha256', $database . '.' . $collection . '.' . $documentId . '.' . $page);
+}
+
+function validateEmbeddedValue(string $fieldName, $value, array $rules): array
+{
+    $valueText = is_array($value) ? '' : (string) $value;
+    $ruleSet = is_array($rules) ? $rules : [];
+
+    if (!empty($ruleSet['required']) && ($value === null || $value === '' || (is_array($value) && empty($value)))) {
+        return ['valid' => false, 'message' => 'El campo ' . $fieldName . ' es obligatorio.'];
+    }
+
+    $validateRules = preg_split('/\s+/', trim((string) ($ruleSet['validate'] ?? '')));
+    foreach ($validateRules as $rule) {
+        if ($rule === 'required') {
+            continue;
+        }
+        if ($rule === 'email' && !filter_var($valueText, FILTER_VALIDATE_EMAIL)) {
+            return ['valid' => false, 'message' => 'El campo ' . $fieldName . ' no tiene un email válido.'];
+        }
+        if (($rule === 'number' || $rule === 'numeric') && !is_numeric($valueText)) {
+            return ['valid' => false, 'message' => 'El campo ' . $fieldName . ' debe ser numérico.'];
+        }
+        if (($rule === 'integer' || $rule === 'digits') && !preg_match('/^-?\d+$/', $valueText)) {
+            return ['valid' => false, 'message' => 'El campo ' . $fieldName . ' debe ser entero.'];
+        }
+    }
+
+    if (!empty($ruleSet['pattern'])) {
+        $pattern = '/' . str_replace('/', '\/', $ruleSet['pattern']) . '/';
+        if ($value !== null && $value !== '' && preg_match($pattern, (string) $value) !== 1) {
+            return ['valid' => false, 'message' => 'El campo ' . $fieldName . ' no cumple el formato requerido.'];
+        }
+    }
+
+    return ['valid' => true, 'message' => ''];
+}
+
 function get_data($dataset, string $field)
 {
     $parts = explode('.', $field);
@@ -73,6 +119,20 @@ try {
     }
     $id = $_GET['_id'];
     $info = $_SESSION['nfembeded'][$id];
+    if (empty($info['_id']) || empty($info['database']) || empty($info['collection'])) {
+        throw new RuntimeException('The embedded array session is incomplete.');
+    }
+
+    $sourcePage = $info['page'] ?? $info['source_page'] ?? ($_SERVER['PHP_SELF'] ?? $_SERVER['REQUEST_URI'] ?? '');
+    $info['page'] = $sourcePage;
+    $computedDocumentKey = buildDocumentKey($info);
+    $requestedDocumentKey = $_POST['document_key'] ?? $_GET['document_key'] ?? null;
+    if (!empty($requestedDocumentKey) && $requestedDocumentKey !== $computedDocumentKey) {
+        throw new RuntimeException('Embedded array document reference mismatch.');
+    }
+    $_SESSION['nfembeded'][$id]['page'] = $sourcePage;
+    $_SESSION['nfembeded'][$id]['document_key'] = $computedDocumentKey;
+
     //$result['debug'] = $info;
     //$result['ss'] = $_SESSION['nfembeded'];
     //$result['session_id'] = session_id();
@@ -115,27 +175,48 @@ try {
     }
     $items = mongotoArray($items);
 
-    if (isset($_POST['pos'])) {
-        $pos = (int)$_POST['pos'];
-    }
-    if ($_POST['op'] == 'pos') {
-        $_SESSION['nfembeded'][$id]['pos'] = $pos;
+    $op = $_POST['op'] ?? '';
+    $pos = isset($_POST['pos']) ? (int) $_POST['pos'] : null;
+
+    if ($op === 'pos') {
+        if ($pos !== null) {
+            $_SESSION['nfembeded'][$id]['pos'] = $pos;
+        }
         $result['items'] = $items;
-    } elseif ($_POST['op'] == 'load') {
-        $result['item'] = $items[$pos];
-        $_SESSION['nfembeded'][$id]['pos'] = $pos;
+    } elseif ($op === 'load') {
+        if ($pos !== null && isset($items[$pos])) {
+            $result['item'] = $items[$pos];
+            $_SESSION['nfembeded'][$id]['pos'] = $pos;
+        } else {
+            throw new InvalidArgumentException('No se encontró la posición solicitada.');
+        }
     } else {
-        if ($_POST['op'] == 'update') {
-            foreach ($_POST[$info['nameprefix']] as $k => $pfield) {
+        if ($op === 'update') {
+            $fieldRules = $info['field_rules'] ?? [];
+            $payload = $_POST[$info['nameprefix']] ?? [];
+            if (!is_array($payload)) {
+                throw new InvalidArgumentException('Los datos enviados no tienen el formato esperado.');
+            }
+
+            foreach ($payload as $k => $pfield) {
+                $rules = $fieldRules[$k] ?? [];
+                $validation = validateEmbeddedValue($k, $pfield, $rules);
+                if (!$validation['valid']) {
+                    throw new InvalidArgumentException($validation['message']);
+                }
+
                 $set[$field . '.' . $pos . '.' . $k] = $pfield;
                 $items[$pos][$k] = $pfield;
             }
             $result['set'] = $set;
             $m->{$info['database']}->{$info['collection']}->updateOne(['_id' => ($info['simpleid'] ? $info['_id'] : tomongoid($info['_id']))], ['$set' => $set], ['upsert' => true]);
-        } elseif ($_POST['op'] == 'delete') {
+        } elseif ($op === 'delete') {
+            if ($pos === null || !isset($items[$pos])) {
+                throw new InvalidArgumentException('No se encontró la posición a eliminar.');
+            }
+
             unset($items[$pos]);
             $items = array_values($items);
-            // $m->{$info['database']}->{$info['collection']}->updateOne(['_id'=>($info['simpleid']?$info['_id']:tomongoid($info['_id']))],['$unset'=>[$field.'.'.$pos=>1]]);
             $m->{$info['database']}->{$info['collection']}->updateOne(['_id' => ($info['simpleid'] ? $info['_id'] : tomongoid($info['_id']))], ['$set' => [$field => $items]]);
         }
         $result['field'] = $field;
@@ -150,5 +231,6 @@ try {
 } catch (Exception $e) {
     $result['error'] = $e->getMessage();
 }
-//header('Content-Type: application/json');
-//echo json_encode($result);
+
+header('Content-Type: application/json; charset=utf-8');
+echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
