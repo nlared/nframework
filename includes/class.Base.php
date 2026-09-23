@@ -223,7 +223,7 @@ class baseInput
 
         $valueText = (string) $newval;
         $rules = !empty($this->validate) ? preg_split('/\s+/', trim((string) $this->validate)) : [];
-        $rules = array_values(array_filter($rules ?? [], static fn ($rule) => $rule !== ''));
+        $rules = array_values(array_filter($rules ?? [], static fn($rule) => $rule !== ''));
 
         $patternValue = (string) ($this->pattern ?? '');
         if ($patternValue !== '') {
@@ -267,7 +267,7 @@ class baseInput
     public function data_validate()
     {
         $rules = !empty($this->validate) ? preg_split('/\s+/', trim((string) $this->validate)) : [];
-        $rules = array_values(array_filter($rules, static fn ($rule) => $rule !== ''));
+        $rules = array_values(array_filter($rules, static fn($rule) => $rule !== ''));
 
         if (!empty($this->required) && !in_array('required', $rules, true)) {
             $rules[] = 'required';
@@ -555,7 +555,7 @@ class inputNumber extends baseInput
         }
 
         $rules = !empty($this->validate) ? preg_split('/\s+/', trim((string) $this->validate)) : [];
-        $rules = array_values(array_filter($rules, static fn ($rule) => $rule !== ''));
+        $rules = array_values(array_filter($rules, static fn($rule) => $rule !== ''));
 
         foreach ($rules as $rule) {
             if ($rule === 'float' || $rule === 'number') {
@@ -623,7 +623,7 @@ class inputSpinner extends baseInput
         }
 
         $rules = !empty($this->validate) ? preg_split('/\s+/', trim((string) $this->validate)) : [];
-        $rules = array_values(array_filter($rules, static fn ($rule) => $rule !== ''));
+        $rules = array_values(array_filter($rules, static fn($rule) => $rule !== ''));
 
         foreach ($rules as $rule) {
             if ($rule === 'float' || $rule === 'number') {
