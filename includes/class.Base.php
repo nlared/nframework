@@ -190,41 +190,75 @@ class baseInput
                     } elseif ($current instanceof \MongoDB\Model\BSONDocument) {
                         $current = $current->$key;
                     } else {
-                        $current = $this->default; // Retorna null si la clave no existe
+                        $current = $this->default;
                     }
                 }
                 $this->value = $current;
-            } else {
-
-                if (!isset($this->dataset->{$this->field}) && isset($this->default)) {
-                    $this->value = $this->default;
-                } else {
-                    $this->value = $this->dataset->{$this->field};
-                }
-            }
-        } else {
-            if (!isset($this->value) && isset($this->default)) {
+            } elseif (isset($this->dataset->{$this->field})) {
+                $this->value = $this->dataset->{$this->field};
+            } elseif (isset($this->default)) {
                 $this->value = $this->default;
             }
+        } elseif (!isset($this->value) && isset($this->default)) {
+            $this->value = $this->default;
         }
-        if ($this->id == '') {
-            $this->id = str_replace(['[', ']', '.'], ['_', '', '_'], $this->name);
+
+        if ($this->id === '') {
+            $this->id = str_replace(['[', ']', '.'], ['_', '', '_'], (string) $this->name);
         }
-        if ($this->id == '') {
-            $this->id = str_replace(['[', ']', '.'], ['_', '', '_'], $this->field);
+        if ($this->id === '') {
+            $this->id = str_replace(['[', ']', '.'], ['_', '', '_'], (string) $this->field);
         }
     }
 
     public function is_valid($newval)
     {
-        return $this->pattern != '' ? filter_var($newval, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/' . $this->pattern . '/']]) : true;
+        if ($newval === null || (is_string($newval) && trim($newval) === '')) {
+            return !$this->required;
+        }
+
+        if (!is_scalar($newval) && !is_object($newval) && !method_exists($newval, '__toString')) {
+            return false;
+        }
+
+        $valueText = (string) $newval;
+        $rules = !empty($this->validate) ? preg_split('/\s+/', trim((string) $this->validate)) : [];
+        $rules = array_values(array_filter($rules ?? [], static fn ($rule) => $rule !== ''));
+
+        $patternValue = (string) ($this->pattern ?? '');
+        if ($patternValue !== '') {
+            $pattern = '/' . str_replace('/', '\/', $patternValue) . '/';
+            if (preg_match($pattern, $valueText) !== 1) {
+                return false;
+            }
+        }
+
+        foreach ($rules as $rule) {
+            if ($rule === 'required') {
+                continue;
+            }
+            if ($rule === 'email' && !filter_var($valueText, FILTER_VALIDATE_EMAIL)) {
+                return false;
+            }
+            if (($rule === 'number' || $rule === 'numeric') && !is_numeric($valueText)) {
+                return false;
+            }
+            if (($rule === 'integer' || $rule === 'digits') && !preg_match('/^-?\d+$/', $valueText)) {
+                return false;
+            }
+            if (($rule === 'float' || $rule === 'double') && !filter_var($valueText, FILTER_VALIDATE_FLOAT)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     protected function writetags(): string
     {
         $result = '';
         foreach ($this->tags as $name => $value) {
-            $result .= ' ' . $name . '="' . $value . '"';
+            $result .= ' ' . $name . '="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '"';
         }
 
         return $result;
@@ -232,47 +266,76 @@ class baseInput
 
     public function data_validate()
     {
-        if (!empty($this->validate)) {
-            $rules = explode(' ', $this->validate);
-        } else {
-            $rules = [];
-        }
-        if ($this->required && !in_array('required', $rules)) {
+        $rules = !empty($this->validate) ? preg_split('/\s+/', trim((string) $this->validate)) : [];
+        $rules = array_values(array_filter($rules, static fn ($rule) => $rule !== ''));
+
+        if (!empty($this->required) && !in_array('required', $rules, true)) {
             $rules[] = 'required';
         }
 
-        if ($this->pattern) {
+        if (!empty($this->pattern)) {
+            $hasPatternRule = false;
             foreach ($rules as $rule) {
-                if (substr($rule, 0, 7) == 'pattern') {
-                    $encontrado = true;
+                if (stripos((string) $rule, 'pattern') === 0) {
+                    $hasPatternRule = true;
+                    break;
                 }
             }
-            if (!$encontrado) {
+            if (!$hasPatternRule) {
                 $rules[] = 'pattern=(' . $this->pattern . ')';
             }
         }
+
         $rulesstr = trim(implode(' ', $rules));
 
-        return !empty($rulesstr) ? ' data-validate="' . $rulesstr . '"' : '';
+        return $rulesstr !== '' ? ' data-validate="' . $rulesstr . '"' : '';
     }
 
     public function inputtags()
     {
-        return ($this->caption ? ' data-label="' . $this->caption . '"' : '') .
-            ($this->addclass ? ' class="' . $this->addclass . '"' : '') .
-            ($this->required ? ' required="required"' : '') .
-            ($this->pattern ? ' data-mask-pattern="' . $this->pattern . '"' : '') .
-            ($this->readonly ? ' readonly="readonly"' : '') .
-            ($this->disabled ? ' disabled' : '') .
-            ($this->prepend ? ' data-prepend="' . $this->prepend . '"' : '') .
-            ($this->append ? ' data-append="' . $this->append . '"' : '') .
-            ($this->prepend_options ? ' data-prepend-options="' . $this->prepend_options . '"' : '') .
-            ($this->append_options ? ' data-append-options="' . $this->append_options . '"' : '') .
-            ($this->invalid_feedback != '' ? '<span class="invalid_feedback">' . $this->invalid_feedback . '</span>' : '') .
-            ($this->autocomplete ? '" autocomplete="' . $this->autocomplete . '"' : '') .
-            ($this->datasize ? ' data-size="' . $this->datasize . '"' : '') .
-            ($this->placeholder ? ' placeholder="' . $this->placeholder . '"' : '') .
-            $this->data_validate();
+        $attributes = [];
+
+        if ($this->caption !== '') {
+            $attributes[] = 'data-label="' . htmlspecialchars((string) $this->caption, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if ($this->addclass !== '') {
+            $attributes[] = 'class="' . htmlspecialchars((string) $this->addclass, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if ($this->required) {
+            $attributes[] = 'required="required"';
+        }
+        if (!empty($this->pattern)) {
+            $attributes[] = 'data-mask-pattern="' . htmlspecialchars((string) $this->pattern, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if ($this->readonly) {
+            $attributes[] = 'readonly="readonly"';
+        }
+        if ($this->disabled) {
+            $attributes[] = 'disabled';
+        }
+        if ($this->prepend !== '') {
+            $attributes[] = 'data-prepend="' . htmlspecialchars((string) $this->prepend, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if ($this->append !== '') {
+            $attributes[] = 'data-append="' . htmlspecialchars((string) $this->append, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if ($this->prepend_options !== '') {
+            $attributes[] = 'data-prepend-options="' . htmlspecialchars((string) $this->prepend_options, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if ($this->append_options !== '') {
+            $attributes[] = 'data-append-options="' . htmlspecialchars((string) $this->append_options, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if ($this->autocomplete !== '') {
+            $attributes[] = 'autocomplete="' . htmlspecialchars((string) $this->autocomplete, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if ($this->datasize !== '') {
+            $attributes[] = 'data-size="' . htmlspecialchars((string) $this->datasize, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if ($this->placeholder !== '') {
+            $attributes[] = 'placeholder="' . htmlspecialchars((string) $this->placeholder, ENT_QUOTES, 'UTF-8') . '"';
+        }
+
+        return ' ' . implode(' ', $attributes) . $this->data_validate();
     }
 
     public function getLabelHtml(): string
@@ -410,11 +473,7 @@ class inputText extends baseInput
 
     public function is_valid($newval): bool
     {
-        if (empty($this->pattern)) {
-            return is_string($newval);
-        }
-
-        return (bool) preg_match('/' . $this->pattern . '/', $newval);
+        return parent::is_valid($newval);
     }
 
     private function getMaskRole(): string
@@ -466,6 +525,10 @@ class inputNumber extends baseInput
 
     public function __toMongo($val)
     {
+        if ($val === null || $val === '') {
+            return null;
+        }
+
         return $this->data_validate == 'integer' || $this->data_validate == 'digits' ? (int) $val : (float) $val;
     }
 
@@ -487,11 +550,23 @@ class inputNumber extends baseInput
 
     public function is_valid($newval)
     {
-        if ($this->validate == 'float') {
-            return filter_var($newval, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_THOUSAND);
-        } else {
-            return filter_var($newval, FILTER_VALIDATE_INT);
+        if ($newval === null || (is_string($newval) && trim($newval) === '')) {
+            return !$this->required;
         }
+
+        $rules = !empty($this->validate) ? preg_split('/\s+/', trim((string) $this->validate)) : [];
+        $rules = array_values(array_filter($rules, static fn ($rule) => $rule !== ''));
+
+        foreach ($rules as $rule) {
+            if ($rule === 'float' || $rule === 'number') {
+                return filter_var((string) $newval, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_THOUSAND) !== false;
+            }
+            if ($rule === 'integer' || $rule === 'digits') {
+                return filter_var((string) $newval, FILTER_VALIDATE_INT) !== false;
+            }
+        }
+
+        return filter_var((string) $newval, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_THOUSAND) !== false || filter_var((string) $newval, FILTER_VALIDATE_INT) !== false;
     }
 }
 
@@ -500,6 +575,10 @@ class inputSpinner extends baseInput
     public $addclass;
     public function __toMongo($val)
     {
+        if ($val === null || $val === '') {
+            return null;
+        }
+
         return ($this->data_validate == 'integer' || $this->data_validate == 'digits' ? (int) $val : (float) $val);
     }
 
@@ -539,7 +618,23 @@ class inputSpinner extends baseInput
     }
     public function is_valid($newval)
     {
-        return is_numeric($newval);
+        if ($newval === null || (is_string($newval) && trim($newval) === '')) {
+            return !$this->required;
+        }
+
+        $rules = !empty($this->validate) ? preg_split('/\s+/', trim((string) $this->validate)) : [];
+        $rules = array_values(array_filter($rules, static fn ($rule) => $rule !== ''));
+
+        foreach ($rules as $rule) {
+            if ($rule === 'float' || $rule === 'number') {
+                return filter_var((string) $newval, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_THOUSAND) !== false;
+            }
+            if ($rule === 'integer' || $rule === 'digits') {
+                return filter_var((string) $newval, FILTER_VALIDATE_INT) !== false;
+            }
+        }
+
+        return filter_var((string) $newval, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_THOUSAND) !== false || filter_var((string) $newval, FILTER_VALIDATE_INT) !== false;
     }
 }
 
@@ -661,18 +756,25 @@ class inputTime extends baseInput
     }
     public function __toMongo($val)
     {
-        if (!empty($val)) {
-            $orig_date = DateTime::createFromFormat('H:i', $val, new DateTimeZone('UTC'));
-            $orig_date = $orig_date->getTimestamp();
-            $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
+        if (empty($val)) {
+            return null;
         }
 
-        return $utcdatetime;
+        $orig_date = DateTime::createFromFormat('H:i', $val, new DateTimeZone('UTC'));
+        if ($orig_date === false) {
+            return null;
+        }
+
+        $orig_date = $orig_date->getTimestamp();
+        return new MongoDB\BSON\UTCDateTime($orig_date * 1000);
     }
     public function is_valid($date)
     {
-        //todo: implement validation logic
-        return preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $date);
+        if ($date === null || $date === '') {
+            return !$this->required;
+        }
+
+        return preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', (string) $date) === 1;
     }
 }
 class inputDateTime extends baseInput
