@@ -28,6 +28,7 @@ function mongo_auto_increment($campo)
     return $result->seq;
 }
 
+#[\AllowDynamicProperties]
 class Base
 {
     public $tags;
@@ -40,39 +41,42 @@ class Base
         }
     }
 }
+#[\AllowDynamicProperties]
 class baseInput
 {
-    public $required;
-    public $addclass;
-    public $class;
-    public $type;
-    public $role;
-    public $infobox;
-    public $id;
-    public $name;
-    public $nameprefix;
+    public $required = false;
+    public $addclass = '';
+    public $class = '';
+    public $type = '';
+    public $role = '';
+    public $infobox = '';
+    public $id = '';
+    public $name = '';
+    public $nameprefix = '';
     public $dataset;
     public $nfembeded;
-    public $field;
-    public $disabled;
-    public $placeholder;
-    public $caption;
-    public $prependicon;
-    public $readonly;
+    public $field = '';
+    public $disabled = false;
+    public $placeholder = '';
+    public $caption = '';
+    public $prependicon = '';
+    public $readonly = false;
     public $default;
-    public $validate;
-    public $prepend;
-    public $append;
-    public $prepend_options;
-    public $append_options;
-    public $autocomplete;
-    public $title;
-    public $pattern;
-    public $onChange;
-    public $tags;
-    public $value;
-    public $datasize;
+    public $validate = '';
+    public $prepend = '';
+    public $append = '';
+    public $prepend_options = '';
+    public $append_options = '';
+    public $autocomplete = '';
+    public $title = '';
+    public $pattern = '';
+    public $onChange = '';
+    public $tags = [];
+    public $value = null;
+    public $datasize = '';
     public $backreadonly = false;
+    public $invalid_feedback = '';
+
     public function __toMongo($val)
     {
         return $val;
@@ -81,36 +85,40 @@ class baseInput
     public function __lset($option, $value)
     {
         $ovars = array_keys(get_object_vars($this));
-        if ($option == 'value') {
+        if ($option === 'value') {
             $this->value = $value;
-        } elseif (in_array($option, $ovars)) {
+        } elseif (in_array($option, $ovars, true)) {
             $this->{$option} = $value;
         } else {
             $this->tags[$option] = $value;
         }
-        echo "$option,$value<br>";
     }
 
     public function __get($name)
     {
-        switch ($name) {
-            case 'value':
-                if (isset($this->dataset)) {
-                    return $this->dataset->{$this->field};
-                } else {
-                    return $this->value;
-                }
+        if ($name === 'value') {
+            if (isset($this->dataset) && isset($this->field)) {
+                return $this->dataset->{$this->field};
+            }
+
+            return $this->value;
         }
+
+        if (property_exists($this, $name)) {
+            return $this->{$name};
+        }
+
+        return null;
     }
 
     public function __isset($option)
     {
         $ovars = array_keys(get_object_vars($this));
-        if (in_array($option, $ovars)) {
+        if (in_array($option, $ovars, true)) {
             return isset($this->{$option});
-        } else {
-            return isset($this->tags[$option]);
         }
+
+        return isset($this->tags[$option]);
     }
 
     public function __construct($options = [])
@@ -121,15 +129,19 @@ class baseInput
             $options['class'] = 'inputText';
         }
         foreach ($options as $option => $value) {
-            if ($option == 'value') {
+            if ($option === 'value') {
                 $this->value = $value;
-            } elseif ($option == 'dataset') {
-                $value->addElement($this);
+            } elseif ($option === 'dataset') {
+                if (is_object($value) && method_exists($value, 'addElement')) {
+                    $value->addElement($this);
+                }
                 $this->dataset = $value;
-            } elseif ($option == 'nfembeded') {
-                $value->addElement($this);
+            } elseif ($option === 'nfembeded') {
+                if (is_object($value) && method_exists($value, 'addElement')) {
+                    $value->addElement($this);
+                }
                 $this->nfembeded = $value;
-            } elseif (in_array($option, $ovars)) {
+            } elseif (in_array($option, $ovars, true)) {
                 $this->{$option} = $value;
             } else {
                 $this->tags[$option] = $value;
@@ -141,28 +153,31 @@ class baseInput
         }
 
         if (!empty($this->nfembeded)) {
-            if ($this->name == '' & $this->field != '') {
+            if ($this->name === '' && $this->field !== '') {
                 $this->name = $this->field;
             }
-            $this->name = $this->nfembeded->nameprefix . '[' . $this->name . ']';
+            if (!empty($this->nfembeded->nameprefix)) {
+                $this->name = $this->nfembeded->nameprefix . '[' . $this->name . ']';
+            }
         }
 
         if (!empty($this->dataset)) {
-            if ($this->name == '' & $this->field != '') {
+            if ($this->name === '' && $this->field !== '') {
                 $this->name = $this->field;
             }
-            $this->name = $this->dataset->nameprefix . '[' . $this->name . ']';
+            if (!empty($this->dataset->nameprefix)) {
+                $this->name = $this->dataset->nameprefix . '[' . $this->name . ']';
+            }
 
-            if ($this->dataset->allUppercase && property_exists($this, 'uppercase')) {
+            if (!empty($this->dataset->allUppercase) && property_exists($this, 'uppercase')) {
                 $this->uppercase = true;
             }
-            if ($this->dataset->allLowercase && property_exists($this, 'lowercase')) {
+            if (!empty($this->dataset->allLowercase) && property_exists($this, 'lowercase')) {
                 $this->lowercase = true;
             }
-            if (strpos($this->field, '.') !== false) {
-                $data = $this->dataset->info;
-                $keys = explode('.', str_replace(['$', '[', ']'], [$this->dataset->position, '.', ''], $this->field));
-                // unset($data['nfversions']);
+            if (strpos((string) $this->field, '.') !== false) {
+                $data = $this->dataset->info ?? [];
+                $keys = explode('.', str_replace(['$', '[', ']'], [$this->dataset->position ?? '', '.', ''], $this->field));
                 $current = $data;
 
                 foreach ($keys as $key) {
@@ -288,7 +303,7 @@ class baseInput
     }
     public function getPatternAttr(): string
     {
-        return $this->pattern ? ' data-mask-pattern="' . $this->pattern . '"' : '';
+        return !empty($this->pattern) ? ' data-mask-pattern="' . $this->pattern . '"' : '';
     }
     public function getAutocompleteAttr(): string
     {
