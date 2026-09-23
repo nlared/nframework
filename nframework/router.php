@@ -1148,6 +1148,11 @@ $router->addRoute('/nftables/[s:collection]/', function (string $route, array $p
 	require 'nftable.php';
 }, ['GET', 'POST']);
 
+$router->addRoute('/nftables/[s:collection]/import', function (string $route, array $p) {
+	global $m, $config, $nframework, $javas, $result;
+	require 'nfimport.php';
+}, ['GET', 'POST']);
+
 $router->addRoute('/nftables/[s:collection]/[s:id]', function (string $route, array $p) {
 	global $m, $config, $nframework, $javas, $result;
 	require 'nfdialog.php';
