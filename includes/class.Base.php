@@ -841,7 +841,7 @@ class inputMCE extends baseInput
     public $upload = false;
     public $mediadir;
     public $baseurl;
-    public $id;
+    // public $id;
     public $extended_valid_elements;
     public $content_css;
     public function __toString()
@@ -878,6 +878,9 @@ hugerte.PluginManager.add('myPlugin', function(editor, url) {
         console.log('Plugin personalizado inicializado');
     });
 });
+	'containerid' => 'list',
+	'dialogid' => $dialog->id,
+	'template' => <<<T
 
             ");
 
