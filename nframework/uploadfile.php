@@ -75,7 +75,11 @@ function handleFileUpload(array $upload): array
 		}
 
 		if (!isset($_FILES[$upload['formname']]['tmp_name'])) {
-			throw new Exception('Form not found: ' . $upload['formname']);
+			return [
+				'error' => '',
+				'onresult' => [],
+				'files' => getFileList($upload),
+			];
 		}
 
 		return handleFileUploadProcess($upload);
@@ -213,7 +217,7 @@ $result = [
 	'delete' => $upload['delete'],
 	'download' => $upload['download'],
 	'preview' => !empty($upload['preview']),
-	'files' => getFileList($upload),
+	'files' => $uploadResult['files'] ?? getFileList($upload),
 	'onresult' => $uploadResult['onresult'],
 	'error' => $uploadResult['error']
 ];

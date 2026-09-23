@@ -1447,39 +1447,60 @@ abstract class BaseFileInput extends baseInput
         global $javas;
 
         $javas->addjs(<<<JS
-            $.ajax({
-                url: '/nframework/uploadfile.php',
-                method: "POST",
-                data: "mid={$this->id}",
-                dataType: 'json',
-                success: function(data) {
-                    nffileupload_{$this->id}(data);
+            (function(){
+                var inputId = '#{$this->id}';
+                var progressId = '#{$this->id}_progress';
+                var \$input = $(inputId);
+                var \$progress = $(progressId);
+
+                if (\$input.length) {
+                    \$input.off('.nfFileUpload');
+                    \$input.removeData('blueimp-fileupload');
+                    \$input.removeData('fileupload');
+                    \$input.removeData('nf-fileupload-bound');
+
+                    try {
+                        \$input.fileupload('destroy');
+                    } catch (e) {}
                 }
-            });
-            
-            $("#{$this->id}_progress").hide();
-            $("#{$this->id}").fileupload({
-                url: '/nframework/uploadfile.php',
-                dataType: "json",
-                done: function (e, data) {
-                    nffileupload_{$this->id}(data.result);
-                },
-                progressall: function (e, data) {
-                    var progress = parseInt(data.loaded / data.total * 100, 10);
-                    var pg = $("#{$this->id}_progress");
-                    if (progress === 100 || progress === 0) {
-                        pg.hide();
-                    } else {
-                        pg.show();
-                        pg.attr("data-value", progress);
+
+                $.ajax({
+                    url: '/nframework/uploadfile.php',
+                    method: "POST",
+                    data: "mid={$this->id}",
+                    dataType: 'json',
+                    success: function(data) {
+                        nffileupload_{$this->id}(data);
                     }
-                }
-            }).bind("fileuploadcompleted", function(e, data) {
-                console.log("eventFinished");
-            }).prop("disabled", !$.support.fileInput)
-              .parent().addClass($.support.fileInput ? undefined : "disabled");           
-            
-              
+                });
+
+                \$progress.hide();
+                \$input.fileupload({
+                    url: '/nframework/uploadfile.php',
+                    dataType: "json",
+                    done: function (e, data) {
+                        nffileupload_{$this->id}(data.result);
+                        try {
+                            \$input.val('');
+                            \$input.trigger('change');
+                        } catch (e) {}
+                    },
+                    progressall: function (e, data) {
+                        var progress = parseInt(data.loaded / data.total * 100, 10);
+                        if (progress === 100 || progress === 0) {
+                            \$progress.hide();
+                        } else {
+                            \$progress.show();
+                            \$progress.attr("data-value", progress);
+                        }
+                    }
+                }).bind("fileuploadcompleted", function(e, data) {
+                    console.log("eventFinished");
+                }).prop("disabled", !$.support.fileInput)
+                  .parent().addClass($.support.fileInput ? undefined : "disabled");
+
+                \$input.data('nf-fileupload-bound', true);
+            })();
         JS, 'ready');
     }
 
@@ -1504,7 +1525,10 @@ class inputFile extends BaseFileInput
         $lng = $nframework->language;
         $this->initializeFileUpload();
 
-        // Prepare session data with path-specific config
+        // Prepare session data with path-specific config.
+        // Reinitializing the same mid guarantees a clean state when the control is reused
+        // without reloading the page.
+        unset($_SESSION['uploads4'][$this->id]);
         $_SESSION['uploads4'][$this->id] = array_merge($this->getSessionConfig(), [
             'dir' => dirname($this->path),
             'extension' => $nframework->api_path . '/uploadfile_ext_path.php',
@@ -1596,7 +1620,8 @@ class inputFiles extends BaseFileInput
         $lng = $nframework->language;
         $this->initializeFileUpload();
 
-        // Prepare session configuration
+        // Prepare session configuration; the same control id may be re-used without reload.
+        unset($_SESSION['uploads4'][$this->id]);
         $_SESSION['uploads4'][$this->id] = array_merge($this->getSessionConfig(), [
             'countlimit' => (int) $this->countlimit,
             'sizelimit' => $this->sizelimit,
