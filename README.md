@@ -39,6 +39,18 @@ git clone https://github.com/yourusername/nframework.git
 cd nframework
 ```
 
+### Install as Composer package (Laravel)
+
+```bash
+composer require nlared/nframework
+```
+
+The package auto-registers artisan commands:
+
+- `php artisan make:databindingajax {name?} {--path=docs} {--force}`
+- `php artisan make:databingajax {name?} {--path=docs} {--force}` (alias)
+- `php artisan make:datatableajax {name?} {--path=docs} {--force}`
+
 2. **Install dependencies:**
 ```bash
 composer install
