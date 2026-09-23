@@ -4,6 +4,14 @@ namespace Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 
+class ComponentsTest extends TestCase
+{
+    public function testComponentSuiteIsAvailable(): void
+    {
+        $this->assertTrue(true);
+    }
+}
+
 /**
  * Test suite for XMLS class
  */

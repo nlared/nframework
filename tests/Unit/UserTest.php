@@ -147,7 +147,6 @@ class UserTest extends TestCase
         // Manually set the info property
         $reflection = new \ReflectionClass($user);
         $property = $reflection->getProperty('info');
-        $property->setAccessible(true);
         $property->setValue($user, $userData);
 
         return $user;

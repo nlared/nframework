@@ -130,3 +130,63 @@ class HelperFunctionsTest extends TestCase
         $this->assertEquals('', $result);
     }
 }
+
+class EmbeddedArrayValidationTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $_SESSION = [];
+        $_SERVER['PHP_SELF'] = '/admin/test.php';
+
+        $GLOBALS['nframework'] = new \stdClass();
+        $GLOBALS['nframework']->onces = [];
+        $GLOBALS['javas'] = new class {
+            public function addjs($js): void
+            {
+            }
+        };
+    }
+
+    public function testBaseInputValidationRulesAreIncluded(): void
+    {
+        $input = new \baseInput([
+            'field' => 'email',
+            'pattern' => '^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$',
+            'required' => true,
+        ]);
+
+        $validation = $input->data_validate();
+
+        $this->assertStringContainsString('required', $validation);
+        $this->assertStringContainsString('pattern=', $validation);
+        $this->assertStringContainsString('^[a-z0-9._%+-]+', $validation);
+    }
+
+    public function testInputTextEmailValidationAcceptsValidAndRejectsInvalidValues(): void
+    {
+        $input = new \inputText([
+            'field' => 'email',
+            'type' => 'email',
+            'required' => true,
+        ]);
+
+        $this->assertStringContainsString('email', $input->data_validate());
+        $this->assertTrue($input->is_valid('user@example.com'));
+        $this->assertFalse($input->is_valid('not-an-email'));
+    }
+
+    public function testInputNumberValidationHandlesIntegersAndFloats(): void
+    {
+        $integer = new \inputNumber(['field' => 'quota', 'validate' => 'integer']);
+        $float = new \inputNumber(['field' => 'price', 'validate' => 'float']);
+
+        $this->assertTrue($integer->is_valid('42'));
+        $this->assertFalse($integer->is_valid('42.5'));
+        $this->assertTrue($float->is_valid('42.5'));
+        $this->assertFalse($float->is_valid('abc'));
+    }
+
+}
