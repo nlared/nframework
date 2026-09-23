@@ -4,19 +4,30 @@ require 'include.php';
 function getParentPositions(array $nodes, string $startId): array
 {
     $positions = [];
-    $current   = $startId;
+    $current = $startId;
+    $visited = [];
 
     while (isset($nodes[$current]['nfparent'])) {
-        $parentId = $nodes[$current]['nfparent'];
-        if (!isset($nodes[$parentId])) {
-            // Si el padre no existe, detenemos el bucle
+        if (isset($visited[$current])) {
             break;
         }
+        $visited[$current] = true;
+
+        $parentId = $nodes[$current]['nfparent'];
+        if (!isset($nodes[$parentId])) {
+            break;
+        }
+
+        $parentDocumentKey = $nodes[$parentId]['document_key'] ?? null;
+        $currentDocumentKey = $nodes[$current]['document_key'] ?? null;
+        if ($parentDocumentKey !== null && $currentDocumentKey !== null && $parentDocumentKey !== $currentDocumentKey) {
+            break;
+        }
+
         $positions[] = $nodes[$parentId]['pos'] ?? 0;
-        $current     = $parentId;
+        $current = $parentId;
     }
 
-    // Invertimos para que vaya de id1 → id2 (en lugar de id2 → id1)
     return array_reverse($positions);
 }
 
