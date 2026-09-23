@@ -1,29 +1,38 @@
 <?php
-if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-    $_SERVER['REQUEST_SCHEME'] = str_replace('http', 'https', $_SERVER['REQUEST_SCHEME']);
-    $_SERVER['SERVER_PROTOCOL'] = str_replace('HTTP', 'HTTPS', $_SERVER['SERVER_PROTOCOL']);
-    $_SERVER['HTTPS'] = 'on';
+function normalizeRequestScheme(): void
+{
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+        $_SERVER['REQUEST_SCHEME'] = str_replace('http', 'https', $_SERVER['REQUEST_SCHEME'] ?? 'https');
+        $_SERVER['SERVER_PROTOCOL'] = str_replace('HTTP', 'HTTPS', $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1');
+        $_SERVER['HTTPS'] = 'on';
+    }
 }
 
-//TODO: HTTP_CF_IPCOUNTRY
-if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-    $ipList = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-    $ip = $ipList[0]; // First IP is usually the client
-} elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
-    $ip = $_SERVER['HTTP_X_REAL_IP'];
-} else {
-    $ip = $_SERVER['REMOTE_ADDR'];
+function resolveClientIp(): string
+{
+    $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+    if ($forwarded !== '') {
+        $ipList = array_map('trim', explode(',', $forwarded));
+        foreach ($ipList as $candidate) {
+            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_IP)) {
+                return $candidate;
+            }
+        }
+    }
+
+    $realIp = $_SERVER['HTTP_X_REAL_IP'] ?? '';
+    if ($realIp !== '' && filter_var($realIp, FILTER_VALIDATE_IP)) {
+        return $realIp;
+    }
+
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+    return filter_var($remoteAddr, FILTER_VALIDATE_IP) ? $remoteAddr : '127.0.0.1';
 }
 
-
+normalizeRequestScheme();
+$ip = resolveClientIp();
 
 if (php_sapi_name() != 'cli') {
-    /*if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === "off") {
-        $location = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-        header('HTTP/1.1 301 Moved Permanently');
-        header('Location: ' . $location);
-        exit;
-    }*/
     if (empty($_SERVER['HTTP_USER_AGENT'])) {
         http_response_code(403);
         exit("Access denied.");
@@ -665,10 +674,18 @@ use Nlared\MongoSessionHandler;
 $sessions = $m->{$config['sitedb']}->sessions;
 $handler = new MongoSessionHandler($sessions);
 session_set_save_handler($handler);
-session_name(str_replace('.', '_', $config['cookie_domain']));
-session_set_cookie_params(0, '/', $config['cookie_domain'], $nframework->https, false);
+$cookieName = preg_replace('/[^a-zA-Z0-9_]/', '_', (string) $config['cookie_domain']);
+session_name($cookieName !== '' ? $cookieName : 'nframework_session');
+ini_set('session.use_strict_mode', '1');
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => $config['cookie_domain'],
+    'secure' => (bool) $nframework->https,
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
 session_start();
-
 
 if (empty($_SESSION['nf']['browser']['language'])) {
     $nframework->loadBrowserInfo();

@@ -20,7 +20,7 @@
         "mikehaertl/php-pdftk": "^0.12.1",
         "google/recaptcha": "^1.3",
         "mlocati/ocsp": "^1.2",
-        "dompdf/dompdf": "^2.0",
+        "dompdf/dompdf": "^3.1",
         "v-matsuk/time-overlap-calculator": "^1.0",
         "google/cloud-storage": "*",
         "league/oauth2-facebook": "^2.0",
