@@ -69,8 +69,8 @@ echo $arrayf;
 <div class="container p-5">
 	<div class="box shadow-large">
 		<div class="box-title">Embeded Data</div>
-		<div class="button" onclick="<?= $arrayf->function_new() ?>">Agregar</div>
-		<div id="list">
+		<div class="button" onclick="<?= htmlspecialchars($arrayf->function_new(), ENT_QUOTES) ?>">Agregar</div>
+		<div id="<?= htmlspecialchars($arrayf->containerid, ENT_QUOTES) ?>">
 
 		</div>
 	</div>

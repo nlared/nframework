@@ -125,6 +125,18 @@ if (!$nframework->isAjax()) {
 	                </a>
 	            </li>
 				<li>
+					<a href="/docs/arraylist.php" class="side-menu__item">
+						<span class="icon"><span class="mif-list"></span></span>
+						<span class="caption">Embedded Array</span>
+					</a>
+				</li>
+				<li>
+					<a href="/docs/JobsExample.php" class="side-menu__item">
+						<span class="icon"><span class="mif-timer"></span></span>
+						<span class="caption">Background Jobs</span>
+					</a>
+				</li>
+				<li>
 					<a href="/docs/backgroundps.php" class="side-menu__item">
 						<span class="icon"><span class="mif-file-code"></span></span>
 						<span class="caption">Background Process</span>
