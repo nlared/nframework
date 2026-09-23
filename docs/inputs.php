@@ -224,6 +224,26 @@ $codes = [
         'code'=>"new inputrte(['name'=>'html']);"
     ],*/
     [
+        'title' => 'Etiqueta / oculto',
+        'code' => "new label(['name'=>'label1','caption'=>'Etiqueta fija','value'=>'Versión 1.0']);"
+    ],
+    [
+        'title' => 'Archivos',
+        'code' => "new inputFile(['name'=>'file1','caption'=>'Archivo','dir'=>__DIR__.'/tmp/','path'=>__DIR__.'/tmp/file.txt','upload'=>true,'delete'=>true,'preview'=>true,'download'=>true,'accept'=>'image/*']);"
+    ],
+    [
+        'title' => 'Archivos múltiples',
+        'code' => "new inputFiles(['name'=>'files1','caption'=>'Archivos múltiples','dir'=>__DIR__.'/tmp/','upload'=>true,'delete'=>true,'preview'=>true,'download'=>true,'accept'=>'image/*','countlimit'=>3]);"
+    ],
+    [
+        'title' => 'Select con iconos',
+        'code' => "new SelectIcon(['name'=>'selecticon1','caption'=>'Select con iconos','options'=>['home'=>['datashow'=>'Inicio','icon'=>'mif-home'],'user'=>['datashow'=>'Usuario','icon'=>'mif-user'],'settings'=>['datashow'=>'Configuración','icon'=>'mif-cog']],'value'=>'home']);"
+    ],
+    [
+        'title' => 'Dirección / mapa',
+        'code' => "new inputaddress(['name'=>'address1','caption'=>'Dirección']);"
+    ],
+    [
         'title' => 'mapmarker',
         'code' => "new mapmarker(['name'=>'map1']);"
     ],
