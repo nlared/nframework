@@ -39,6 +39,12 @@ if (php_sapi_name() != 'cli') {
     }
 }
 require __DIR__ . '/vendor/autoload.php';
+
+// Backward compatibility for legacy serialized/content references.
+if (!class_exists(\PhpOffice\PhpWord\Element\Paragraph::class) && class_exists(\PhpOffice\PhpWord\Element\TextRun::class)) {
+    class_alias(\PhpOffice\PhpWord\Element\TextRun::class, \PhpOffice\PhpWord\Element\Paragraph::class);
+}
+
 require __DIR__ . '/functions.php';
 require __DIR__ . '/class.UIManager.php';
 
