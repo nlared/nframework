@@ -457,6 +457,76 @@ class inputText extends baseInput
 
     public function __toString(): string
     {
+        global $nframework, $javas;
+        if (!empty($this->ajax)) {
+            $args = $this->ajax->args ?? '&o=2';
+            $nframework->csss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css";
+            $nframework->jss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js";
+
+            $this->addclass = ($this->addclass ? $this->addclass . ' ' : '') . ' tomselect';
+            //$this->role = 'tomselect';
+
+            if (!empty($this->ajax->load) && $this->ajax->load != '') {
+                $load = $this->ajax->load;
+            } else {
+                if (!empty($this->value)) {
+                    $items = 'tomselects["' . $this->id . '"].setValue(' . json_encode($this->value) . ');';
+                } else {
+                    $items = '';
+                }
+                $load = <<<js
+function(query, callback){
+                    //if(!query.length&&  )return callback();
+                    fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['adduri']}&q='+encodeURIComponent(query))
+                    .then(res=>res.json())
+                    .then(json=>{
+                        callback(json);                        
+                    }).catch(()=>{
+                        callback();
+                    });
+                }
+js;
+            }
+            $this->role = 'tomselect';
+            unset($this->ajax->load);
+            $_SESSION['selectajax'][$this->id] = $this->ajax;
+            addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
+
+
+            $javas->addjs(
+                <<<js
+	tomselects['{$this->id}'] = new TomSelect('#{$this->id}',{
+		valueField:'value',
+		labelField:'label',
+		searchField:'label',   
+		load:{$load}
+	});
+js,
+                'ready'
+            );
+
+
+            if (!empty($this->value)) {
+                $javas->addjs(
+                    <<<js
+fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['adduri']}&qid='+encodeURIComponent('{$this->value}'))
+    .then(res => res.json())
+    .then(items => {
+        console.log(items);
+        items.forEach(item => {
+            tomselects['{$this->id}'].addOption(item);
+            tomselects['{$this->id}'].addItem(item.value);
+            tomselects['{$this->id}'].refreshOptions(false);
+            tomselects['{$this->id}'].setValue(item.value);
+        });
+    });
+js,
+                    'ready'
+                );
+            }
+        }
+
+
         return <<<HTML
             <div class="form-group">
                 <input name="{$this->name}" 
