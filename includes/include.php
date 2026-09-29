@@ -528,11 +528,14 @@ if ($block_reason != "") {
     http_response_code(403);
     exit("Access denied.");
 }
+$eventAt = new MongoDB\BSON\UTCDateTime(time() * 1000);
 $nfuristat = $m->{$config['sitedb']}->nfuristats->insertOne([
-    'created_at' => new MongoDB\BSON\UTCDateTime(time() * 1000), // use PHP DateTime; the MongoDB driver will convert it to BSON UTC datetime
+    'created_at' => $eventAt,
+    'createdAt' => $eventAt,
     'ip' => $ip,
     'host' => $_SERVER['HTTP_HOST'],
     'path' => $_SERVER['REQUEST_URI'],
+    'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
     'agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
     'block_reason' => $block_reason
 ]);
