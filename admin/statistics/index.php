@@ -61,6 +61,14 @@ s<?
                 min-width: 150px;
             }
 
+            .stats-field select {
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 7px 9px;
+                min-width: 150px;
+                background: #fff;
+            }
+
             .stats-btn {
                 border: 0;
                 border-radius: 9px;
@@ -153,11 +161,52 @@ s<?
                     <label for="dateend">Fecha fin</label>
                     <input type="date" id="dateend" value="<?= $today ?>">
                 </div>
+                <div class="stats-field">
+                    <label for="methodFilter">Metodo HTTP</label>
+                    <select id="methodFilter">
+                        <option value="">Todos</option>
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="PATCH">PATCH</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="HEAD">HEAD</option>
+                        <option value="OPTIONS">OPTIONS</option>
+                    </select>
+                </div>
+                <div class="stats-field">
+                    <label for="statusFilter">Status HTTP</label>
+                    <select id="statusFilter">
+                        <option value="">Todos</option>
+                        <option value="2XX">2XX</option>
+                        <option value="3XX">3XX</option>
+                        <option value="4XX">4XX</option>
+                        <option value="5XX">5XX</option>
+                        <option value="200">200</option>
+                        <option value="301">301</option>
+                        <option value="302">302</option>
+                        <option value="403">403</option>
+                        <option value="404">404</option>
+                        <option value="500">500</option>
+                    </select>
+                </div>
+                <div class="stats-field">
+                    <label for="blockedFilter">Bloqueos</label>
+                    <select id="blockedFilter">
+                        <option value="all">Todos</option>
+                        <option value="exclude">Excluir bloqueados</option>
+                        <option value="only">Solo bloqueados</option>
+                    </select>
+                </div>
                 <button class="stats-btn" id="reloadBtn" type="button">Actualizar</button>
                 <div class="stats-status" id="status">Cargando...</div>
             </div>
 
             <div class="stats-summary">
+                <div class="stats-card">
+                    <div class="k">Requests totales</div>
+                    <div class="v" id="totalRequests">0</div>
+                </div>
                 <div class="stats-card">
                     <div class="k">Sesiones totales</div>
                     <div class="v" id="totalSessions">0</div>
@@ -181,6 +230,18 @@ s<?
                 <div class="stats-card">
                     <div class="k">Dias con datos</div>
                     <div class="v" id="totalDays">0</div>
+                </div>
+                <div class="stats-card">
+                    <div class="k">Latencia promedio (ms)</div>
+                    <div class="v" id="avgResponse">0</div>
+                </div>
+                <div class="stats-card">
+                    <div class="k">Tasa de error (%)</div>
+                    <div class="v" id="errorRate">0</div>
+                </div>
+                <div class="stats-card">
+                    <div class="k">Tasa de bloqueo (%)</div>
+                    <div class="v" id="blockedRate">0</div>
                 </div>
             </div>
 
@@ -215,9 +276,24 @@ s<?
                     <div class="stats-canvas"><canvas id="totalsChart"></canvas></div>
                 </div>
 
+                <div class="stats-panel">
+                    <h3>Distribucion de codigos HTTP</h3>
+                    <div class="stats-canvas"><canvas id="statusChart"></canvas></div>
+                </div>
+
+                <div class="stats-panel">
+                    <h3>Errores y bloqueos por dia</h3>
+                    <div class="stats-canvas"><canvas id="securityChart"></canvas></div>
+                </div>
+
                 <div class="stats-panel" style="grid-column: 1 / -1;">
                     <h3>Top agentes de usuario</h3>
                     <div class="stats-canvas tall"><canvas id="agentsChart"></canvas></div>
+                </div>
+
+                <div class="stats-panel" style="grid-column: 1 / -1;">
+                    <h3>Top rutas solicitadas</h3>
+                    <div class="stats-canvas tall"><canvas id="pathsChart"></canvas></div>
                 </div>
             </div>
         </div>
@@ -230,13 +306,20 @@ s<?
         const statusEl = document.getElementById('status');
         const dateIniEl = document.getElementById('dateini');
         const dateEndEl = document.getElementById('dateend');
+        const methodFilterEl = document.getElementById('methodFilter');
+        const statusFilterEl = document.getElementById('statusFilter');
+        const blockedFilterEl = document.getElementById('blockedFilter');
 
+        const totalRequestsEl = document.getElementById('totalRequests');
         const totalSessionsEl = document.getElementById('totalSessions');
         const totalPathsEl = document.getElementById('totalPaths');
         const totalIpsEl = document.getElementById('totalIps');
         const totalMBEl = document.getElementById('totalMB');
         const totalResponseEl = document.getElementById('totalResponse');
         const totalDaysEl = document.getElementById('totalDays');
+        const avgResponseEl = document.getElementById('avgResponse');
+        const errorRateEl = document.getElementById('errorRate');
+        const blockedRateEl = document.getElementById('blockedRate');
 
         const charts = {};
         let timer = null;
@@ -282,18 +365,26 @@ s<?
         }
 
         function fillSummary(payload, points) {
+            const totalRequests = safeNumber(payload.total_requests);
             const totalSessions = safeNumber(payload.total_sessions);
             const totalPaths = safeNumber(payload.total_paths);
             const totalIps = safeNumber(payload.total_ips);
             const totalSizeBytes = safeNumber(payload.total_size_bytes);
             const totalResponse = safeNumber(payload.total_response_time_ms);
+            const avgResponse = safeNumber(payload.avg_response_time_ms);
+            const errorRate = safeNumber(payload.error_rate) * 100;
+            const blockedRate = safeNumber(payload.blocked_rate) * 100;
 
+            totalRequestsEl.textContent = totalRequests.toLocaleString('es-MX');
             totalSessionsEl.textContent = totalSessions.toLocaleString('es-MX');
             totalPathsEl.textContent = totalPaths.toLocaleString('es-MX');
             totalIpsEl.textContent = totalIps.toLocaleString('es-MX');
             totalMBEl.textContent = (totalSizeBytes / (1024 * 1024)).toFixed(2);
             totalResponseEl.textContent = totalResponse.toLocaleString('es-MX');
             totalDaysEl.textContent = points.length.toLocaleString('es-MX');
+            avgResponseEl.textContent = avgResponse.toFixed(2);
+            errorRateEl.textContent = errorRate.toFixed(2);
+            blockedRateEl.textContent = blockedRate.toFixed(2);
         }
 
         function renderCharts(payload) {
@@ -308,11 +399,14 @@ s<?
                     return {
                         iso,
                         label: localDateLabel(iso),
+                        requests: safeNumber(item.request_count),
                         sessions: safeNumber(item.sessions),
                         paths: safeNumber(item.paths),
                         ips: safeNumber(item.ips),
                         sizeMB: safeNumber(item.size_bytes) / (1024 * 1024),
-                        responseMs: safeNumber(item.response_time_ms)
+                        responseMs: safeNumber(item.response_time_ms),
+                        errors: safeNumber(item.error_count),
+                        blocked: safeNumber(item.blocked_count)
                     };
                 })
                 .filter(Boolean)
@@ -326,7 +420,11 @@ s<?
             const ips = points.map((p) => p.ips);
             const sizeMB = points.map((p) => Number(p.sizeMB.toFixed(3)));
             const responseMs = points.map((p) => p.responseMs);
-            const avgResponseMs = points.map((p) => (p.sessions > 0 ? Number((p.responseMs / p.sessions).toFixed(2)) : 0));
+            const requests = points.map((p) => p.requests);
+            const errorCounts = points.map((p) => p.errors);
+            const blockedCounts = points.map((p) => p.blocked);
+            const avgResponseMs = points.map((p) => (p.requests > 0 ? Number((p.responseMs / p.requests).toFixed(2)) : 0));
+            const errorRateByDay = points.map((p) => (p.requests > 0 ? Number(((p.errors / p.requests) * 100).toFixed(2)) : 0));
 
             const cumulativeSessions = [];
             const cumulativeMB = [];
@@ -358,6 +456,14 @@ s<?
                             backgroundColor: 'rgba(10, 165, 124, 0.15)',
                             fill: true,
                             tension: 0.25
+                        },
+                        {
+                            label: 'Requests',
+                            data: requests,
+                            borderColor: '#6d54d8',
+                            backgroundColor: 'rgba(109, 84, 216, 0.08)',
+                            fill: false,
+                            tension: 0.2
                         },
                         {
                             label: 'IPs',
@@ -421,6 +527,14 @@ s<?
                             borderColor: '#1362f4',
                             yAxisID: 'y1',
                             tension: 0.25
+                        },
+                        {
+                            label: 'Error % por dia',
+                            data: errorRateByDay,
+                            borderColor: '#7a2b2b',
+                            borderDash: [6, 4],
+                            yAxisID: 'y2',
+                            tension: 0.2
                         }
                     ]
                 },
@@ -440,6 +554,16 @@ s<?
                             position: 'right',
                             grid: {
                                 drawOnChartArea: false
+                            }
+                        },
+                        y2: {
+                            beginAtZero: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                callback: (value) => `${value}%`
                             }
                         }
                     }
@@ -534,6 +658,40 @@ s<?
                 }
             });
 
+            const statusEntries = Object.entries(payload.status_codes || {})
+                .map(([code, count]) => ({
+                    code: String(code),
+                    count: safeNumber(count)
+                }))
+                .sort((a, b) => Number(a.code) - Number(b.code));
+
+            buildOrUpdateChart('statusChart', {
+                type: 'bar',
+                data: {
+                    labels: statusEntries.map((entry) => entry.code),
+                    datasets: [{
+                        label: 'Requests por codigo',
+                        data: statusEntries.map((entry) => entry.count),
+                        backgroundColor: statusEntries.map((entry) => {
+                            const code = Number(entry.code);
+                            if (code >= 500) return 'rgba(213, 59, 59, 0.85)';
+                            if (code >= 400) return 'rgba(221, 138, 0, 0.85)';
+                            if (code >= 300) return 'rgba(109, 84, 216, 0.80)';
+                            return 'rgba(10, 165, 124, 0.85)';
+                        }),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
             const agentEntries = Object.entries(payload.agents || {})
                 .map(([agent, count]) => ({
                     agent,
@@ -563,11 +721,77 @@ s<?
                     }
                 }
             });
+
+            const pathEntries = (payload.top_paths || [])
+                .map((item) => ({
+                    path: String(item.path || ''),
+                    count: safeNumber(item.count)
+                }))
+                .filter((item) => item.path.length > 0)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 15);
+
+            buildOrUpdateChart('pathsChart', {
+                type: 'bar',
+                data: {
+                    labels: pathEntries.map((entry) => entry.path.length > 90 ? `${entry.path.slice(0, 87)}...` : entry.path),
+                    datasets: [{
+                        label: 'Requests por ruta',
+                        data: pathEntries.map((entry) => entry.count),
+                        backgroundColor: 'rgba(19, 98, 244, 0.82)',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            buildOrUpdateChart('securityChart', {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                            label: 'Errores diarios',
+                            data: errorCounts,
+                            borderColor: '#d53b3b',
+                            backgroundColor: 'rgba(213, 59, 59, 0.15)',
+                            fill: true,
+                            tension: 0.2
+                        },
+                        {
+                            label: 'Bloqueos diarios',
+                            data: blockedCounts,
+                            borderColor: '#dd8a00',
+                            backgroundColor: 'rgba(221, 138, 0, 0.12)',
+                            fill: true,
+                            tension: 0.2
+                        }
+                    ]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
         }
 
         async function loadStats() {
             const dateini = dateIniEl.value;
             const dateend = dateEndEl.value;
+            const method = methodFilterEl.value;
+            const status = statusFilterEl.value;
+            const blocked = blockedFilterEl.value;
 
             if (!dateini || !dateend) {
                 statusEl.textContent = 'Define un rango valido';
@@ -582,11 +806,12 @@ s<?
             statusEl.textContent = 'Sincronizando...';
 
             try {
-                const url = `data.php?dateini=${encodeURIComponent(dateini)}&dateend=${encodeURIComponent(dateend)}&_=${Date.now()}`;
+                const url = `data.php?dateini=${encodeURIComponent(dateini)}&dateend=${encodeURIComponent(dateend)}&method=${encodeURIComponent(method)}&status=${encodeURIComponent(status)}&blocked=${encodeURIComponent(blocked)}&_=${Date.now()}`;
                 const response = await fetch(url, {
                     cache: 'no-store',
                     headers: {
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
                 if (!response.ok) {
@@ -607,10 +832,15 @@ s<?
             timer = setInterval(loadStats, POLL_MS);
         }
 
-        document.getElementById('reloadBtn').addEventListener('click', () => {
+        function reloadAndRestartPolling() {
             loadStats();
             startPolling();
-        });
+        }
+
+        document.getElementById('reloadBtn').addEventListener('click', reloadAndRestartPolling);
+        methodFilterEl.addEventListener('change', reloadAndRestartPolling);
+        statusFilterEl.addEventListener('change', reloadAndRestartPolling);
+        blockedFilterEl.addEventListener('change', reloadAndRestartPolling);
 
         loadStats();
         startPolling();
