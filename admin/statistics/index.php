@@ -1,12 +1,12 @@
-s<?
-    require '../common2.php';
-    $nframework->usecommon = true;
+<?php
+require '../common2.php';
+$nframework->usecommon = true;
 
-    $today = date('Y-m-d');
-    $weekAgo = date('Y-m-d', strtotime('-7 days'));
+$today = date('Y-m-d');
+$weekAgo = date('Y-m-d', strtotime('-7 days'));
 
-    $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
-    ?>
+$nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
+?>
 
 <div class="container">
     <div class="box shadow-large">
