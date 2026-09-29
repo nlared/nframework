@@ -437,6 +437,7 @@ class inputText extends baseInput
     public $lowercase;
     public $autotrim;
     public $autocomplete = 'off';
+    public $ajax;
 
     public function __construct($options = [])
     {
