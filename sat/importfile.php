@@ -155,7 +155,7 @@ function hydrateCfdiFromDom(DOMDocument $dom, SAT\Generated\cfdv40\Comprobante $
 
 function processExtractedFile($file)
 {
-    global $namespaceTranslations, $classTranslations;
+    global $namespaceTranslations, $classTranslations, $config, $m;
 
     validateProcessingRequirements();
     validateXmlFile($file);
