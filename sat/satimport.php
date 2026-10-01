@@ -16,7 +16,7 @@ use PhpCfdi\SatWsDescargaMasiva\Services\Download\DownloadResult;
 
 
 
-require '../common2.php';
+require 'include.php';
 $dataset = new dataset(
 	[
 		'collection' => $m->{$config['sitedb']}->exampledata,
