@@ -168,9 +168,19 @@ function processExtractedFile($file)
 
     $cfdi = new SAT\Generated\cfdv40\Comprobante();
     hydrateCfdiFromDom($dom, $cfdi);
+    $uuid = extractCfdiUuid($cfdi);
+    $emisorRfc = extractEmisorRfc($cfdi);
+
+    if ($uuid === '') {
+        throw new RuntimeException('No se encontro UUID en el Complemento/TimbreFiscalDigital del CFDI.');
+    }
+
+    if ($emisorRfc === '') {
+        throw new RuntimeException('No se encontro RFC del Emisor en el CFDI.');
+    }
 
 
-    $destinationPath = $_SERVER['DOCUMENT_ROOT'] . '/comprobantes/xmls/' . $cfdi->Emisor->Rfc . '/' . $cfdi->Complemento->TimbreFiscalDigital->Uuid . '.xml'; // Replace with the actual destination path
+    $destinationPath = $_SERVER['DOCUMENT_ROOT'] . '/comprobantes/xmls/' . $emisorRfc . '/' . $uuid . '.xml'; // Replace with the actual destination path
     echo "Extracted file will be saved to: " . $destinationPath . "\n";
     echo "Destination path: " . $destinationPath . "\n";
     if (!is_dir(dirname($destinationPath))) {
