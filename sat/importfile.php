@@ -177,7 +177,12 @@ function processExtractedFile($file)
         mkdir(dirname($destinationPath), 0777, true);
     }
     file_put_contents($destinationPath, $dom->saveXML());
-    $m->{$config['sitedb']}->sat_comprobantes->insertOne($cfdi);
+
+    if ($m->{$config['sitedb']}->sat_comprobantes->findOne([
+        'Complemento.TimbreFiscalDigital.Uuid' => (string)$cfdi->Complemento->TimbreFiscalDigital->Uuid
+    ]) === null) {
+        $m->{$config['sitedb']}->sat_comprobantes->insertOne($cfdi);
+    }
 
     $conceptCount = 0;
     if (isset($cfdi->Conceptos) && is_object($cfdi->Conceptos) && isset($cfdi->Conceptos->Concepto) && is_array($cfdi->Conceptos->Concepto)) {
