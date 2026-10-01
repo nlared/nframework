@@ -102,9 +102,72 @@ function mapElementAttributesToObject(DOMElement $element): stdClass
 {
     $obj = new stdClass();
     foreach ($element->attributes as $attribute) {
-        $obj->{$attribute->nodeName} = $attribute->nodeValue;
+        $attributeName = $attribute->localName ?? $attribute->nodeName;
+        $obj->{$attributeName} = $attribute->nodeValue;
     }
     return $obj;
+}
+
+function mapElementRecursivelyToObject(DOMElement $element): stdClass
+{
+    $obj = mapElementAttributesToObject($element);
+
+    foreach ($element->childNodes as $childNode) {
+        if (!($childNode instanceof DOMElement)) {
+            continue;
+        }
+
+        $childName = $childNode->localName ?? $childNode->nodeName;
+        $childValue = mapElementRecursivelyToObject($childNode);
+
+        if (property_exists($obj, $childName)) {
+            if (!is_array($obj->{$childName})) {
+                $obj->{$childName} = [$obj->{$childName}];
+            }
+            $obj->{$childName}[] = $childValue;
+            continue;
+        }
+
+        $obj->{$childName} = $childValue;
+    }
+
+    return $obj;
+}
+
+function extractCfdiUuid(SAT\Generated\cfdv40\Comprobante $cfdi): string
+{
+    if (!isset($cfdi->Complemento) || !is_object($cfdi->Complemento) || !isset($cfdi->Complemento->TimbreFiscalDigital)) {
+        return '';
+    }
+
+    $timbre = $cfdi->Complemento->TimbreFiscalDigital;
+    if (is_array($timbre)) {
+        $timbre = $timbre[0] ?? null;
+    }
+
+    if (!is_object($timbre)) {
+        return '';
+    }
+
+    if (isset($timbre->UUID) && trim((string)$timbre->UUID) !== '') {
+        return trim((string)$timbre->UUID);
+    }
+
+    if (isset($timbre->Uuid) && trim((string)$timbre->Uuid) !== '') {
+        return trim((string)$timbre->Uuid);
+    }
+
+    return '';
+}
+
+function extractEmisorRfc(SAT\Generated\cfdv40\Comprobante $cfdi): string
+{
+    if (!isset($cfdi->Emisor) || !is_object($cfdi->Emisor) || !isset($cfdi->Emisor->Rfc)) {
+        return '';
+    }
+
+    $rfc = trim((string)$cfdi->Emisor->Rfc);
+    return $rfc;
 }
 
 function findFirstLocalNameElement(DOMElement $parent, string $tagName): ?DOMElement
