@@ -151,6 +151,11 @@ function hydrateCfdiFromDom(DOMDocument $dom, SAT\Generated\cfdv40\Comprobante $
         }
         $cfdi->Conceptos = (object) ['Concepto' => $conceptos];
     }
+
+    $complementoNode = findFirstLocalNameElement($root, 'Complemento');
+    if ($complementoNode instanceof DOMElement) {
+        $cfdi->Complemento = mapElementRecursivelyToObject($complementoNode);
+    }
 }
 
 function processExtractedFile($file)
