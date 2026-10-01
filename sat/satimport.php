@@ -4,6 +4,7 @@ if (empty($_GET['_id'])) {
 	header('Location: ?_id=' . $newid);
 	exit();
 }
+
 use PhpCfdi\SatWsDescargaMasiva\RequestBuilder\FielRequestBuilder\Fiel;
 use PhpCfdi\SatWsDescargaMasiva\RequestBuilder\FielRequestBuilder\FielRequestBuilder;
 use PhpCfdi\SatWsDescargaMasiva\Service;
@@ -38,14 +39,14 @@ if ($nframework->isAjax()) {
 		];
 		// Creación de la FIEL, puede leer archivos DER (como los envía el SAT) o PEM (convertidos con openssl)
 		$fiel = Fiel::create(
-		    file_get_contents('/var/www/datas/'.$user->_id.'.cer'),
-		    file_get_contents('/var/www/datas/'.$user->_id.'.key'),
-		    $user->fielpassword
+			file_get_contents('/var/www/datas/' . $user->_id . '.cer'),
+			file_get_contents('/var/www/datas/' . $user->_id . '.key'),
+			$user->fielpassword
 		);
-		
+
 		// verificar que la FIEL sea válida (no sea CSD y sea vigente acorde a la fecha del sistema)
 		if (! $fiel->isValid()) {
-		    return;
+			return;
 		}
 
 		// creación del web client basado en Guzzle que implementa WebClientInterface
@@ -60,80 +61,79 @@ if ($nframework->isAjax()) {
 		// Configurar zona horaria de México para las consultas SAT
 		//date_default_timezone_set('America/Mexico_City');
 		// ya implementado en el nframework
-		
+
 
 		// Crear la consulta con fechas más recientes y en zona horaria correcta
 		$fechaInicio = $dataset->dtini->toDateTime()->format('Y-m-d H:i:s'); // Fecha más reciente
 		$fechaFin = $dataset->dtini->toDateTime()->format('Y-m-d H:i:s');
-		
+
 		//echo "Consultando CFDIs del {$fechaInicio} al {$fechaFin} (hora de México)", PHP_EOL; 
 		$request = QueryParameters::create(
-		    DateTimePeriod::createFromValues($fechaInicio, $fechaFin),
+			DateTimePeriod::createFromValues($fechaInicio, $fechaFin),
 		);
-		
+
 		// presentar la consulta
 		$query = $service->query($request);
-		
-		
+
+
 		// verificar que el proceso de consulta fue correcto
 		if (! $query->getStatus()->isAccepted()) {
-		    $result['error']= "Fallo al presentar la consulta: {$query->getStatus()->getMessage()}";
-		    
-		}else{
-			$dataset->requestId=$query->getRequestId();
-		// el identificador de la consulta está en $query->getRequestId()
-		//echo "Se generó la solicitud {$query->getRequestId()}", PHP_EOL;
+			$result['error'] = "Fallo al presentar la consulta: {$query->getStatus()->getMessage()}";
+		} else {
+			$dataset->requestId = $query->getRequestId();
+			// el identificador de la consulta está en $query->getRequestId()
+			//echo "Se generó la solicitud {$query->getRequestId()}", PHP_EOL;
 		}
-		
-		
-		
-		
-		
-		
-		
-		
-		
+
+
+
+
+
+
+
+
+
 		$rfc = "RFC del contribuyente"; #Se necesita en todos los procesos, excepto en el login
-		$cert = file_get_contents('/var/www/datas/'.$user->_id.'.cer'); #Se necesita en todos los procesos
-		$key = file_get_contents('/var/www/datas/'.$user->_id.'.key.pem'); #Se necesita en todos los procesos, es necesario convertir el archivo .key a .pem
-		
-		$fechaInicial = str_replace(' ','T',$dataset->dtini->toDateTime()->format('Y-m-d H:i:s')); #Solo se necesita al momento de hacer la solicitud, se debe respetar el formato
-		$fechaFinal = str_replace(' ','T',$dataset->dtend->toDateTime()->format('Y-m-d H:i:s')); #Solo se necesita al momento de hacer la solicitud, se debe respetar el formato
+		$cert = file_get_contents('/var/www/datas/' . $user->_id . '.cer'); #Se necesita en todos los procesos
+		$key = file_get_contents('/var/www/datas/' . $user->_id . '.key.pem'); #Se necesita en todos los procesos, es necesario convertir el archivo .key a .pem
+
+		$fechaInicial = str_replace(' ', 'T', $dataset->dtini->toDateTime()->format('Y-m-d H:i:s')); #Solo se necesita al momento de hacer la solicitud, se debe respetar el formato
+		$fechaFinal = str_replace(' ', 'T', $dataset->dtend->toDateTime()->format('Y-m-d H:i:s')); #Solo se necesita al momento de hacer la solicitud, se debe respetar el formato
 		$TipoSolicitud = "CFDI"; #Solo se necesita al momento de hacer la solicitud, el valor solo puede ser: CFDI o Metadata
 		$TipoConsulta = "Emitidos"; #Solo se necesita al momento de hacer la solicitud, el valor solo puede ser: Emitidos o Recibidos
-		
+
 		if ($TipoConsulta === "Emitidos") { #If que envia a solicitar.php el tipo de consulta a requerir
-		    $TipoConsulta = "RfcEmisor";
+			$TipoConsulta = "RfcEmisor";
 		} elseif ($TipoConsulta === "Recibidos") {
-		    $TipoConsulta = "RfcReceptor";
+			$TipoConsulta = "RfcReceptor";
 		}
-		
+
 		/*
 		$idSolicitud = "id proporcionado por el SAT al momento de recibir tu solicitud."; #Solo se necesita al momento de verificar la solicitud realizada
 		$idPaquete = "Lo proporciona el SAT al momento de verificar que este lista la solicitud para descargar"; #Solo se necesita al momento de descargar los paquetes (archivos zip)
 		*/
 		##### Ejemplos de uso #####
-		$result['user']=$user;
-		$result['dtini']=$fechaInicial;
-		$result['dtend']=$fechaFinal;
-		
+		$result['user'] = $user;
+		$result['dtini'] = $fechaInicial;
+		$result['dtend'] = $fechaFinal;
+
 		$Login = Login::soapRequest($cert, $key);
-		$result['p1']=$Login; #Si todo sale bien, nos devolverá un Token de que inicio bien la sesión
-		if(empty($dataset->solicitud)){
+		$result['p1'] = $Login; #Si todo sale bien, nos devolverá un Token de que inicio bien la sesión
+		if (empty($dataset->solicitud)) {
 			$idSolicitud = Solicitar::soapRequest($cert, $key, $Login->token, $user['rfc'], $fechaInicial, $fechaFinal, $TipoSolicitud);
-			$result['p2']=$idSolicitud; #Si todo sale bien, nos va a devolver un ID de solicitud, la cual tenemos que guardar para recuperar la información
-			$dataset->solicitud=$idSolicitud;
-		}else{
-			$idSolicitud=$dataset->solicitud;
+			$result['p2'] = $idSolicitud; #Si todo sale bien, nos va a devolver un ID de solicitud, la cual tenemos que guardar para recuperar la información
+			$dataset->solicitud = $idSolicitud;
+		} else {
+			$idSolicitud = $dataset->solicitud;
 		}
-		
+
 		$Verificar = Verificar::soapRequest($cert, $key, $Login->token, $user['rfc'], $idSolicitud);
-		$result['p3']=$Verificar; #Si la solicitud esta terminada, nos debe de regresar el codigo 3 que significa que esta lista para descargar el paquete o los paquetes zip
-		
+		$result['p3'] = $Verificar; #Si la solicitud esta terminada, nos debe de regresar el codigo 3 que significa que esta lista para descargar el paquete o los paquetes zip
+
 		$Descargar = Descargar::soapRequest($cert, $key, $Login->token, $user['rfc'], $idPaquete);
 		Complemento::saveBase64File($Descargar->Paquete, $idPaquete . ".zip");
-		$result['p4']=$Descargar; #Si todo sale bien, el paquete o los paquetes se deben de guardar con terminacion.zip		
-		
+		$result['p4'] = $Descargar; #Si todo sale bien, el paquete o los paquetes se deben de guardar con terminacion.zip		
+
 	}
 } else {
 	$nframework->usecommon = true;
@@ -156,4 +156,4 @@ if ($nframework->isAjax()) {
 			</form>
 		</div>
 	</div>
-<?}?>
+<? } ?>
