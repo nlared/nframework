@@ -179,7 +179,10 @@ function processExtractedFile($file)
     file_put_contents($destinationPath, $dom->saveXML());
 
     if ($m->{$config['sitedb']}->sat_comprobantes->findOne([
-        'Complemento.TimbreFiscalDigital.Uuid' => (string)$cfdi->Complemento->TimbreFiscalDigital->Uuid
+        '$or' => [
+            ['Complemento.TimbreFiscalDigital.UUID' => $uuid],
+            ['Complemento.TimbreFiscalDigital.Uuid' => $uuid],
+        ],
     ]) === null) {
         $m->{$config['sitedb']}->sat_comprobantes->insertOne($cfdi);
     }
