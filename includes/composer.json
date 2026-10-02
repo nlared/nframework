@@ -35,8 +35,8 @@
         "microsoft/kiota-serialization-text": "^1.5",
         "spomky-labs/otphp": "^11.3",
         "phpcfdi/sat-ws-descarga-masiva": "^1.1",
-        "phpcfdi/cfdi-expresiones": "^1.1",
-        "phpcfdi/sat-estado-cfdi": "^1.1"
+        "phpcfdi/cfdi-expresiones": "^3.3",
+        "phpcfdi/sat-estado-cfdi": "^2.0"
     },
     "require-dev": {
         "laravel/pint": "^1.24",
