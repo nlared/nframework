@@ -20,6 +20,15 @@ $google_oauth_redirect_uri = 'https://' . $config['cookie_domain'] . '/login-goo
 $google_oauth_version = 'v3';
 // If the captured code param exists and is valid
 if (isset($_GET['code']) && !empty($_GET['code'])) {
+    // Valida el parámetro state para evitar CSRF de inicio de sesión.
+    $expectedState = $_SESSION['google_oauth_state'] ?? '';
+    unset($_SESSION['google_oauth_state']);
+    if (!is_string($_GET['state'] ?? null) || $expectedState === '' || !hash_equals($expectedState, $_GET['state'])) {
+        exit('Invalid state.');
+    }
+    if (!is_string($_GET['code'])) {
+        exit('Invalid code.');
+    }
     // Execute cURL request to retrieve the access token
     $params = [
         'code' => $_GET['code'],
@@ -47,13 +56,14 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
         $response = curl_exec($ch);
         curl_close($ch);
         $profile = json_decode($response, true);
-        // Make sure the profile data exists
-        if (isset($profile['email'])) {
+        // Make sure the profile data exists and the email is verified by Google
+        $emailVerified = filter_var($profile['verified_email'] ?? $profile['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if (isset($profile['email']) && $emailVerified) {
             $google_name_parts = [];
             $google_name_parts[] = isset($profile['given_name']) ? preg_replace('/[^a-zA-Z0-9]/s', '', $profile['given_name']) : '';
             $google_name_parts[] = isset($profile['family_name']) ? preg_replace('/[^a-zA-Z0-9]/s', '', $profile['family_name']) : '';
             // Authenticate the user
-            session_regenerate_id();
+            session_regenerate_id(true);
             $_SESSION['google_loggedin'] = TRUE;
             $_SESSION['google_email'] = $profile['email'];
             $_SESSION['google_name'] = implode(' ', $google_name_parts);
@@ -82,10 +92,10 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
             session_write_close();
             // Redirect to profile page
             if (!empty($_SESSION['login_redirect'])) {
-                $redir = $_SESSION['login_redirect'];
+                $redir = nfSafeRedirect($_SESSION['login_redirect']);
                 unset($_SESSION['login_redirect']);
-                if (strpos($redir, '//') !== 0) {
-                    $redir .= '?uid=' . encryptSessionId($_SESSION['user'], SESSION_KEY);
+                if (strpos($redir, '/') !== 0) {
+                    $redir .= (str_contains($redir, '?') ? '&' : '?') . 'uid=' . encryptSessionId($_SESSION['user'], SESSION_KEY);
                 }
                 header('Location: ' . $redir);
                 exit;
@@ -101,8 +111,10 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
     }
 } else {
     // Define params and redirect to Google Authentication page
+    $_SESSION['google_oauth_state'] = bin2hex(random_bytes(16));
     $params = [
         'response_type' => 'code',
+        'state' => $_SESSION['google_oauth_state'],
         'client_id' => $google_oauth_client_id,
         'redirect_uri' => $google_oauth_redirect_uri,
         'scope' => 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',

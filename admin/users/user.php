@@ -41,7 +41,7 @@ if ($nframework->isAjax()) {
 		}
 	}
 	if ($_POST['op'] == 'password') {
-		$dataset->password = hash('sha512', $_POST['password']);
+		$dataset->password = nfPasswordHash((string) $_POST['password']);
 		$result = [
 			'error' => '',
 			'js' => 'alert("Contraseña cambiada");'

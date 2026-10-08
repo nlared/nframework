@@ -17,11 +17,12 @@ if (!isset($_GET['code'])) {
     //echo '<a href="' . $authUrl . '">Log in with Facebook!</a>';
     header('Location: ' . $authUrl);
     exit;
-} elseif (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state'])) {
+} elseif (empty($_GET['state']) || empty($_SESSION['oauth2state']) || !is_string($_GET['state']) || !hash_equals($_SESSION['oauth2state'], $_GET['state'])) {
     unset($_SESSION['oauth2state']);
     echo 'Invalid state.';
     exit;
 }
+unset($_SESSION['oauth2state']);
 
 // Get an access token (using the authorization code grant)
 $token = $provider->getAccessToken('authorization_code', [
@@ -34,6 +35,10 @@ try {
     //printf('Hello %s!', $user->getFirstName());
 
 
+    if (empty($user->getEmail())) {
+        exit('Facebook no proporcionó un email.');
+    }
+    session_regenerate_id(true);
     $useroauth = $m->{$config['sitedb']}->users->findOne(['username' => $user->getEmail()]);
     if (!empty($useroauth->_id)) {
         $_SESSION['user'] = (string)$useroauth->_id;
@@ -59,10 +64,10 @@ try {
     session_write_close();
     // Redirect to profile page
     if (!empty($_SESSION['login_redirect'])) {
-        $redir = $_SESSION['login_redirect'];
+        $redir = nfSafeRedirect($_SESSION['login_redirect']);
         unset($_SESSION['login_redirect']);
-        if (strpos($redir, '//') !== 0) {
-            $redir .= '?uid=' . encryptSessionId($_SESSION['user'], SESSION_KEY);
+        if (strpos($redir, '/') !== 0) {
+            $redir .= (str_contains($redir, '?') ? '&' : '?') . 'uid=' . encryptSessionId($_SESSION['user'], SESSION_KEY);
         }
         header('Location: ' . $redir);
         exit;

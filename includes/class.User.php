@@ -17,14 +17,16 @@ class User implements ArrayAccess
             if (isset($info['_id'])) {
                 $info['_id'] = tomongoid($info['_id']);
             }
-            if (isset($info['password'])) {
-                $passwords = [];
-                foreach ($config['users']['algos'] as $algo) {
-                    $passwords[] = hash($algo, $info['password']);
-                }
-                $find['password'] = ['$in' => $passwords];
+            $password = null;
+            if (array_key_exists('password', $find)) {
+                // La contraseña nunca se busca en la base de datos: se verifica después con nfPasswordVerify().
+                $password = (string) $find['password'];
+                unset($find['password']);
             }
             $info = $this->m->{$config['sitedb']}->users->findOne($find);
+            if (!empty($info) && $password !== null && !nfPasswordVerify($password, $info['password'] ?? null)) {
+                $info = null;
+            }
             if (! empty($info)) {
                 $id = (string) $info->_id;
                 $this->info = mongotoarray($info);
@@ -37,16 +39,41 @@ class User implements ArrayAccess
         }
         $this->notifications = new Notifications;
     }
+    /**
+     * Autentica por usuario (sin distinguir mayúsculas) y contraseña.
+     * Si el hash almacenado es legado (sha512 sin sal) se migra a password_hash().
+     */
+    public static function authenticate($username, $password): ?User
+    {
+        global $m, $config;
+        if (!is_string($username) || !is_string($password) || trim($username) === '' || $password === '') {
+            return null;
+        }
+        $doc = $m->{$config['sitedb']}->users->findOne([
+            'username' => new MongoDB\BSON\Regex('^' . preg_quote(trim($username), '/') . '$', 'i'),
+        ]);
+        if (empty($doc) || $doc['username'] === 'guest') {
+            return null;
+        }
+        $stored = $doc['password'] ?? null;
+        if (!nfPasswordVerify($password, $stored) && !nfPasswordVerify(trim($password), $stored)) {
+            return null;
+        }
+        if (password_needs_rehash((string) $stored, PASSWORD_DEFAULT)) {
+            $m->{$config['sitedb']}->users->updateOne(['_id' => $doc['_id']], ['$set' => ['password' => nfPasswordHash($password)]]);
+        }
+        return new User(['_id' => $doc['_id']]);
+    }
+
     public  function isLoggedIn(): bool
     {
-        return $this->info['username'] != 'guest' && $this->info['username'] != '';
+        return !empty($this->info['username']) && $this->info['username'] != 'guest';
     }
     public function requireAuth()
     {
-        $_SESSION['nframework']['logiopage'] = $_SERVER['DOCUMENT_URI'];
-        if ($this->info['username'] == 'guest') {
-            http_response_code(401);
-            header('location: /account/login');
+        if (!$this->isLoggedIn()) {
+            $_SESSION['login_redirect'] = $_SERVER['REQUEST_URI'] ?? '/';
+            header('Location: /account/login');
             exit();
         }
     }
@@ -64,18 +91,24 @@ class User implements ArrayAccess
     public function in($verb)
     {
         global $config;
-        $f = $this->m->{$config['sitedb']}->usersgroups->findOne([
-            'users' => tomongoid($this->info['_id']),
-            'name' => $verb,
-        ]);
-        return !empty($f);
+        if (empty($this->info['_id'])) {
+            return false;
+        }
+        // Se cachea por petición: in('admins') se consulta varias veces en cada página.
+        if (!array_key_exists($verb, $this->groupCache)) {
+            $this->groupCache[$verb] = !empty($this->m->{$config['sitedb']}->usersgroups->findOne(
+                ['users' => tomongoid($this->info['_id']), 'name' => $verb],
+                ['projection' => ['_id' => 1]]
+            ));
+        }
+        return $this->groupCache[$verb];
     }
 
     public static function create($info): User
     {
         global $config, $m;
         $info['username'] = strtolower($info['username']);
-        $info['password'] = hash($config['users']['algos'][0], $info['password']); // hash
+        $info['password'] = nfPasswordHash((string) $info['password']);
         $info['_id'] = new MongoDB\BSON\ObjectId();
         $m->{$config['sitedb']}->users->insertOne($info);
         return new User(['_id' =>  $info['_id']]);

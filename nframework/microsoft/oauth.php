@@ -37,13 +37,14 @@ try {
     $email = $me->getMail();
 
 
-    echo "Hello {$me->getDisplayName()}, your ID is {$me->getId()}";
+    echo 'Hello ' . htmlspecialchars((string) $me->getDisplayName()) . ', your ID is ' . htmlspecialchars((string) $me->getId());
     if (!empty($_SESSION['login_redirect'])) {
-        $redir = $_SESSION['login_redirect'];
+        $redir = nfSafeRedirect($_SESSION['login_redirect']);
         unset($_SESSION['login_redirect']);
         header('Location: ' . $redir);
         exit;
     }
 } catch (ApiException $ex) {
-    echo $ex->getMessage();
+    error_log('nframework microsoft oauth: ' . $ex->getMessage());
+    echo 'Error de autenticación.';
 }
