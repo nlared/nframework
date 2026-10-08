@@ -1,7 +1,5 @@
 <?php
 
-use Google\Service\Datastream\MongodbCollection;
-
 function assignArrayByPath(&$arr, $path, $value, $separator = '.')
 {
     $keys = explode($separator, $path);
@@ -385,57 +383,227 @@ $query=fixSingleQuery(['$or'=>$rules]);*/
 
 
 
-function nflogAttempt($ip, $limit = 5, $blockTime = 300)
+/**
+ * Registra un intento para $key (p.ej. 'login:IP'). Devuelve false si se superó $limit
+ * dentro de la ventana de $blockTime segundos; en ese caso bloquea durante $blockTime.
+ */
+function nflogAttempt($key, $limit = 5, $blockTime = 300)
 {
     global $m, $config;
     $collection = $m->{$config['sitedb']}->nf_attempts;
-    $now = new MongoDB\BSON\UTCDateTime(time() * 1000);
-    $record = $collection->findOne(['ip' => $ip]);
-    if ($record && isset($record['blocked_until']) && $record['blocked_until'] > $now) {
+    $now = time();
+    $record = $collection->findOne(['ip' => $key]);
+    if ($record && isset($record['blocked_until']) && $record['blocked_until']->toDateTime()->getTimestamp() > $now) {
         return false; // Bloqueado
     }
 
-    if (!$record) {
-        $collection->insertOne([
-            'ip' => $ip,
-            'count' => 1,
-            'last_attempt' => $now
-        ]);
-        return true;
-    }
+    $lastAttempt = ($record && isset($record['last_attempt'])) ? $record['last_attempt']->toDateTime()->getTimestamp() : 0;
+    // Ventana expirada o bloqueo terminado: se reinicia el contador.
+    $count = ($lastAttempt < $now - $blockTime || isset($record['blocked_until'])) ? 1 : $record['count'] + 1;
 
-    $count = $record['count'] + 1;
-
+    $set = ['count' => $count, 'last_attempt' => new MongoDB\BSON\UTCDateTime($now * 1000)];
+    $update = ['$set' => $set, '$unset' => ['blocked_until' => '']];
     if ($count > $limit) {
-        $blockedUntil = new MongoDB\BSON\UTCDateTime((time() + $blockTime) * 1000);
-        $collection->updateOne(
-            ['ip' => $ip],
-            ['$set' => ['count' => $count, 'blocked_until' => $blockedUntil, 'last_attempt' => $now]]
-        );
-        return false;
+        $update = ['$set' => $set + ['blocked_until' => new MongoDB\BSON\UTCDateTime(($now + $blockTime) * 1000)]];
     }
+    $collection->updateOne(['ip' => $key], $update, ['upsert' => true]);
 
-    $collection->updateOne(
-        ['ip' => $ip],
-        ['$set' => ['count' => $count, 'last_attempt' => $now]]
-    );
+    return $count <= $limit;
+}
 
-    return true;
+function nflogReset($key): void
+{
+    global $m, $config;
+    $m->{$config['sitedb']}->nf_attempts->deleteOne(['ip' => $key]);
 }
 
 function encryptSessionId($sessionId, $key)
 {
-    $iv = openssl_random_pseudo_bytes(16); // vector de inicialización
-    $encrypted = openssl_encrypt($sessionId, 'AES-256-CBC', $key, 0, $iv);
-    return base64_encode($iv . $encrypted); // concatenamos IV + datos cifrados
+    // AES-256-GCM (autenticado): 'g' . IV(12) . TAG(16) . datos
+    $iv = random_bytes(12);
+    $tag = '';
+    $encrypted = openssl_encrypt((string) $sessionId, 'aes-256-gcm', hash('sha256', (string) $key, true), OPENSSL_RAW_DATA, $iv, $tag);
+    return rtrim(strtr(base64_encode('g' . $iv . $tag . $encrypted), '+/', '-_'), '=');
 }
 
 function decryptSessionId($encryptedData, $key)
 {
-    $data = base64_decode($encryptedData);
+    if (!is_string($encryptedData) || $encryptedData === '') {
+        return false;
+    }
+    $data = base64_decode(strtr($encryptedData, '-_', '+/'), true);
+    if ($data === false) {
+        return false;
+    }
+    if (strlen($data) > 29 && $data[0] === 'g') {
+        return openssl_decrypt(substr($data, 29), 'aes-256-gcm', hash('sha256', (string) $key, true), OPENSSL_RAW_DATA, substr($data, 1, 12), substr($data, 13, 16));
+    }
+    // Formato anterior (AES-256-CBC) por compatibilidad
     $iv = substr($data, 0, 16);
     $encrypted = substr($data, 16);
     return openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
+}
+
+/**
+ * Normaliza una opción de configuración tipo lista: acepta arreglo, BSONArray o texto
+ * separado por saltos de línea, comas o espacios (como se captura en el panel).
+ */
+function nfConfigList($value): array
+{
+    if ($value instanceof Traversable) {
+        $value = iterator_to_array($value, false);
+    }
+    if (is_string($value)) {
+        $value = preg_split('/[\s,;]+/', $value);
+    }
+    if (!is_array($value)) {
+        return [];
+    }
+    $items = array_filter(array_map(fn($v) => is_scalar($v) ? trim((string) $v) : '', $value), fn($v) => $v !== '' && $v[0] !== '#');
+    return array_values(array_unique($items));
+}
+
+/**
+ * Indica si $ip coincide con una IP exacta o un rango CIDR (IPv4 o IPv6), p.ej. '173.245.48.0/20'.
+ */
+function nfIpMatches(string $ip, string $rule): bool
+{
+    if (!str_contains($rule, '/')) {
+        return $ip === $rule;
+    }
+    [$subnet, $bits] = explode('/', $rule, 2);
+    $ipBin = @inet_pton($ip);
+    $subnetBin = @inet_pton($subnet);
+    if ($ipBin === false || $subnetBin === false || strlen($ipBin) !== strlen($subnetBin) || !ctype_digit($bits)) {
+        return false;
+    }
+    $bits = (int) $bits;
+    if ($bits > strlen($ipBin) * 8) {
+        return false;
+    }
+    $bytes = intdiv($bits, 8);
+    if (substr($ipBin, 0, $bytes) !== substr($subnetBin, 0, $bytes)) {
+        return false;
+    }
+    $rest = $bits % 8;
+    if ($rest === 0) {
+        return true;
+    }
+    $mask = chr((0xff << (8 - $rest)) & 0xff);
+    return (($ipBin[$bytes] & $mask) === ($subnetBin[$bytes] & $mask));
+}
+
+/**
+ * Devuelve $url solo si apunta a este sitio (ruta relativa) o a un host permitido
+ * en $config['allowed_redirect_hosts']; en otro caso devuelve $default.
+ */
+function nfSafeRedirect($url, string $default = '/'): string
+{
+    global $config;
+    if (!is_string($url) || $url === '' || preg_match('/[\x00-\x1f\\\\]/', $url)) {
+        return $default;
+    }
+    if ($url[0] === '/' && !str_starts_with($url, '//')) {
+        return $url;
+    }
+    $parts = parse_url($url);
+    if (empty($parts['host']) || !in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)) {
+        return $default;
+    }
+    $allowed = array_map('strtolower', array_merge(
+        [nfSiteHost()],
+        nfConfigList($config['allowed_redirect_hosts'] ?? [])
+    ));
+    return in_array(strtolower($parts['host']), $allowed, true) ? $url : $default;
+}
+
+/**
+ * Host público del sitio. Usa $config['url'] si existe para no confiar en la cabecera Host
+ * (evita envenenamiento de enlaces en correos de restablecimiento/activación).
+ */
+function nfSiteHost(): string
+{
+    global $config;
+    if (!empty($config['url'])) {
+        $host = parse_url($config['url'], PHP_URL_HOST);
+        if (!empty($host)) {
+            return $host;
+        }
+    }
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    return preg_match('/^[A-Za-z0-9.\-]+(:\d+)?$/', $host) ? $host : 'localhost';
+}
+
+function isValidObjectId($id): bool
+{
+    return (is_string($id) && preg_match('/^[a-f\d]{24}$/i', $id) === 1) || $id instanceof MongoDB\BSON\ObjectId;
+}
+
+/**
+ * Corta la petición si el usuario actual no pertenece a alguno de los grupos indicados.
+ */
+function requireGroup(string ...$groups): void
+{
+    global $user, $nframework;
+    foreach ($groups as $group) {
+        if (isset($user) && $user->in($group)) {
+            return;
+        }
+    }
+    if (isset($nframework) && $nframework->isAjax()) {
+        http_response_code(403);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'No autorizado']);
+    } else {
+        header('Location: /');
+    }
+    exit();
+}
+
+/**
+ * Elimina recursivamente operadores peligrosos de una consulta Mongo proveniente del cliente
+ * ($where, $function, $accumulator, etc. permiten ejecutar JavaScript en el servidor).
+ */
+function nfSanitizeMongoQuery($query)
+{
+    static $forbidden = ['$where', '$function', '$accumulator', '$expr', '$jsonSchema', '$lookup', '$unionWith', '$merge', '$out'];
+    if (!is_array($query)) {
+        return $query;
+    }
+    $clean = [];
+    foreach ($query as $key => $value) {
+        if (is_string($key) && in_array(strtolower($key), $forbidden, true)) {
+            continue;
+        }
+        $clean[$key] = nfSanitizeMongoQuery($value);
+    }
+    return $clean;
+}
+
+/**
+ * Verifica una contraseña contra el hash almacenado (password_hash o hashes legados sin sal).
+ */
+function nfPasswordVerify(string $password, $stored): bool
+{
+    global $config;
+    if (!is_string($stored) || $stored === '') {
+        return false;
+    }
+    $info = password_get_info($stored);
+    if (!empty($info['algo'])) {
+        return password_verify($password, $stored);
+    }
+    foreach ((array) ($config['users']['algos'] ?? ['sha512']) as $algo) {
+        if (in_array($algo, hash_algos(), true) && hash_equals($stored, hash($algo, $password))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function nfPasswordHash(string $password): string
+{
+    return password_hash($password, PASSWORD_DEFAULT);
 }
 function isValidSession($encryptedSessionId, $key)
 {
