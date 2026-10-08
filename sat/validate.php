@@ -1,100 +1,119 @@
 <?
 require 'include.php';
-require 'RSAUtils.php';
-$developermode=true;
-$nocert=$_GET['nocert'];
-$sello=$_GET['sello'];
-//$sello2=$_GET['sello2'];
-/*$developermode=true;
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-//*/
 
 $nframework->usecommon=false;
-function hex2str($hex) {
-    $str = '';
-	for($i=0;$i<strlen($hex);$i+=2) $str .= chr(hexdec(substr($hex,$i,2)));
-    return $str;
-}
+$result=[];
 
-function hex2asc($myin) {
-	for ($i=0; $i<strlen($myin)/2; $i++) {
-		$myout.=chr(base_convert(substr($myin,$i*2,2),16,10));
+// nocert proviene del cliente y se usa como nombre de archivo: solo dígitos/hex.
+$nocert=is_string($_GET['nocert'] ?? null) ? $_GET['nocert'] : '';
+$sello=is_string($_GET['sello'] ?? null) ? $_GET['sello'] : '';
+if(!preg_match('/^[0-9A-Fa-f]{1,64}$/',$nocert) || $sello==='' || empty($_SESSION['logintoken'])){
+	$result['status']='mala';
+	$result['error']='Solicitud inválida';
+	echo json_encode($result);
+	return;
+}
+// El token de inicio de sesión es de un solo uso.
+$logintoken=$_SESSION['logintoken'];
+unset($_SESSION['logintoken']);
+
+$certpath=__DIR__.'/certs/'.$nocert;
+if(!file_exists($certpath.'.pem')){
+	if(!file_exists($certpath)){
+		$result['status']='mala';
+		$result['error']='Certificado no encontrado';
+		echo json_encode($result);
+		return;
 	}
-	return $myout;
+	// Conversión DER -> PEM sin invocar comandos de shell.
+	file_put_contents($certpath.'.pem',"-----BEGIN CERTIFICATE-----\n".chunk_split(base64_encode(file_get_contents($certpath)),64,"\n")."-----END CERTIFICATE-----\n");
 }
-
-if(!file_exists('certs/'.$nocert.'.pem')){
-	exec('openssl x509 -inform DER -outform PEM -in '.__DIR__.'/certs/'.$nocert.' -out '.__DIR__.'/certs/'.$nocert.'.pem',$consola4);
-}
-$certf=file_get_contents('certs/'.$nocert.'.pem');
+$certf=file_get_contents($certpath.'.pem');
 $pubkeyid=openssl_pkey_get_public($certf);
-//$pubkeyid=openssl_csr_get_public_key(file_get_contents('./certs/'.$nocert));
 if ($pubkeyid===false){
-	$result['error']= 'errorcert:';
+	$result['status']='mala';
+	$result['error']='errorcert';
+	echo json_encode($result);
+	return;
 }
 
- $details = openssl_pkey_get_details($pubkeyid);
- //$result['d']=$details;
- if (!array_key_exists('rsa', $details)) {
-     throw new \Exception('Unable to load the key');
- }
-//echo $sello;
-$sello=base64_decode($sello);
-$oo=base64_encode(hex2bin($sello));
+$details = openssl_pkey_get_details($pubkeyid);
+if (!array_key_exists('rsa', $details)) {
+	throw new \Exception('Unable to load the key');
+}
 
-$result['sello']=$oo;
+/*
+ * El certificado lo sube el propio usuario: sin validar que fue emitido por el SAT cualquiera
+ * podría generar uno autofirmado con el RFC de otra persona. Se exige la cadena de confianza
+ * configurada en $config['sat_ca_bundle'] (archivo PEM o directorio con los certificados raíz
+ * e intermedios del SAT).
+ */
+$cabundle=$config['sat_ca_bundle'] ?? '';
+if($cabundle==='' || !file_exists($cabundle) || openssl_x509_checkpurpose($certf, X509_PURPOSE_ANY, [$cabundle])!==true){
+	$result['status']='mala';
+	$result['error']=($cabundle==='' ? 'Validación de certificados SAT no configurada (sat_ca_bundle)' : 'El certificado no fue emitido por el SAT');
+	echo json_encode($result);
+	return;
+}
+$certinfo=openssl_x509_parse($certf,true);
+if(!empty($certinfo['validTo_time_t']) && $certinfo['validTo_time_t']<time()){
+	$result['status']='mala';
+	$result['error']='Certificado vencido';
+	echo json_encode($result);
+	return;
+}
 
+$sello=base64_decode(strtr($sello,'-_','+/'));
+$firma=@hex2bin((string)$sello);
+if($firma===false){
+	$result['status']='mala';
+	echo json_encode($result);
+	return;
+}
 
-$ok = openssl_verify($_SESSION['logintoken'], hex2bin($sello), $pubkeyid,OPENSSL_ALGO_SHA256 );
+$ok = openssl_verify($logintoken, $firma, $pubkeyid,OPENSSL_ALGO_SHA256 );
 if ($ok == 1) {
     $result['status']= "buena";
-    if(str_contains($_SESSION['logintoken'],'||')){
+    if(str_contains($logintoken,'||')){
     	$result['donde']='aqui1';
     }else{
     	$result['donde']='aqui2';
-    	$certd=openssl_x509_parse($certf,true);
-    	file_put_contents('certs/'.$nocert.'.json',json_encode($certd));
+    	$certd=$certinfo;
+    	file_put_contents(__DIR__.'/certs/'.$nocert.'.json',json_encode($certd));
+    	$uid=(string)($certd['subject']['x500UniqueIdentifier'] ?? '');
     	$username=(
-    		str_contains($certd['subject']['x500UniqueIdentifier'],'/')?
-    		trim(substr($certd['subject']['x500UniqueIdentifier'],0,strpos($certd['subject']['x500UniqueIdentifier'],'/')))
+    		str_contains($uid,'/')?
+    		trim(substr($uid,0,strpos($uid,'/')))
     		:
-    		trim($certd['subject']['x500UniqueIdentifier'])
+    		trim($uid)
     	);
+    	if($username===''){
+    		$result['status']='mala';
+    		echo json_encode($result);
+    		return;
+    	}
     	$m->{$config['sitedb']}->users->updateOne([
     		'username'=>$username,
     		],[
     		'$set'=>[
     			'username'=>$username,
     			'nocert'=>$nocert,
-    			'razonsocial'=>$certd['subject']['name'],
-    			'curp'=>$certd['subject']['serialNumber']
+    			'razonsocial'=>$certd['subject']['name'] ?? '',
+    			'curp'=>$certd['subject']['serialNumber'] ?? ''
     			]
     		],['upsert'=>true]);
-    	
+
     	$user= new User([
 			'username'=> $username,
 		]);
-		/*$tmp=(array)$user->sessions;
-		$tmp[]=session_id();
-		$user->sessions=array_values(array_unique($tmp));
-    	//*/
+		session_regenerate_id(true);
 		$_SESSION['user']=$user->_id;
-		
     }
-    
+
 } elseif ($ok == 0) {
     $result['status']= "mala";
-    $result['ok']=$ok;
-    $result['signature']=$sello;
-    $result['data']=$_SESSION['logintoken'];
 } else {
     $result['status']= "alarmante, error verificando la firma";
 }
-/*
-while ($msg = openssl_error_string() !== false) {
-    echo $msg;
-}//*/
 
 echo json_encode($result);
