@@ -25,11 +25,13 @@ require 'include.php';
     return;
   }
 
-if (isset($_SESSION['tinymceup'][$_GET['_id']]))
-  /*********************************************
-   * Change this line to set the upload folder *
-   *********************************************/
-  $imageFolder = $_SESSION['tinymceup'][$_GET['_id']]['mediadir'];
+$mceId = (string) ($_GET['_id'] ?? '');
+if (!isset($_SESSION['tinymceup'][$mceId])) {
+    // Sin configuración en sesión no hay carpeta autorizada: antes se escribía en el directorio actual.
+    header("HTTP/1.1 403 Forbidden");
+    return;
+}
+$imageFolder = rtrim($_SESSION['tinymceup'][$mceId]['mediadir'], '/') . '/';
 
 
   reset ($_FILES);
@@ -43,14 +45,19 @@ if (isset($_SESSION['tinymceup'][$_GET['_id']]))
     // header('P3P: CP="There is no P3P policy."');
 
     // Sanitize input
-    if (preg_match("/([^\w\s\d\-_~,;:\[\]\(\).])|([\.]{2,})/", $temp['name'])) {
+    if (preg_match("/([^\w\s\d\-_~,;:\[\]\(\).])|([\.]{2,})/", $temp['name']) || $temp['name'][0] === '.' || substr_count($temp['name'], '.') > 1) {
         header("HTTP/1.1 400 Invalid file name.");
         return;
     }
 
     // Verify extension
-    if (!in_array(strtolower(pathinfo($temp['name'], PATHINFO_EXTENSION)), array("gif", "jpg", "png","webp"))) {
+    if (!in_array(strtolower(pathinfo($temp['name'], PATHINFO_EXTENSION)), array("gif", "jpg", "jpeg", "png", "webp"))) {
         header("HTTP/1.1 400 Invalid extension.");
+        return;
+    }
+    // El contenido debe ser realmente una imagen.
+    if (@getimagesize($temp['tmp_name']) === false) {
+        header("HTTP/1.1 400 Invalid image.");
         return;
     }
 	if(!file_exists($imageFolder)){
@@ -63,7 +70,7 @@ if (isset($_SESSION['tinymceup'][$_GET['_id']]))
     // Determine the base URL
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on' ? "https://" : "http://";
 //    $baseurl = $protocol . $_SERVER["HTTP_HOST"] . rtrim(dirname($_SERVER['REQUEST_URI']), "/") . "/";
-	$baseurl= $_SESSION['tinymceup'][$_GET['_id']]['baseurl'];
+	$baseurl= $_SESSION['tinymceup'][$mceId]['baseurl'];
 
     // Respond to the successful upload with JSON.
     // Use a location key to specify the path to the saved image resource.
