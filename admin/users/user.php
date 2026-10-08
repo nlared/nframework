@@ -19,7 +19,7 @@ $username = new inputText(['dataset' => &$dataset, 'field' => 'username', 'capti
 
 $disabled = new inputCheckbox(['dataset' => &$dataset, 'field' => 'disabled', 'caption' => $nframework->language['disabled'] . ':']);
 
-if (file_exists(include $_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.php')) {
+if (file_exists($_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.php')) {
 	include $_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.php';
 }
 if ($nframework->isAjax()) {
