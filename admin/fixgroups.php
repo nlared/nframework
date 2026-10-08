@@ -1,6 +1,7 @@
 <? 
 
 require 'include.php';
+requireGroup('admins');
 
 foreach($m->{$config['sitedb']}->usersgroups->find() as $d){
 	$users=[];

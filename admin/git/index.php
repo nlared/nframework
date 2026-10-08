@@ -1,22 +1,13 @@
 <?php
 require '../common2.php';
-if (!is_admin()) {
-    header('Location: ../index.php');
-    exit;
-}
 
-if($nframework->is_ajax()){
+if($nframework->isAjax()){
     $action = $_POST['action'] ?? '';
     if ($action === 'pull') {
-        // Execute git pull command
         $output = [];
         $return_var = 0;
-        exec('git pull 2>&1', $output, $return_var);
-        if ($return_var === 0) {
-            echo json_encode(['success' => true, 'message' => implode("\n", $output)]);
-        } else {
-            echo json_encode(['success' => false, 'message' => implode("\n", $output)]);
-        }
+        exec('git -C ' . escapeshellarg(dirname(__DIR__, 2)) . ' pull 2>&1', $output, $return_var);
+        $result = ['success' => $return_var === 0, 'message' => implode("\n", $output)];
     }
     exit;
 }

@@ -1,5 +1,6 @@
 <?
 require 'include.php';
+requireGroup('admins');
 $nframework->usecommon=True;
 ?>
 <div class="container">
