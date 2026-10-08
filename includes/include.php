@@ -756,17 +756,13 @@ $themeswitcher = new ThemeSwitcher();
 function speak($text)
 {
     global $javas;
-    $javas->addjs("
-	speak('$text');
-", 'ready');
+    $javas->addjs('speak(' . json_encode((string) $text) . ');', 'ready');
 }
 // TODO> Other options
 function notify($title = 'nlared.com', $text = '', $options = [])
 {
     global $javas;
-    $javas->addjs("
-	toast('$text');
-", 'ready');
+    $javas->addjs('toast(' . json_encode((string) $text) . ');', 'ready');
 }
 
 
