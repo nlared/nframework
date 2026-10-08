@@ -60,6 +60,10 @@ $sidemenu .= '
         <span class="icon"><span class="mif-folder-tree"></span></span>
         <span class="caption">' . $nframework->language['filemanager'] . '</span>
     </a></li>
+    <li class="slide"><a href="/admin/statistics/" >
+        <span class="icon"><span class="mif-chart-bars"></span></span>
+        <span class="caption">' . $nframework->language['statistics'] . '</span>
+    </a></li>
     <li class="slide"><a href="/admin/errorlog" >
         <span class="icon"><span class="mif-bug"></span></span>
         <span class="caption">' . $nframework->language['logs'] . '</span>
