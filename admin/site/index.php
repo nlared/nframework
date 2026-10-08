@@ -23,6 +23,8 @@ foreach ($themesdir as $themedir) {
 $title = new inputText(['dataset' => &$dataset, 'field' => 'title', 'caption' => $nframework->language['title'] . ':', 'required' => true]);
 $shortname = new inputText(['dataset' => &$dataset, 'field' => 'shortname', 'caption' => $nframework->language['shortname'] . ':', 'required' => true]);
 $tagline = new inputText(['dataset' => &$dataset, 'field' => 'tagline', 'caption' => 'Tagline:']);
+// Dominio público para enlaces de correos, sitemap, robots y manifiesto (ver nfSiteHost()).
+$siteurl = new inputText(['dataset' => &$dataset, 'field' => 'url', 'caption' => 'URL pública del sitio:', 'placeholder' => 'https://www.ejemplo.com', 'pattern' => '^https?://[A-Za-z0-9.\-]+(:[0-9]+)?/?$']);
 $image = new inputText(['dataset' => &$dataset, 'field' => 'image', 'caption' => 'Image:']);
 $description = new textarea(['dataset' => &$dataset, 'field' => 'description', 'caption' => $nframework->language['description'] . ':', 'required' => true]);
 $timezone = new select(['dataset' => &$dataset, 'field' => 'timezone', 'caption' => $nframework->language['timezone'] . ':', 'options' => $timezones]);
@@ -138,6 +140,14 @@ if ($nframework->isAjax()) {
 				</div>
 				<div class="row">
 					<div class="cell"><?= $tagline ?></div>
+				</div>
+				<div class="row">
+					<div class="cell-md-6"><?= $siteurl ?></div>
+					<div class="cell-md-6"><small>
+						Se usa en los enlaces de los correos de activación y de restablecer contraseña, <code>robots.txt</code>, <code>sitemap.xml</code> y el manifiesto.
+						Si está vacía se toma la cabecera <code>Host</code> de la petición, que el visitante puede falsificar.
+						<? if (empty($config['url'])) { ?><br><span class="fg-red">Sin configurar.</span> Valor sugerido: <code>https://<?= htmlspecialchars($_SERVER['HTTP_HOST'] ?? '') ?></code><? } ?>
+					</small></div>
 				</div>
 				<div class="row">
 					<div class="cell"><?= $description ?></div>
