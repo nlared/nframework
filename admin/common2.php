@@ -39,6 +39,10 @@ $sidemenu .= '
         <span class="icon"><span class="mif-security"></span></span>
         <span class="caption">' . $nframework->language['security'] . '</span>
     </a></li> 
+    <li class="slide"><a href="/admin/sat/" >
+        <span class="icon"><span class="mif-key"></span></span>
+        <span class="caption">SAT</span>
+    </a></li>
     <li class="slide"><a href="/admin/theme/tconfig.php" >
         <span class="icon"><span class="mif-insert-template"></span></span>
         <span class="caption">' . $nframework->language['theme'] . '</span>
