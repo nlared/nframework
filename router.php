@@ -1,7 +1,8 @@
 <?
 use Mezon\Router\Router;
 use Mezon\Router\RouterInterface;
-$developermode=true;
+// El modo desarrollador muestra trazas de error; se activa solo para el grupo 'developers' (ver include.php).
+$developermode = false;
 
 require __DIR__.'/nframework/router.php';
 
