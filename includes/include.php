@@ -1,15 +1,39 @@
 <?php
-function normalizeRequestScheme(): void
+/**
+ * Las cabeceras X-Forwarded-* solo se aceptan si la petición llega desde un proxy de confianza
+ * (red privada/loopback o una IP listada en $config['trusted_proxies']); de lo contrario
+ * cualquier cliente podría falsificar su IP y evadir las listas negras y el límite de intentos.
+ */
+function isTrustedProxy(array $trustedProxies = []): bool
 {
-    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+    if (!filter_var($remoteAddr, FILTER_VALIDATE_IP)) {
+        return false;
+    }
+    foreach ($trustedProxies as $proxy) {
+        if (nfIpMatches($remoteAddr, $proxy)) {
+            return true;
+        }
+    }
+    return !filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+}
+
+function normalizeRequestScheme(bool $trustedProxy): void
+{
+    if ($trustedProxy && !empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
         $_SERVER['REQUEST_SCHEME'] = str_replace('http', 'https', $_SERVER['REQUEST_SCHEME'] ?? 'https');
         $_SERVER['SERVER_PROTOCOL'] = str_replace('HTTP', 'HTTPS', $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1');
         $_SERVER['HTTPS'] = 'on';
     }
 }
 
-function resolveClientIp(): string
+function resolveClientIp(bool $trustedProxy): string
 {
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+    if (!$trustedProxy) {
+        return filter_var($remoteAddr, FILTER_VALIDATE_IP) ? $remoteAddr : '127.0.0.1';
+    }
+
     $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
     if ($forwarded !== '') {
         $ipList = array_map('trim', explode(',', $forwarded));
@@ -25,12 +49,8 @@ function resolveClientIp(): string
         return $realIp;
     }
 
-    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
     return filter_var($remoteAddr, FILTER_VALIDATE_IP) ? $remoteAddr : '127.0.0.1';
 }
-
-normalizeRequestScheme();
-$ip = resolveClientIp();
 
 if (php_sapi_name() != 'cli') {
     if (empty($_SERVER['HTTP_USER_AGENT'])) {
@@ -73,11 +93,13 @@ class nFrameworkException extends Exception
 class class_config implements ArrayAccess
 {
     private array $contenedor;
+    private array $fileConfig;
 
     public function __construct()
     {
         require __DIR__ . '/config.php';
         $this->contenedor = (array) $config;
+        $this->fileConfig = $this->contenedor;
 
         $this->contenedor['images']['config']['logo'] = (empty($this->contenedor['image']) ? 'https://www.nlared.com/img/nlaredlogo5.png' : $this->contenedor['image']);
         if (empty($this->contenedor['users']['algos'])) {
@@ -95,11 +117,25 @@ class class_config implements ArrayAccess
         $dbconf = $m->{$this->contenedor['sitedb']}->configs->findOne(['_id' => 'site']);
         $themeconf = $m->{$this->contenedor['sitedb']}->configs->findOne(['_id' => 'theme']);
 
-        $conf = array_merge(
-            $this->contenedor,
-            mongoToArray($dbconf)
-        );
+        $dbconf = mongoToArray($dbconf);
+        $conf = array_merge($this->contenedor, $dbconf);
+        // Las listas se suman: lo definido en config.php (infraestructura) no se puede quitar desde el panel.
+        foreach (['trusted_proxies', 'allowed_redirect_hosts'] as $listKey) {
+            $conf[$listKey] = array_values(array_unique(array_merge(
+                nfConfigList($this->contenedor[$listKey] ?? []),
+                nfConfigList($dbconf[$listKey] ?? [])
+            )));
+        }
         $conf['theme'] = mongoToArray($themeconf);
+        if (empty($conf['session_key'])) {
+            // Clave para cifrar los tokens de redirección entre sitios; se genera una sola vez.
+            $conf['session_key'] = bin2hex(random_bytes(32));
+            $m->{$this->contenedor['sitedb']}->configs->updateOne(
+                ['_id' => 'site'],
+                ['$set' => ['session_key' => $conf['session_key']]],
+                ['upsert' => true]
+            );
+        }
         if (empty($conf['manifest']['theme_color'])) {
             $conf['manifest']['theme_color'] = '#1ba1e2';
         }
@@ -108,6 +144,14 @@ class class_config implements ArrayAccess
         }
 
         $this->contenedor = $conf;
+    }
+
+    /**
+     * Valor tal como está en config.php (sin lo que venga de la base de datos).
+     */
+    public function fileValue(string $key): mixed
+    {
+        return $this->fileConfig[$key] ?? null;
     }
 
     public function offsetSet(mixed $offset, mixed $valor): void
@@ -473,9 +517,23 @@ try {
 
     $config->loadfromdb();
 } catch (Exception $e) {
-    echo 'Excepción capturada: ', $e->getMessage(), "\n";
-    //phpinfo();
+    error_log('nframework: ' . $e->getMessage());
+    if (php_sapi_name() == 'cli') {
+        echo 'Excepción capturada: ', $e->getMessage(), "\n";
+    } else {
+        http_response_code(503);
+        exit('Servicio no disponible.');
+    }
 }
+if (!defined('SESSION_KEY')) {
+    define('SESSION_KEY', (string) $config['session_key']);
+}
+
+// Después de loadfromdb(): trusted_proxies puede venir de config.php y/o del panel (Admin → Seguridad).
+$nfTrustedProxy = isTrustedProxy(nfConfigList($config['trusted_proxies'] ?? []));
+normalizeRequestScheme($nfTrustedProxy);
+$ip = resolveClientIp($nfTrustedProxy);
+$nframework->https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off';
 $block_reason = '';
 if (isset($config['security_user_agents_blacklist'])) {
     $userAgent = strtolower($_SERVER['HTTP_USER_AGENT']);
@@ -977,10 +1035,11 @@ function mongoToArray($obj)
     return $m;
 }
 
-function csrfValidate()
+function csrfValidate(): bool
 {
-    return $_POST['CSRFToken'] ==
-        hash('sha256', $_SESSION['nf']['Anti-CSRF'] . $_SERVER['HTTP_USER_AGENT'] . $_SERVER['REQUEST_URI']);
+    $token = $_POST['CSRFToken'] ?? '';
+    return is_string($token) && !empty($_SESSION['nf']['Anti-CSRF']) &&
+        hash_equals(hash('sha256', $_SESSION['nf']['Anti-CSRF'] . $_SERVER['HTTP_USER_AGENT'] . $_SERVER['REQUEST_URI']), $token);
 }
 function csrfToken($action): string
 {

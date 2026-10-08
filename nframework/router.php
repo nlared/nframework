@@ -21,9 +21,67 @@ function replaceVarsAtUrl($url, $vars)
 {
 	foreach ($vars as $clave => $valor) {
 		// Reemplaza {clave} por el valor codificado
-		$url = str_replace("{" . $clave . "}", urlencode($valor), $url);
+		$url = str_replace("{" . $clave . "}", urlencode((string) $valor), $url);
 	}
 	return $url;
+}
+
+/**
+ * Crea un PHPMailer configurado con los datos SMTP del sitio.
+ */
+function nfMailer(): PHPMailer
+{
+	global $config;
+	$mail = new PHPMailer(true);
+	$mail->isSMTP();
+	$mail->CharSet = 'UTF-8';
+	$mail->Host = $config['smtp']['host'];
+	$mail->SMTPAuth = boolval($config['smtp']['auth']);
+	$mail->Username = $config['smtp']['username'];
+	$mail->Password = $config['smtp']['password'];
+	if (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'ssl') {
+		$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+	} elseif (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'tls') {
+		$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+	}
+	$mail->Port = $config['smtp']['port'];
+	$mail->setFrom($config['smtp']['fromemail'], $config['smtp']['fromname']);
+	$mail->isHTML(true);
+	return $mail;
+}
+
+/**
+ * Marca la sesión como autenticada (regenerando el id para evitar fijación de sesión)
+ * y redirige al destino guardado o al inicio correspondiente.
+ */
+function nfCompleteLogin(User $user): void
+{
+	session_regenerate_id(true);
+	$_SESSION['user'] = $user->_id;
+	unset($_SESSION['tmp_user']);
+	$redir = $_SESSION['login_redirect'] ?? '';
+	$_SESSION['login_redirect'] = '';
+	session_write_close();
+	if ($redir != '' && $redir != '/account/login.php' && $redir != '/account/login') {
+		$redir = nfSafeRedirect($redir);
+		if (strpos($redir, '/') !== 0) {
+			$redir .= (str_contains($redir, '?') ? '&' : '?') . 'uid=' . encryptSessionId($user->_id, SESSION_KEY);
+		}
+		header('Location: ' . $redir);
+	} elseif ($user->in('admins')) {
+		header('Location: /admin/');
+	} else {
+		header('Location: /');
+	}
+	exit();
+}
+
+/**
+ * Limita el tamaño de imágenes generadas dinámicamente para evitar agotar memoria/CPU.
+ */
+function nfClampImageSize($size, int $max = 2048): int
+{
+	return max(1, min($max, (int) $size));
 }
 
 
