@@ -747,6 +747,7 @@ if (!empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^[
 } else {
     if (isset($requiresession)) {
         header('Location: /');
+        exit();
     } else {
         $user = new User(['username' => 'guest']);
     }
