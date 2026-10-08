@@ -1,7 +1,7 @@
 <?
 //Datatable reorder
 require 'include.php';
-$datainfo = $_SESSION['datatable'][$_GET['id']];
+$datainfo = $_SESSION['datatable'][(string) ($_GET['id'] ?? '')] ?? null;
 if (empty($datainfo)) {
     echo 'error en session';
     die();
@@ -11,11 +11,13 @@ header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 $data = \json_decode(file_get_contents('php://input'), true);
 
-foreach ($data['rows'] as $row) {
-
-    $id = $row['id'];
-    $newPos = intval($row['newPosition']);
-
-    $m->{$datainfo['db']}->{$datainfo['collection']}->updateOne(['_id' => new \MongoDB\BSON\ObjectId($id)], ['$set' => ['position' => $newPos]]);
+foreach ((array) ($data['rows'] ?? []) as $row) {
+    if (!isValidObjectId($row['id'] ?? null)) {
+        continue;
+    }
+    $m->{$datainfo['db']}->{$datainfo['collection']}->updateOne(
+        ['_id' => new \MongoDB\BSON\ObjectId($row['id'])],
+        ['$set' => ['position' => intval($row['newPosition'] ?? 0)]]
+    );
 }
-$result = ['success' => true, 'data' => $data];
+$result = ['success' => true];

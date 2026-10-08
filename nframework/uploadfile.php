@@ -204,8 +204,8 @@ function getFileList(array $upload): array
 }
 
 // Main execution
-if (!isset($_POST['mid']) || !isset($_SESSION['uploads4'][$_POST['mid']])) {
-	echo json_encode(['error' => 'Sesión inválida', 'session' => session_id()]);
+if (!isset($_POST['mid']) || !is_string($_POST['mid']) || !isset($_SESSION['uploads4'][$_POST['mid']])) {
+	echo json_encode(['error' => 'Sesión inválida']);
 	exit;
 }
 
@@ -213,7 +213,8 @@ $upload = $_SESSION['uploads4'][$_POST['mid']];
 $uploadResult = handleFileUpload($upload);
 
 $result = [
-	'conf' => $upload,
+	// No se exponen rutas del servidor (dir, extension, extensioninfo) al navegador.
+	'conf' => array_diff_key($upload, array_flip(['dir', 'extension', 'extensioninfo', 'onupload', 'ondelete', 'onlist', 'oncountcheck', 'ondownload'])),
 	'delete' => $upload['delete'],
 	'download' => $upload['download'],
 	'preview' => !empty($upload['preview']),

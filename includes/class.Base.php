@@ -217,7 +217,11 @@ class baseInput
             return !$this->required;
         }
 
-        if (!is_scalar($newval) && !is_object($newval) && !method_exists($newval, '__toString')) {
+        if (is_array($newval)) {
+            // Controles compuestos (mapmarker, etc.) envían arreglos.
+            return !$this->required || !empty($newval);
+        }
+        if (!is_scalar($newval) && !(is_object($newval) && method_exists($newval, '__toString'))) {
             return false;
         }
 
@@ -510,7 +514,7 @@ js,
             if (!empty($this->value)) {
                 $javas->addjs(
                     <<<js
-fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['adduri']}&qid='+encodeURIComponent('{$this->value}'))
+fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['adduri']}&qid='+encodeURIComponent({$this->jsValue()}))
     .then(res => res.json())
     .then(items => {
         console.log(items);
@@ -545,6 +549,11 @@ js,
     public function is_valid($newval): bool
     {
         return parent::is_valid($newval);
+    }
+
+    private function jsValue(): string
+    {
+        return json_encode((string) $this->value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
     }
 
     private function getMaskRole(): string
@@ -1065,7 +1074,8 @@ class inputCheckBox extends baseOptions
     }
     public function is_valid($newval)
     {
-        return filter_var($newval, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== null;
+        // checkedvalue puede ser cualquier valor escalar; una casilla sin marcar no se envía (null).
+        return $newval === null || is_scalar($newval);
     }
     public function __toMongo($val)
     {
@@ -1482,6 +1492,12 @@ abstract class BaseFileInput extends baseInput
     public $caption;
 
 
+    public function is_valid($newval)
+    {
+        // Los archivos se suben por /nframework/uploadfile.php, no llegan en el POST del formulario.
+        return true;
+    }
+
     protected function initializeFileUpload(): void
     {
         global $nframework;
@@ -1867,10 +1883,9 @@ class datasetpdo
             $this->{$option} = $value;
         }
         if ($this->_id != '' && $this->key != '') {
-
-            // $this->info =(array) $this->collection->findOne(['_id'=>$this->_id]);
-            $sth = $this->pdo->query('SELECT * FROM ' . $this->table . ' WHERE ' . $this->key . '="' . $this->_id . '"');
-            $this->info = $sth->fetch(PDO::FETCH_ASSOC);
+            $sth = $this->pdo->prepare('SELECT * FROM ' . self::identifier($this->table) . ' WHERE ' . self::identifier($this->key) . ' = ?');
+            $sth->execute([$this->_id]);
+            $this->info = $sth->fetch(PDO::FETCH_ASSOC) ?: [];
             if (count($this->info) == 0) {
                 $this->info = ['_id' => $this->_id];
             } else {
@@ -1881,35 +1896,50 @@ class datasetpdo
     }
 
 
+    /**
+     * Valida un nombre de tabla/columna; los identificadores no pueden ir como parámetros.
+     */
+    private static function identifier($name): string
+    {
+        if (!is_string($name) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name)) {
+            throw new InvalidArgumentException('Identificador SQL inválido');
+        }
+        return '`' . $name . '`';
+    }
+
     public function save()
     {
         $errores = '';
+        $post = $_POST[$this->nameprefix] ?? [];
         foreach ($this->elements as $element) {
-            $element->value = $_POST[$this->nameprefix][$element->field];
-            if ($element->disabled != false && !$element->is_valid($_POST[$this->nameprefix][$element->field])) {
+            $value = $post[$element->field] ?? null;
+            if (!$element->disabled && !$element->is_valid($value)) {
                 $errores .= 'Error en:' . $element->field . '<br/>';
             }
+            $element->value = $value;
         }
-        if (empty($errores)) {
-            if (!$this->exists) {
-                foreach ($this->elements as $element) {
-                    $changes[$element->field] = $_POST[$this->nameprefix][$element->field];
-                }
-                $sql = 'INSERT INTO ' . $this->table
-                    . ' (' . implode(',', array_keys($changes)) . ') values("' . implode('","', $changes) . '")';
-            } else {
-                foreach ($this->elements as $element) {
-                    if ($element->field == $this->key) {
-                        $where = ' where ' . $element->field . '="' . $this->_id . '"';
-                    } else {
-                        $sqls[] = $element->field . '="' . $_POST[$this->nameprefix][$element->field] . '"';
-                    }
-                }
-                $sql = 'UPDATE ' . $this->table . ' SET ' . implode(',', $sqls) . $where;
+        if (!empty($errores)) {
+            return $errores;
+        }
+        // Consultas preparadas: antes los valores del formulario se concatenaban en el SQL.
+        $changes = [];
+        foreach ($this->elements as $element) {
+            if (!$element->disabled && $element->field != $this->key) {
+                $changes[self::identifier($element->field)] = $post[$element->field] ?? null;
             }
-            //echo $sql;
-            $this->pdo->query($sql);
         }
+        if (!$this->exists) {
+            $changes[self::identifier($this->key)] = $this->_id;
+            $sql = 'INSERT INTO ' . self::identifier($this->table)
+                . ' (' . implode(',', array_keys($changes)) . ') VALUES (' . implode(',', array_fill(0, count($changes), '?')) . ')';
+            $params = array_values($changes);
+        } else {
+            $sets = array_map(fn($column) => $column . ' = ?', array_keys($changes));
+            $sql = 'UPDATE ' . self::identifier($this->table) . ' SET ' . implode(',', $sets) . ' WHERE ' . self::identifier($this->key) . ' = ?';
+            $params = array_merge(array_values($changes), [$this->_id]);
+        }
+        $this->pdo->prepare($sql)->execute($params);
+        return false;
     }
 
     public function &__get($name)
@@ -2152,10 +2182,11 @@ class dataset
             $nftableenable = true;
         }
         foreach ($this->elements as $element) {
-            if ($element->disabled != false && !$element->is_valid($_POST[$this->nameprefix][$element->field])) {
+            // Se validan los campos editables (antes solo se validaban los deshabilitados).
+            if (!$element->disabled && !$element->is_valid($_POST[$this->nameprefix][$element->field] ?? null)) {
                 $errores .= 'Error en:' . $element->field . '<br/>';
             } else {
-                $element->value = $_POST[$this->nameprefix][$element->field];
+                $element->value = $_POST[$this->nameprefix][$element->field] ?? null;
             }
         }
         if (empty($errores)) {
@@ -2169,7 +2200,8 @@ class dataset
                 if ($element->field == '_id') {
                     $element->value = (string) $this->_id;
                 } else {
-                    if (!$element->backreadonly) {
+                    // Los campos deshabilitados no se aceptan desde el navegador.
+                    if (!$element->backreadonly && !$element->disabled) {
                         $results['addata'][] = str_replace('$', $this->position, $this->fieldprefix . $element->field);
                         if ($_POST[$this->nameprefix][$element->field] == '') {
                             $changes['$unset'][str_replace('$', $this->position, $this->fieldprefix . $element->field)] = 1;
@@ -2192,7 +2224,10 @@ class dataset
             }
             if ($punto) {
                 //	echo '<textarea>'.print_r($changes,true).'</textarea>';
-                $this->collection->updateOne(['_id' => $this->_id], $changes, ['upsert' => true], $options);
+                if ($this->historic) {
+                    $changes['$set']['nfversions'] = $this->info['nfversions'];
+                }
+                $this->collection->updateOne(['_id' => $this->_id], $changes, ['upsert' => true] + $options);
             } else {
                 $options['upsert'] = true;
                 $this->collection->updateOne(['_id' => $this->_id], ['$set' => $this->info], $options);

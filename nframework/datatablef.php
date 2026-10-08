@@ -4,7 +4,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
-$datainfo = $_SESSION['datatable'][$_GET['id']];
+$datainfo = $_SESSION['datatable'][(string) ($_GET['id'] ?? '')] ?? null;
 
 if (empty($datainfo)) {
 	echo 'error en session';
@@ -12,14 +12,13 @@ if (empty($datainfo)) {
 }
 
 $filters = $datainfo['filters'];
-function converttophptypepipeline($pipeline, $field, $phpfunction)
+function converttophptypepipeline($pipeline, $field, callable $fn)
 {
+	if (!is_array($pipeline)) {
+		return $pipeline;
+	}
 	foreach ($pipeline as $key => $value) {
 		if ($key == $field) {
-			$fn = eval('return ' . $phpfunction);
-			if (!is_callable($fn)) {
-				throw new Exception("La función PHP no es válida: $phpfunction");
-			}
 			if (is_array($value)) {
 				foreach ($value as $k => $v) {
 					$value[$k] = $fn($v);
@@ -30,21 +29,22 @@ function converttophptypepipeline($pipeline, $field, $phpfunction)
 				$pipeline[$key] = $fn($value);
 			}
 		} else {
-			$pipeline[$key] = converttophptypepipeline($value, $field, $phpfunction);
+			$pipeline[$key] = converttophptypepipeline($value, $field, $fn);
 		}
 	}
 	return $pipeline;
 }
 
-$pipeline = $_SESSION['datatable'][$_GET['id']]['original'];
-if (!empty($_POST['pipelinequery'])) {
-	$tmppipeline = $_POST['pipelinequery'];
+$pipeline = $datainfo['original'];
+if (!empty($_POST['pipelinequery']) && is_array($_POST['pipelinequery'])) {
+	// La consulta viene del navegador: se quitan operadores que ejecutan código en el servidor.
+	$tmppipeline = nfSanitizeMongoQuery($_POST['pipelinequery']);
 	foreach ($filters as $filter) {
 		if (isset($filter['field'])) {
 			if ($filter['phptype'] == 'number') {
-				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], 'function($value) { return floatval($value); };');
+				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], fn($value) => floatval($value));
 			} else if ($filter['phptype'] == 'date') {
-				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], 'function($value) { return new \MongoDB\BSON\UTCDateTime(strtotime($value) * 1000); };');
+				$tmppipeline = converttophptypepipeline($tmppipeline, $filter['field'], fn($value) => new \MongoDB\BSON\UTCDateTime(strtotime((string) $value) * 1000));
 			}
 		}
 	}
@@ -53,8 +53,7 @@ if (!empty($_POST['pipelinequery'])) {
 	];
 }
 
-$_SESSION['datatable'][$_GET['id']]['pipeline'] = $pipeline;
+$_SESSION['datatable'][(string) $_GET['id']]['pipeline'] = $pipeline;
 $result = [
 	'pipeline' => $pipeline,
-	'errors' => error_get_last()
 ];

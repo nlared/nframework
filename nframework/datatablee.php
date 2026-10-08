@@ -7,7 +7,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
-$datainfo = $_SESSION['datatable'][$_GET['id']];
+$datainfo = $_SESSION['datatable'][(string) ($_GET['id'] ?? '')] ?? null;
 // Create a new spreadsheet
 
 
@@ -20,10 +20,6 @@ header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
 
-$psort = $_GET['order'];
-foreach ($psort as $nsort) {
-	$sorts[$datainfo['columns'][$nsort['column']]] = ($nsort['dir'] == 'asc' ? 1 : -1);
-}
 foreach ($datainfo['columns'] as $column) {
 	if ($column == '_id') {
 		$project['_id'] = ['$toString' => '$_id'];
@@ -34,6 +30,7 @@ foreach ($datainfo['columns'] as $column) {
 
 $pipeline = (isset($datainfo['pipeline']) ? $datainfo['pipeline'] : []);
 $options = [];
+$arrayData = [];
 foreach ($m->{$datainfo['db']}->{$datainfo['collection']}->aggregate($pipeline, $options) as $d) {
 	$d = mongotoarray($d);
 	$d['_id'] = (string) $d['_id'];
