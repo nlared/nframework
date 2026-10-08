@@ -164,7 +164,6 @@ try {
     //$data=mongotoArray($dataset->{$field});
 
     $data = mongotoArray($dataset->info);
-    $result['ssssssss'] = $data;
     if (str_contains($field, '.')) {
         //	if(empty($_POST['op'])||){
         $items = get_data($data, $field);
@@ -198,7 +197,15 @@ try {
                 throw new InvalidArgumentException('Los datos enviados no tienen el formato esperado.');
             }
 
+            if ($pos === null) {
+                throw new InvalidArgumentException('Posición inválida.');
+            }
+            $set = [];
             foreach ($payload as $k => $pfield) {
+                // Solo nombres de campo simples: '.' o '$' permitirían escribir en cualquier parte del documento.
+                if (!is_string($k) || !preg_match('/^[A-Za-z0-9_\-]+$/', $k) || (!empty($fieldRules) && !array_key_exists($k, $fieldRules))) {
+                    continue;
+                }
                 $rules = $fieldRules[$k] ?? [];
                 $validation = validateEmbeddedValue($k, $pfield, $rules);
                 if (!$validation['valid']) {
@@ -208,7 +215,9 @@ try {
                 $set[$field . '.' . $pos . '.' . $k] = $pfield;
                 $items[$pos][$k] = $pfield;
             }
-            $result['set'] = $set;
+            if (empty($set)) {
+                throw new InvalidArgumentException('No hay datos para guardar.');
+            }
             $m->{$info['database']}->{$info['collection']}->updateOne(['_id' => ($info['simpleid'] ? $info['_id'] : tomongoid($info['_id']))], ['$set' => $set], ['upsert' => true]);
         } elseif ($op === 'delete') {
             if ($pos === null || !isset($items[$pos])) {

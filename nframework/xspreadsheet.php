@@ -29,6 +29,7 @@ if (isset($_GET['mid']) && isset($_SESSION['nfxspreadsheet'][$_GET['mid']])) {
         $update = json_decode($jsonInput, true);
         // Check the decoded data
         $cambios = [];
+        $save = false;
         if ($update) {
             foreach ($update['rows'] as $row => $datarow) {
                 foreach ($datarow['cells'] as $cell => $datacell) {
@@ -66,7 +67,7 @@ if (isset($_GET['mid']) && isset($_SESSION['nfxspreadsheet'][$_GET['mid']])) {
                 'error' => $e->getMessage()
             ];
         } else {
-            $esult = [
+            $result = [
                 'error' => 'error'
             ];
         }
