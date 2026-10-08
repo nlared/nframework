@@ -1,4 +1,5 @@
 <?
+require '../common2.php';
 $supervisorConfig =
     '[program:nframework-worker]  
 command=php /var/www/html/job_worker.php default 5  
