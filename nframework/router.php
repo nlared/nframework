@@ -585,6 +585,7 @@ $router->addRoute('/images/config/[i:size]/logo.png', function (string $route, a
 	global $m, $config, $nframework;
 	$logo = $_SERVER['DOCUMENT_ROOT'] . '/img/nf/logo.png';
 	$dir = 'img/nf/config/';
+	$p['size'] = nfClampImageSize($p['size']);
 	$dst = $dir . '/logo_' . $p['size'] . '.png';
 	if (!file_exists($dst) || filemtime($dst) < filemtime($logo)) {
 		if (!file_exists($dir)) {
@@ -756,6 +757,8 @@ $router->addRoute('/images/[s:id]/[i:w]/[i:h]/preview.png', function (string $ro
 $router->addRoute('/images/config/[i:w]/[i:h]/logo.png', function (string $route, array $p) {
 	global $m, $config, $nframework;
 	$dir = 'img/nf/config/';
+	$p['w'] = nfClampImageSize($p['w']);
+	$p['h'] = nfClampImageSize($p['h']);
 	$dst = $dir . '/logo_' . $p['w'] . 'x' . $p['h'] . '.png';
 	if (!file_exists($dst) || filemtime($dst) < filemtime($config['image'])) {
 		if (!file_exists($dir)) {
@@ -785,7 +788,14 @@ $router->addRoute('/images/resize/[s:id]/[i:w]/[i:h]/[s:file]', function (string
 	global $nframework;
 	if (isset($_SESSION['imagesresize'][$p['id']])) {
 		$conf = $_SESSION['imagesresize'][$p['id']];
-		$filename = $p['file'];
+		$filename = basename($p['file']);
+		if ($filename === '' || $filename[0] === '.') {
+			http_response_code(404);
+			return;
+		}
+		$p['w'] = nfClampImageSize($p['w']);
+		$p['h'] = nfClampImageSize($p['h']);
+		$actualizar = false;
 		$pos = strrpos($filename, '.');
 		$name = substr($filename, 0, $pos);
 		$ext = substr($filename, $pos);
@@ -835,7 +845,14 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 	global $nframework;
 	if (isset($_SESSION['imagesresize'][$p['id']])) {
 		$conf = $_SESSION['imagesresize'][$p['id']];
-		$filename = $p['file'];
+		$filename = basename($p['file']);
+		if ($filename === '' || $filename[0] === '.') {
+			http_response_code(404);
+			return;
+		}
+		$p['w'] = nfClampImageSize($p['w']);
+		$p['h'] = nfClampImageSize($p['h']);
+		$actualizar = false;
 		$pos = strrpos($filename, '.');
 		$name = substr($filename, 0, $pos);
 		$ext = substr($filename, $pos);

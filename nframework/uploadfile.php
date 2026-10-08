@@ -4,13 +4,18 @@ require 'include.php';
 header('Content-Type: application/json');
 function isValidFilename(string $filename): bool
 {
+	// Archivos ocultos (.htaccess, .user.ini) o rutas relativas permiten ejecutar código en el servidor.
+	if ($filename === '' || $filename[0] === '.' || str_contains($filename, '..') || strlen($filename) > 255) {
+		return false;
+	}
+	// Se revisan todas las extensiones (x.php.jpg) sin distinguir mayúsculas (x.PHP, x.phtml, x.phar).
+	$dangerous = '/^(php\d*|phtml|pht|phar|phps|pgif|inc|shtml|htaccess|htpasswd|ini|asp|aspx|ascx|jsp|jspx|cgi|pl|py|rb|exe|bat|cmd|com|sh|bash|ps1|vbs|scr|msi|dll|so)$/i';
+	foreach (array_slice(explode('.', $filename), 1) as $extension) {
+		if (preg_match($dangerous, $extension)) {
+			return false;
+		}
+	}
 	$forbidden = [
-		'.php',
-		'.asp',
-		'.exe',
-		'.bat',
-		'.cmd',
-		'.sh',
 		'?',
 		'[',
 		']',
@@ -94,7 +99,7 @@ function handleFileDelete(array $upload): array
 		return ['error' => 'No permitido eliminar', 'onresult' => []];
 	}
 
-	$filename = sanitizeFilename(rawurldecode($_POST['file']));
+	$filename = sanitizeFilename(rawurldecode((string) ($_POST['file'] ?? '')));
 
 	if (!isValidFilename($filename)) {
 		return ['error' => 'Nombre de archivo inválido', 'onresult' => []];
@@ -160,8 +165,14 @@ function handleFileUploadProcess(array $upload): array
 
 	$fullPath = rtrim($directorio, '/') . '/' . $filename;
 
+	if (!empty($upload['sizelimit']) && $ufile['size'] > $upload['sizelimit']) {
+		unlink($ufile['tmp_name']);
+		return ['error' => 'El archivo excede el tamaño permitido', 'onresult' => []];
+	}
+
 	if (!move_uploaded_file($ufile['tmp_name'], $fullPath)) {
-		return ['error' => 'No se pudo mover el archivo ' . $ufile['tmp_name'] . ' a ' . $fullPath, 'onresult' => []];
+		error_log('nframework upload: no se pudo mover ' . $ufile['tmp_name'] . ' a ' . $fullPath);
+		return ['error' => 'No se pudo guardar el archivo', 'onresult' => []];
 	}
 
 	$onresult = [];

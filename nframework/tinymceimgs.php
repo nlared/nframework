@@ -1,6 +1,6 @@
 <?
 require 'include.php';
-$developermode=true;
+$_GET['_id'] = (string) ($_GET['_id'] ?? '');
 if (isset($_SESSION['tinymceup'][$_GET['_id']])){
 	/*********************************************
 	   * Change this line to set the upload folder *
