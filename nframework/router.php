@@ -83,12 +83,15 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 	$msgError = '';
 	if (!empty($_POST['login'])) {
 		$login = $_POST['login'];
-		$user = new User([
-			'username' => ['$regex' => trim($login['username']), '$options' => 'i'],
-			'password' => trim($login['password'])
-		]);
+		$user = null;
+		if (!nflogAttempt('login:' . $GLOBALS['ip'], 10, 900)) {
+			$msgError = 'Demasiados intentos, intente más tarde.';
+		} else {
+			$user = User::authenticate($login['username'] ?? null, $login['password'] ?? null);
+		}
 
-		if (!empty($user->_id)) {
+		if ($user !== null && !empty($user->_id)) {
+			nflogReset('login:' . $GLOBALS['ip']);
 			if (!empty($user->disabled) && $user->disabled == true) {
 				$msgError = 'La cuenta no está activada.';
 				$nframework->usecommon = true;
@@ -110,45 +113,25 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 			}
 
 			if (!empty($user->twofa_secret)) {
+				session_regenerate_id(true);
 				$_SESSION['tmp_user'] = $user->_id;
 				header('location: /account/twofa');
 				exit();
 			}
-			$_SESSION['user'] = $user->_id;
-			session_write_close();
-			if ($_SESSION['login_redirect'] != '' && $_SESSION['login_redirect'] != '/account/login.php') {
-				$redir = $_SESSION['login_redirect'];
-				$_SESSION['login_redirect'] = '';
-				if (strpos($redir, '//') !== 0) {
-					$redir .= '?uid=' . encryptSessionId($user->_id, SESSION_KEY);
-				}
-				header('location: ' . $redir);
-			} else {
-				if ($user->in('admins')) {
-					header('location: /admin/');
-				} else {
-					header('location: /');
-				}
-			}
-			exit();
+			nfCompleteLogin($user);
 		}
-		$msgError = 'Datos incorrectos';
+		if ($msgError == '') {
+			$msgError = 'Datos incorrectos';
+		}
 	}
-	if (!empty($_GET['login_redirect'])) {
-		$_SESSION['login_redirect'] = decryptSessionId($_GET['login_redirect'], SESSION_KEY);
+	if (!empty($_GET['login_redirect']) && is_string($_GET['login_redirect'])) {
+		$_SESSION['login_redirect'] = (string) decryptSessionId($_GET['login_redirect'], SESSION_KEY);
 	}
 	if (!empty($_SESSION['user'])) {
-		if (!empty($_SESSION['login_redirect'])  && $_SESSION['login_redirect'] != '/account/login.php') {
-			$redir = $_SESSION['login_redirect'];
-			$_SESSION['login_redirect'] = '';
-			if (strpos($redir, '//') !== 0) {
-				$redir .= '?uid=' . encryptSessionId($_SESSION['user'], SESSION_KEY);
-			}
-			header('location: ' . $redir);
-			exit();
+		$current = new User(['_id' => $_SESSION['user']]);
+		if (!empty($current->_id)) {
+			nfCompleteLogin($current);
 		}
-		header('location: /');
-		exit();
 	}
 
 	$nframework->usecommon = true;
@@ -175,25 +158,15 @@ $router->addRoute('/account/twofa', function (string $route, array $p) {
 		header('location: /account/login');
 		exit();
 	}
-	if (!empty($_POST['code'])) {
+	$msgError = '';
+	if (!empty($_POST['code']) && is_string($_POST['code'])) {
 		$user = new User([
 			'_id' => $_SESSION['tmp_user']
 		]);
-		$totp = TOTP::create($user->twofa_secret);
-		if ($totp->verify($_POST['code'])) {
-			$_SESSION['user'] = $user->_id;
-			unset($_SESSION['tmp_user']);
-			session_write_close();
-			if ($_SESSION['nframework']['loginpage'] != '' && $_SESSION['nframework']['loginpage'] != '/account/login.php') {
-				header('location: ' . $_SESSION['nframework']['loginpage']);
-			} else {
-				if ($user->in('admins')) {
-					header('location: /admin/');
-				} else {
-					header('location: /');
-				}
-			}
-			exit();
+		if (!nflogAttempt('twofa:' . $GLOBALS['ip'], 10, 900)) {
+			$msgError = 'Demasiados intentos, intente más tarde.';
+		} elseif (!empty($user->twofa_secret) && TOTP::create($user->twofa_secret)->verify(trim($_POST['code']))) {
+			nfCompleteLogin($user);
 		} else {
 			$msgError = 'Código incorrecto';
 		}
@@ -214,9 +187,12 @@ $router->addRoute('/account/twofa', function (string $route, array $p) {
 $router->addRoute('/account/signup', function (string $route, array $p) {
 	global $twig, $config, $nframework, $m;
 	$lng = $nframework->language();
-	if (!empty($_POST['signup'])) {
-		$signup = $_POST['signup'];
-		if ($signup['password'] != $signup['confirmpassword']) {
+	$msgError = '';
+	if (!empty($_POST['signup']) && is_array($_POST['signup'])) {
+		$signup = array_map(fn($v) => is_string($v) ? $v : '', $_POST['signup'] + ['username' => '', 'name' => '', 'password' => '', 'confirmpassword' => '']);
+		if (!nflogAttempt('signup:' . $GLOBALS['ip'], 5, 3600)) {
+			$msgError = 'Demasiados intentos, intente más tarde.';
+		} elseif ($signup['password'] != $signup['confirmpassword']) {
 			$msgError = 'Las contraseñas no coinciden';
 		} elseif (strlen($signup['password']) < 6) {
 			$msgError = 'La contraseña debe tener al menos 6 caracteres';
@@ -224,7 +200,7 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 			$msgError = 'Debe indicar un email válido';
 		} else {
 			$user = new User([
-				'username' => trim($signup['username']),
+				'username' => strtolower(trim($signup['username'])),
 			]);
 			if (!empty($user->_id)) {
 				$msgError = 'Ya existe un usuario con ese email';
@@ -233,7 +209,7 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 				$nuser = User::create([
 					'username' => trim($signup['username']),
 					'name' => trim($signup['name']),
-					'password' => trim($signup['password'], PASSWORD_DEFAULT),
+					'password' => $signup['password'],
 					'active' => false,
 					'created_at' => time(),
 					'updated_at' => time(),
@@ -241,47 +217,19 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 					'activatetoken' => $token,
 					'activatetokenexp' => time() + (60 * 60 * 24),
 				]);
-				$mail = new PHPMailer();
 				try {
-					$mail->isSMTP();
-					$mail->CharSet = 'UTF-8';                                            // Send using SMTP
-					$mail->Host       = $config['smtp']['host'];               // Set the SMTP server to send through
-					$mail->SMTPAuth   = boolval($config['smtp']['auth']);                                   // Enable SMTP authentication
-					$mail->Username   = $config['smtp']['username'];            // SMTP username
-					$mail->Password   = $config['smtp']['password'];            // SMTP password
-					if (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'ssl') {
-						$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
-					} elseif (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'tls') {
-						$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;        // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
-					}
-					$mail->Port       = $config['smtp']['port'];               // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
-
-					//Recipients
-					$mail->setFrom($config['smtp']['fromemail'], $config['smtp']['fromname']);
-					$mail->addAddress($nuser->username, $nuser->name);     // Add a recipient
-					// Content
-					$mail->isHTML(true);                                  // Set email format to HTML
+					$mail = nfMailer();
+					$mail->addAddress($nuser->username, $nuser->name);
+					$link = 'https://' . nfSiteHost() . '/account/activate?token=' . $token . '&user=' . $nuser->_id;
+					$name = htmlspecialchars((string) $nuser->name, ENT_QUOTES, 'UTF-8');
 					$mail->Subject = $lng['activate_account_subject'];
-					$mail->Body    = $lng['activate_account_body'] . replaceVarsAtUrl('https://' . $_SERVER['HTTP_HOST'] . '/account/activate?token=' . $token . '&user=' . $nuser->_id, [
-						'token' => $token,
-						'user' => $nuser->_id
-					]);
-					$mail->AltBody = $lng['activate_account_altbody'] . replaceVarsAtUrl('https://' . $_SERVER['HTTP_HOST'] . '/account/activate?token=' . $token . '&user=' . $nuser->_id, [
-						'token' => $token,
-						'user' => $nuser->_id
-					]);
-
-					$c = $mail->send();
-					if ($c) {
-						$msgError = $lng['activate_account_sent'];
-					} else {
-						$msgError = $lng['activate_account_error'] . $mail->ErrorInfo;
-					}
-					//header('location: /account/login');
-					//exit();
-
+					$mail->Body    = str_replace(['{name}', '{link}'], [$name, htmlspecialchars($link, ENT_QUOTES, 'UTF-8')], $lng['activate_account_body']);
+					$mail->AltBody = str_replace(['{name}', '{link}'], [(string) $nuser->name, $link], $lng['activate_account_altbody']);
+					$mail->send();
+					$msgError = $lng['activate_account_sent'];
 				} catch (Exception $e) {
-					$msgError = $lng['activate_account_error'] . $e->getMessage();
+					error_log('nframework signup mail: ' . $e->getMessage());
+					$msgError = $lng['activate_account_error'];
 				}
 			}
 		}
@@ -301,52 +249,31 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 $router->addRoute('/account/forgot', function (string $route, array $p) {
 	global $twig, $config, $nframework, $m;
 	$lng = $nframework->language();
-	if (!empty($_POST['login'])) {
-		$login = $_POST['login'];
-		$user = new User([
-			'username' => ['$regex' => trim($login['username']), '$options' => 'i'],
-		]);
-		if (!empty($user->_id)) {
+	if (!empty($_POST['login']['username']) && is_string($_POST['login']['username'])) {
+		$username = trim($_POST['login']['username']);
+		$user = null;
+		if (nflogAttempt('forgot:' . $GLOBALS['ip'], 5, 3600)) {
+			$user = new User([
+				'username' => new MongoDB\BSON\Regex('^' . preg_quote($username, '/') . '$', 'i'),
+			]);
+		}
+		// Mismo mensaje exista o no el usuario, para no permitir enumerar cuentas.
+		$msgError = $lng['reset_password_sent'];
+		if ($user !== null && !empty($user->_id) && $user->username !== 'guest') {
 			$token = bin2hex(random_bytes(16));
-			$user->resettoken = $token;
+			$user->resettoken = hash('sha256', $token);
 			$user->resettokenexp = time() + (60 * 60);
-			//$user->save();
-			//Enviar email
-			$mail = new PHPMailer();
-			$mail->CharSet = 'UTF-8';
 			try {
-				//Server settings
-				$mail->isSMTP();                                            // Send using SMTP
-				$mail->Host       = $config['smtp']['host'];               // Set the SMTP server to send through
-				$mail->SMTPAuth   = $config['smtp']['auth'];                                   // Enable SMTP authentication
-				$mail->Username   = $config['smtp']['username'];            // SMTP username
-				$mail->Password   = $config['smtp']['password'];            // SMTP password
-				if (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'ssl') {
-					$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
-				} elseif (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'tls') {
-					$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;        // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
-				}
-				$mail->Port       = $config['smtp']['port'];               // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
-
-				//Recipients
-				$mail->setFrom($config['smtp']['fromemail'], $config['smtp']['fromname']);
-				$mail->addAddress($user->username, $user->name);     // Add a recipient		
-				// Content			
-				$mail->isHTML(true);                                  // Set email format to HTML
+				$mail = nfMailer();
+				$mail->addAddress($user->username, (string) $user->name);
+				$vars = ['host' => nfSiteHost(), 'token' => $token, 'user' => $user->_id];
 				$mail->Subject = $lng['reset_password_subject'];
-				$mail->Body    =  replaceVarsAtUrl($lng['reset_password_body'], ['host' => $_SERVER['HTTP_HOST'], 'token' => $token, 'user' => $user->_id]);
-				$mail->AltBody = replaceVarsAtUrl($lng['reset_password_altbody'], [
-					'host' => $_SERVER['HTTP_HOST'],
-					'token' => $token,
-					'user' => $user->_id
-				]);
+				$mail->Body    = str_replace('{name}', htmlspecialchars((string) $user->name, ENT_QUOTES, 'UTF-8'), replaceVarsAtUrl($lng['reset_password_body'], $vars));
+				$mail->AltBody = str_replace('{name}', (string) $user->name, replaceVarsAtUrl($lng['reset_password_altbody'], $vars));
 				$mail->send();
-				$msgError = $lng['reset_password_sent'];
 			} catch (Exception $e) {
-				$msgError = $lng['reset_password_error'] . $mail->ErrorInfo;
+				error_log('nframework reset mail: ' . $e->getMessage());
 			}
-		} else {
-			$msgError = $lng['user_not_found'];
 		}
 	} else {
 		$msgError = $lng['must_provide_username'];
@@ -365,23 +292,27 @@ $router->addRoute('/account/forgot', function (string $route, array $p) {
 $router->addRoute('/account/reset', function (string $route, array $p) {
 	global $twig, $config, $nframework;
 	$lng = $nframework->language();
-	if (!empty($_GET['token']) && !empty($_GET['user'])) {
+	$msgError = '';
+	if (!empty($_GET['token']) && is_string($_GET['token']) && isValidObjectId($_GET['user'] ?? null)) {
+		// Los valores se fuerzan a string: un arreglo como token[$ne]=x permitiría saltarse la validación.
 		$user = new User([
 			'_id' => toMongoId($_GET['user']),
-			'resettoken' => $_GET['token'],
+			'resettoken' => hash('sha256', $_GET['token']),
 			'resettokenexp' => ['$gt' => time()]
 		]);
 		if (!empty($user->_id)) {
-			if (!empty($_POST['password']) && !empty($_POST['confirmpassword'])) {
-				if ($_POST['password'] != $_POST['confirmpassword']) {
+			$password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+			$confirm = is_string($_POST['confirmpassword'] ?? null) ? $_POST['confirmpassword'] : '';
+			if ($password !== '' && $confirm !== '') {
+				if ($password !== $confirm) {
 					$msgError = $lng['passwords_do_not_match'];
-				} elseif (strlen($_POST['password']) < 6) {
+				} elseif (strlen($password) < 6) {
 					$msgError = $lng['password_too_short'];
 				} else {
-					$user->password =  hash($config['users']['algos'][0], trim($_POST['password']));
+					$user->password = nfPasswordHash($password);
 					$user->resettoken = null;
 					$user->resettokenexp = null;
-					//$user->save();
+					$user->sessions = [];
 					header('location: /account/login');
 					exit();
 				}
@@ -399,14 +330,16 @@ $router->addRoute('/account/reset', function (string $route, array $p) {
 		'nframework' => [
 			'themeSwitcher' => $nframework->themeSwitcher()
 		],
-		'lng' => $lng
+		'lng' => $lng,
+		'msgError' => $msgError
 	]);
 }, ['GET', 'POST']);
 $router->addRoute('/account/activate/', function (string $route, array $p) {
 	global $twig, $config, $nframework, $javas;
 	$nframework->usecommon = true;
-	if (!empty($_GET['token'])) {
-
+	$msgError = '';
+	if (!empty($_GET['token']) && is_string($_GET['token']) && isValidObjectId($_GET['user'] ?? null)) {
+		// token se fuerza a string: token[$ne]=x iniciaría sesión como cualquier usuario.
 		$user = new User([
 			'_id' => toMongoId($_GET['user']),
 			'activatetoken' => $_GET['token'],
@@ -416,20 +349,19 @@ $router->addRoute('/account/activate/', function (string $route, array $p) {
 			$user->activatetoken = null;
 			$user->activatetokenexp = null;
 			$user->active = true;
-			//$user->save();
+			session_regenerate_id(true);
 			$_SESSION['user'] = $user->_id;
 			session_write_close();
 			header('location: /');
 			exit();
 		} else {
-			if (!empty($_GET['user'])) {
-				$user = new User([
-					'_id' => toMongoId($_GET['user']),
-				]);
-				if (!empty($user->_id) && empty($user->activatetoken)) {
-					$msgError = 'La cuenta ya está activada';
-					$javas->addjs(
-						<<<addjs
+			$user = new User([
+				'_id' => toMongoId($_GET['user']),
+			]);
+			if (!empty($user->_id) && empty($user->activatetoken)) {
+				$msgError = 'La cuenta ya está activada';
+				$javas->addjs(
+					<<<addjs
 let timeLeft = 10;
         const timerElement = document.getElementById('timer');
 
@@ -442,10 +374,7 @@ let timeLeft = 10;
             }
         }, 1000);
 addjs
-					);
-				} else {
-					$msgError = 'Token inválido o caducado';
-				}
+				);
 			} else {
 				$msgError = 'Token inválido o caducado';
 			}
@@ -553,7 +482,7 @@ $router->addRoute('/account/logout', function (string $route, array $p) {
 		session_start();
 	}
 	session_destroy();
-	header('Location: ' . (isset($_GET['to']) ? $_GET['to'] : '/'));
+	header('Location: ' . nfSafeRedirect($_GET['to'] ?? '/'));
 	$nframework->usecommon = true;
 	$template = $twig->load('logout.html');
 	echo $template->render([

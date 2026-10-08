@@ -77,10 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['code']) && !isset($_GE
 	exit();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['error'])) {
 	// Answer from the authentication service contains an error.
-	printf('Something went wrong while authenticating: [%s] %s', $_GET['error'], $_GET['error_description']);
+	printf('Something went wrong while authenticating: [%s] %s', htmlspecialchars((string) $_GET['error']), htmlspecialchars((string) ($_GET['error_description'] ?? '')));
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['code'])) {
 	// Validate the OAuth state parameter
-	if (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['state'])) {
+	$expectedState = $_SESSION['state'] ?? '';
+	unset($_SESSION['state']);
+	if (!is_string($_GET['state'] ?? null) || $expectedState === '' || !hash_equals($expectedState, $_GET['state'])) {
 		//  require 'common.php';
 		session_destroy();
 		//unset($_SESSION['state']);
@@ -104,24 +106,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['code']) && !isset($_GE
 		// The following user properties are needed in the next page
 		$_SESSION['preferred_username'] = $jsonAccessTokenPayload['preferred_username'];
 		$_SESSION['given_name'] = $jsonAccessTokenPayload['name'];
-		$useroauth = $m->{$config['sitedb']}->users->findOne([
-			'$or' => [
-				['username' => $jsonAccessTokenPayload['preferred_username']],
-				['nombrenormalizado' => normalizar($jsonAccessTokenPayload['name'])]
-			]
-		]);
+		// Primero por username; la coincidencia por nombre visible (editable por el usuario en Microsoft)
+		// solo vincula cuentas legadas sin username, para no permitir suplantación.
+		$useroauth = $m->{$config['sitedb']}->users->findOne(['username' => $jsonAccessTokenPayload['preferred_username']])
+			?? $m->{$config['sitedb']}->users->findOne([
+				'nombrenormalizado' => normalizar($jsonAccessTokenPayload['name']),
+				'$or' => [['username' => null], ['username' => '']]
+			]);
+		session_regenerate_id(true);
 		if (!empty($useroauth->_id)) {
-			file_put_contents('ola.txt', $decodedAccessTokenPayload);
 			if ($useroauth->username == '') {
 				$m->{$config['sitedb']}->users->updateOne(
-					['nombrenormalizado' => normalizar($jsonAccessTokenPayload['name'])],
+					['_id' => $useroauth->_id],
 					[
 						'$set' => [
 							'username' => $jsonAccessTokenPayload['preferred_username']
 						]
 					]
 				);
-				$_SESSION['user'] = $jsonAccessTokenPayload['preferred_username'];
+				$_SESSION['user'] = (string)$useroauth->_id;
 			} else {
 				$m->{$config['sitedb']}->users->updateOne([
 					'username' => $jsonAccessTokenPayload['preferred_username']
@@ -138,10 +141,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['code']) && !isset($_GE
 			}
 			session_write_close();
 			if (!empty($_SESSION['login_redirect'])) {
-				$redir = $_SESSION['login_redirect'];
+				$redir = nfSafeRedirect($_SESSION['login_redirect']);
 				unset($_SESSION['login_redirect']);
-				if (strpos($redir, '//') !== 0) {
-					$redir .= '?uid=' . encryptSessionId($_SESSION['user'], SESSION_KEY);
+				if (strpos($redir, '/') !== 0) {
+					$redir .= (str_contains($redir, '?') ? '&' : '?') . 'uid=' . encryptSessionId($_SESSION['user'], SESSION_KEY);
 				}
 				header('Location: ' . $redir);
 				exit;
@@ -168,7 +171,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['code']) && !isset($_GE
 		}
 		exit();
 	} catch (League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
-		printf('Something went wrong, couldn\'t get tokens: %s', $e->getMessage());
+		error_log('nframework ms oauth: ' . $e->getMessage());
+		echo 'Something went wrong, couldn\'t get tokens.';
 		session_destroy();
 		//require 'common.php';
 		echo 'Intente de nuevo <a href="/" class="button">Inicio</a>';
