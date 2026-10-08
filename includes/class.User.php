@@ -5,6 +5,7 @@ class User implements ArrayAccess
     public $info;
     private $m;
     private $db;
+    private array $groupCache = [];
     public $notifications;
     public function __construct($info)
     {
@@ -128,16 +129,19 @@ class User implements ArrayAccess
     {
         global $themecolor, $config, $themeswitcher;
         $addtheme = ' ' . $themecolor;
+        $csrfToken = csrfToken('/account/login');
+        $registerButton = '';
         if ($this->info['username'] != 'guest' && $this->info['username'] != '') {
+            $safeUsername = htmlspecialchars((string) $this->info['username'], ENT_QUOTES, 'UTF-8');
             $result = <<<HTML
                 <a href="#" class="app-bar-item">
                     <img src="/images/pngtowebp/users/32/32/{$this->info['_id']}.webp" alt="user picture" class="avatar">
-                    <span class="ml-2 app-bar-name">{$this->info['username']}</span>
+                    <span class="ml-2 app-bar-name">{$safeUsername}</span>
                 </a>
                 <div class="d-menu context drop-down place-right" data-role="dropdown" id="logindrop">
                     <div class="p-3 bg-white fg-black text-center" style="width:300px">
                         <img src="/images/pngtowebp/users/120/120/{$this->info['_id']}.webp" alt="user picture" class="avatar">
-                        <div class="h4 mb-0">{$this->info['username']}</div>
+                        <div class="h4 mb-0">{$safeUsername}</div>
                         <div>{$this->title}</div>
                     </div>
                     <div class="bg-white d-flex flex-justify-between flex-equal-items p-2">
