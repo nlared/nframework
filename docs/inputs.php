@@ -241,7 +241,15 @@ $codes = [
     ],
     [
         'title' => 'Dirección / mapa',
-        'code' => "new inputaddress(['name'=>'address1','caption'=>'Dirección']);"
+        'code' => "new inputaddress(['name'=>'address1','caption'=>'Dirección','defaults'=>['country'=>'México','state'=>'Coahuila'],'frozen'=>['country']]);"
+    ],
+    [
+        'title' => 'Dirección solo campos',
+        'code' => "new inputaddress(['name'=>'address2','showmap'=>false,'fields'=>['street','external_number','neighborhood','zipcode','city']]);"
+    ],
+    [
+        'title' => 'Dirección solo mapa (ubicación congelada)',
+        'code' => "new inputaddress(['name'=>'address3','showfields'=>false,'defaults'=>['lat'=>25.4232,'lng'=>-101.0053],'frozen'=>['location'],'map_height'=>250]);"
     ],
     [
         'title' => 'mapmarker',

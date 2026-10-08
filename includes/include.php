@@ -660,6 +660,9 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
 $original = set_error_handler('nferrorhandler');
 function nframework_autoload($class_name): bool
 {
+    // Clases cuyo archivo no sigue la convención class.<Clase>.php
+    $aliases = ['inputaddress' => 'address'];
+    $class_name = $aliases[strtolower($class_name)] ?? $class_name;
     $ipaths = get_include_path();
     $iarray = array_merge([(string) __DIR__], explode(PATH_SEPARATOR, $ipaths));
     foreach ($iarray as $ipath) {
