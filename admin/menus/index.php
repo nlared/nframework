@@ -3,8 +3,9 @@ require '../common2.php';
 $developermode=true;
 
 
-if(!empty($_GET['eliminar'])){
-	$m->{$config['sitedb']}->menus->deleteone(['_id'=>tomongoid($_GET['eliminar'])]); 
+// Solo por POST: un enlace GET permitía borrar menús mediante CSRF.
+if($_SERVER['REQUEST_METHOD']==='POST' && isValidObjectId($_POST['eliminar'] ?? null)){
+	$m->{$config['sitedb']}->menus->deleteOne(['_id'=>tomongoid($_POST['eliminar'])]);
 }
 
 $nframework->usecommon=true;
@@ -12,10 +13,10 @@ $datatable=new Table();
 $datatable->header='<th>Title</th><th>Path</th><th>Options</th>';
 foreach ($m->{$config['sitedb']}->menus->find() as $doc) {
     $datatable->data[]=[
-        $doc['name'],
-        $doc['path'],
-        '<a href="menu.php?_id='.$doc['_id'].'"><spam class="mif-pencil"></spam></a>
-        <a href="?eliminar='.$doc['_id'].'"><spam class="mif-cross"></spam></a>'
+        htmlspecialchars((string) $doc['name']),
+        htmlspecialchars((string) $doc['path']),
+        '<a href="menu.php?_id='.$doc['_id'].'"><span class="mif-pencil"></span></a>
+        <form method="POST" style="display:inline" onsubmit="return confirm(\'¿Eliminar?\')"><button class="button flat-button" name="eliminar" value="'.$doc['_id'].'"><span class="mif-cross"></span></button></form>'
         ];
 }
 ?>
