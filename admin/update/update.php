@@ -1,44 +1,41 @@
 <?php
+require '../common2.php';
+
 // Define the repository details
 $repoOwner = 'nlared';
 $repoName = 'nframework5';
 $branch = 'master'; // Replace with the branch name you want to update
 
-// Define your GitHub Personal Access Token
-$accessToken = 'YOUR_PERSONAL_ACCESS_TOKEN';
+// GitHub Personal Access Token (configurable en $config['github_token'])
+$accessToken = $config['github_token'] ?? '';
 
 // GitHub API URL for the repository's latest commit
 $apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/commits/$branch";
 
-// cURL initialization
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $apiUrl);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-    "Authorization: token $accessToken",
+curl_setopt($ch, CURLOPT_HTTPHEADER, array_filter([
+    $accessToken !== '' ? "Authorization: token $accessToken" : null,
     "User-Agent: PHP Script"
-));
-
-// Execute the API request
+]));
 $response = curl_exec($ch);
 curl_close($ch);
 
-// Decode the JSON response
-$commitData = json_decode($response, true);
+$commitData = json_decode((string) $response, true);
+$latestCommit = $commitData['sha'] ?? '';
 
-// Extract the latest commit hash
-$latestCommit = $commitData['sha'];
+// El hash se valida antes de usarlo en un comando de shell.
+if (!preg_match('/^[0-9a-f]{40}$/', $latestCommit)) {
+    echo "Failed to get latest commit.";
+    return;
+}
 
-// Command to update the repository
-$updateCommand = "cd ".substr($nframework->include_path0,-9)." && git fetch && git reset --hard $latestCommit";
-
-// Execute the update command
+$updateCommand = 'cd ' . escapeshellarg(dirname(__DIR__, 2)) . ' && git fetch && git reset --hard ' . escapeshellarg($latestCommit);
 exec($updateCommand, $output, $return_var);
 
-// Output the result
 if ($return_var === 0) {
     echo "Repository updated successfully to commit $latestCommit.";
 } else {
     echo "Failed to update repository.";
 }
-?>

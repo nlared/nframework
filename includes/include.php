@@ -337,7 +337,7 @@ class class_nframework
             $tmpfname = tempnam(sys_get_temp_dir(), 'xlsxpdf');
             $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
             $writer->save($tmpfname . '.xlsx'); // This line will force the file to download
-            shell_exec('unoconv -f pdf ' . $tmpfname . '.xlsx');
+            shell_exec('unoconv -f pdf ' . escapeshellarg($tmpfname . '.xlsx'));
             $size = filesize($tmpfname . '.pdf');
             header("Content-length: $size");
             readfile($tmpfname . '.pdf');
@@ -358,6 +358,7 @@ class class_nframework
     {
         global $config;
         $filename = clean_filename($filename);
+        $tmpfname = null;
         if ($config['word_pdf_converter'] == 'Dompdf' || empty($config['word_pdf_converter'])) {
             Settings::setPdfRendererName(Settings::PDF_RENDERER_DOMPDF);
             // Optional since PHPWord can usually locate it via Composer autoload,
@@ -370,10 +371,13 @@ class class_nframework
             $tmpfname = tempnam(sys_get_temp_dir(), 'docxtpdf');
             $word->saveAs($tmpfname . '.docx');
             if ($config['word_pdf_converter'] == 'unoconv') {
-                shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
+                shell_exec('unoconv -f pdf ' . escapeshellarg($tmpfname . '.docx'));
             } else {
-                shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;' " . $tmpfname . '.docx');
+                shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;' " . escapeshellarg($tmpfname . '.docx'));
             }
+        }
+        if ($tmpfname === null) {
+            return;
         }
         if (file_exists($tmpfname . '.pdf')) {
             header("Content-type: application/pdf; charset=utf-8");
@@ -386,6 +390,7 @@ class class_nframework
         if (file_exists($tmpfname . '.docx')) {
             unlink($tmpfname . '.docx');
         }
+        @unlink($tmpfname);
     }
     public function wordTemplateOutPdf(PhpOffice\PhpWord\TemplateProcessor $template, $filename)
     {
@@ -399,9 +404,9 @@ class class_nframework
             $this->wordOutPdf($phpWord, $filename);
         } else {
             if ($config['word_pdf_converter'] == 'unoconv') {
-                shell_exec('unoconv -f pdf ' . $tmpfname . '.docx');
+                shell_exec('unoconv -f pdf ' . escapeshellarg($tmpfname . '.docx'));
             } else {
-                shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;StarOffice.ComponentContext' " . $tmpfname . '.docx');
+                shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;StarOffice.ComponentContext' " . escapeshellarg($tmpfname . '.docx'));
             }
         }
         if (file_exists($tmpfname . '.pdf')) {

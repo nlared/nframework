@@ -95,8 +95,9 @@ function warn($msg)
 $errores = [];
 function return_bytes($val)
 {
-	$val = (int)trim($val);
-	$last = strtolower($val[strlen($val) - 1]);
+	$val = trim((string) $val);
+	$last = strtolower(substr($val, -1));
+	$val = (int) $val;
 	switch ($last) {
 		// The 'G' modifier is available since PHP 5.1.0
 		case 'g':
@@ -349,12 +350,16 @@ if ($opcache_needs_update) {
 	}
 
 	if ($updated) {
-		if (file_put_contents($inipath, $contents)) {
+		if (@file_put_contents($inipath, $contents)) {
 			ok("php.ini actualizado con configuración de opcache");
 			$errores[] = "Reinicia PHP para aplicar cambios: sudo systemctl restart php" . number_format((float)phpversion(), 1) . "-fpm";
 		} else {
 			out(fail("No se pudo escribir en php.ini (permisos insuficientes)"));
-			$errores[] = "Edita manualmente $inipath y agrega: <br><textarea>" . $contents . "</textarea>";
+			$directives = [];
+			foreach ($opcache_settings as $directive => $value) {
+				$directives[] = "$directive=$value";
+			}
+			$errores[] = "Edita manualmente $inipath y agrega:<br><code>" . implode('<br>', $directives) . "</code>";
 		}
 	}
 }
@@ -410,15 +415,21 @@ if ($config['sitedb'] == '') {
 			$errores[] = "admin no existe";
 
 
+			// Contraseña aleatoria (antes era siempre "admin"). Se muestra una sola vez.
+			$adminPassword = substr(strtr(base64_encode(random_bytes(18)), '+/', 'Kx'), 0, 20);
 			$adminid = new  MongoDB\BSON\ObjectID();
 			$m->{$config['sitedb']}->users->insertOne([
 				'username' => 'admin',
 				'_id' => $adminid,
-				'password' => 'c7ad44cbad762a5da0a452f9e854fdc1e0e7a52a38015f23f3eab1d80b931dd472634dfac71cd34ebc35d16ab7fb8a90c81f975113d6c7538dc69dd8de9077ec'
+				'password' => password_hash($adminPassword, PASSWORD_DEFAULT)
 			]);
-			$errores[] = "admin creado error solucionado actualiza la pagina";
+			$errores[] = "admin creado. Usuario: <b>admin</b> Contraseña: <b><code>" . htmlspecialchars($adminPassword) . "</code></b> — guárdela ahora, no se volverá a mostrar.";
 		} else {
 			$adminid = $admin->_id;
+			$adminHash = (string) ($admin->password ?? '');
+			if ($adminHash === hash('sha512', 'admin') || (password_get_info($adminHash)['algo'] && password_verify('admin', $adminHash))) {
+				$errores[] = '<span style="color:red">El usuario admin aún tiene la contraseña predeterminada "admin". Cámbiela en Admin → Usuarios.</span>';
+			}
 		}
 		$gadmin = $m->{$config['sitedb']}->usersgroups->findOne(['name' => 'admins']);
 		if (empty($gadmin)) {
@@ -486,15 +497,7 @@ if ($config['sitedb'] == '') {
 	}
 }
 
-use Nlared\MongoSessionHandler;
-
-$sessions = $m->{$config['sitedb']}->sessions;
-$handler = new MongoSessionHandler($sessions);
-session_set_save_handler($handler);
-session_name(str_replace('.', '_', $config['cookie_domain']));
-session_set_cookie_params(0, '/', $config['cookie_domain'], $nframework->https, false);
-session_start();
-
+// La sesión la inicia include.php (al final).
 
 $a = ini_get('post_max_size');
 $b = ini_get('upload_max_filesize');
@@ -513,6 +516,10 @@ if (count($errores) > 0) {
 } else {
 	out("No se encontraron errores de configuración");
 }
-require 'include.php';
+require_once 'include.php';
 out("sid: " . session_id() . '<br>Lenguaje: ' . $_SESSION['nf']['browser']['language']);
-echo $buffers;
+if (PHP_SAPI === 'cli') {
+	echo html_entity_decode(strip_tags(preg_replace('/(<br\s*\/?>\s*)+/i', "\n", $buffers))), "\n";
+} else {
+	echo $buffers;
+}
