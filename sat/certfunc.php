@@ -2,7 +2,7 @@
 
 function loadcert($certfile){
 
-	exec("openssl x509 -inform DER -in \"$certfile\" -noout -text",$consola3);
+	exec("openssl x509 -inform DER -in ".escapeshellarg($certfile)." -noout -text",$consola3);
 	$serial=trim($consola3[4]);
 	$serial=str_replace(':3', '', $serial);
 	$no_cert=$serial;
@@ -57,12 +57,12 @@ function loadcert($certfile){
 	
 	$certpem=sys_get_temp_dir().'/certpem'.uniqid();
 	$keyinfo=sys_get_temp_dir().'/keyinfo'.uniqid();
-	exec("openssl x509 -noout -modulus -in $certfile | openssl md5 ",$consola1);
-	exec("openssl x509 -inform DER -outform PEM -in $certfile -out $certpem",$consola3);
+	exec("openssl x509 -noout -modulus -in ".escapeshellarg($certfile)." | openssl md5 ",$consola1);
+	exec("openssl x509 -inform DER -outform PEM -in ".escapeshellarg($certfile)." -out ".escapeshellarg($certpem),$consola3);
 	//echo '<br>openssl ocsp -issuer '.$vsatdir.'/ac2_4096.crt -cert '.$this->certpem.
 	//' -text -url https://cfdit.sat.gob.mx/edofiel -VAfile '.$vsatdir.'/OCSP_AC_4096_SHA256.crt';
-	exec('openssl ocsp -issuer '.$vsatdir.'/ac2_4096.crt -cert '.$certpem.
-	' -text -url https://cfdit.sat.gob.mx/edofiel -VAfile '.$vsatdir.'/OCSP_AC_4096_SHA256.crt',$consola4,$otro);
+	exec('openssl ocsp -issuer '.escapeshellarg($vsatdir.'/ac2_4096.crt').' -cert '.escapeshellarg($certpem).
+	' -text -url https://cfdit.sat.gob.mx/edofiel -VAfile '.escapeshellarg($vsatdir.'/OCSP_AC_4096_SHA256.crt'),$consola4,$otro);
 	foreach($consola4 as $linea){
 		if($fin){
 			$res[]=$linea;

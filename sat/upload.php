@@ -1,13 +1,19 @@
 <?php
 //$filename;
-if ( 0 < $_FILES['file']['error'] ) {
+if ( !isset($_FILES['file']) || 0 < $_FILES['file']['error'] ) {
     echo 'Error: ' . $_FILES['file']['error'] . '<br>';
 }else {
 	$certfile=$_FILES['file']['tmp_name'];
-	exec("openssl x509 -inform DER -in \"$certfile\" -noout -text",$consola3);
-	$serial=trim($consola3[4]);
+	exec("openssl x509 -inform DER -in ".escapeshellarg($certfile)." -noout -text",$consola3);
+	$serial=trim($consola3[4] ?? '');
 	$serial=str_replace(':3', '', $serial);
-	$no_cert=$serial;
+	// El número se usa como nombre de archivo: solo hexadecimal.
+	$no_cert=preg_replace('/[^0-9A-Fa-f]/', '', $serial);
+	if ($no_cert === '') {
+		header("Content-type:application/json");
+		echo json_encode(['error' => 'Certificado inválido']);
+		return;
+	}
 	$error=[];
 	$info['nocert']=$no_cert;
 	$pos=strpos($consola3[9],':');
@@ -55,8 +61,8 @@ if ( 0 < $_FILES['file']['error'] ) {
 	
 	$certpem=sys_get_temp_dir().'/certpem'.uniqid();
 	$keyinfo=sys_get_temp_dir().'/keyinfo'.uniqid();
-	exec("openssl x509 -noout -modulus -in $certfile | openssl md5 ",$consola1);
-	exec("openssl x509 -inform DER -outform PEM -in $certfile -out $certpem",$consola3);
+	exec("openssl x509 -noout -modulus -in ".escapeshellarg($certfile)." | openssl md5 ",$consola1);
+	exec("openssl x509 -inform DER -outform PEM -in ".escapeshellarg($certfile)." -out ".escapeshellarg($certpem),$consola3);
 	//echo '<br>openssl ocsp -issuer '.$vsatdir.'/ac2_4096.crt -cert '.$this->certpem.
 	//' -text -url https://cfdit.sat.gob.mx/edofiel -VAfile '.$vsatdir.'/OCSP_AC_4096_SHA256.crt';
 /*
@@ -91,14 +97,14 @@ if ( 0 < $_FILES['file']['error'] ) {
    // echo $filename;
    $info=[
    	'revocado'=>$revocado,
-	'noCert'=>$serial,
+	'noCert'=>$no_cert,
 	'serialNumber'=>$data['serialNumber'],
 	'commonName'=>$data['commonName'],
 	'vencimiento'=>$vencimiento,
 	'hoy'=>$hoy,
 	'vencido'=>$vencido,
-	's'=>$consola3
 	];
+	@unlink($certpem);
 	header("Content-type:application/json");
     echo json_encode($info);
 }
