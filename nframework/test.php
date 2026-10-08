@@ -1,4 +1,74 @@
 <?php
+/*
+ * Diagnóstico e instalador: crea/actualiza la base de datos (usuarios guest/admin, grupos, índices)
+ * y ajusta php.ini.
+ *
+ * Acceso:
+ *  - CLI y localhost: siempre.
+ *  - Cualquier host mientras el sitio NO esté instalado (no existe el grupo 'admins' con usuarios).
+ *    Si $config['install_key'] está definido en config.php, se exige ?key=<install_key>.
+ *  - Una vez instalado: solo usuarios del grupo 'admins' con sesión iniciada.
+ *
+ * Uso en CLI (el host elige el bloque de includes/config.php, es decir, la base de datos):
+ *   php nframework/test.php --host=www.ejemplo.com
+ *   php nframework/test.php www.ejemplo.com
+ */
+if (PHP_SAPI === 'cli') {
+	$cliHost = null;
+	foreach (array_slice($argv, 1) as $arg) {
+		if ($arg === '-h' || $arg === '--help') {
+			echo "Uso: php " . $argv[0] . " --host=<dominio>\n"
+				. "  --host=<dominio>  Dominio del sitio a instalar/revisar (elige el bloque de includes/config.php).\n"
+				. "                    También se acepta el dominio como primer argumento.\n";
+			exit(0);
+		}
+		if (str_starts_with($arg, '--host=')) {
+			$cliHost = substr($arg, 7);
+		} elseif ($arg !== '' && $arg[0] !== '-' && $cliHost === null) {
+			$cliHost = $arg;
+		}
+	}
+	if ($cliHost === null) {
+		fwrite(STDERR, "Aviso: no se indicó --host=<dominio>; se usa 'localhost' (bloque default de config.php).\n");
+		$cliHost = 'localhost';
+	}
+	if (!preg_match('/^[A-Za-z0-9.\-]+(:\d+)?$/', $cliHost)) {
+		fwrite(STDERR, "Host inválido: $cliHost\n");
+		exit(1);
+	}
+	// Variables que config.php e include.php esperan de una petición web.
+	$_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = $cliHost;
+	$_SERVER['REQUEST_URI'] ??= '/nframework/test.php';
+	$_SERVER['REQUEST_METHOD'] ??= 'GET';
+	$_SERVER['HTTP_USER_AGENT'] ??= 'nframework-cli';
+	$_SERVER['DOCUMENT_ROOT'] = dirname(__DIR__);
+	// En CLI el include_path puede no tener includes/ (se configura en el php.ini de FPM).
+	set_include_path(dirname(__DIR__) . '/includes' . PATH_SEPARATOR . get_include_path());
+	echo "Host: $cliHost\n";
+}
+if (PHP_SAPI !== 'cli' && !in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true)) {
+	@include 'config.php';
+	require_once 'vendor/autoload.php';
+	$nfInstalled = false;
+	try {
+		$nfInstallClient = new MongoDB\Client($config['mongo_connection_string'] ?? 'mongodb://127.0.0.1');
+		$nfInstalled = !empty($config['sitedb']) && !empty($nfInstallClient->{$config['sitedb']}->usersgroups->findOne(
+			['name' => 'admins', 'users.0' => ['$exists' => true]]
+		));
+	} catch (Throwable $e) {
+		// Sin conexión: se deja pasar para que el diagnóstico muestre el problema.
+	}
+	if ($nfInstalled) {
+		require_once 'include.php';
+		if (!$user->in('admins')) {
+			http_response_code(403);
+			exit('El sitio ya está instalado: inicie sesión como administrador para usar esta página.');
+		}
+	} elseif (!empty($config['install_key']) && !hash_equals((string) $config['install_key'], (string) ($_GET['key'] ?? ''))) {
+		http_response_code(403);
+		exit('Se requiere la clave de instalación (?key=).');
+	}
+}
 /*ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);//*/

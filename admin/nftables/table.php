@@ -5,6 +5,7 @@ if (empty($_GET['_id'])) {
     exit();
 }
 require 'include.php';
+requireGroup('admins');
 $dataset = new dataset(
     [
         'collection' => $m->{$config['sitedb']}->nftables,

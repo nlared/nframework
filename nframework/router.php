@@ -466,6 +466,7 @@ addjs
 
 $router->addRoute('/account/totp-setup', function ($route, $arg) {
 	global $user, $m, $config, $nframework;
+	$user->requireAuth();
 
 	// Genera el secreto y guárdalo en la base de datos del usuario
 	if (empty($user->totp_secret)) {
@@ -494,6 +495,7 @@ $router->addRoute('/account/totp-setup', function ($route, $arg) {
 
 $router->addRoute('/account/profile', function (string $route, array $p) {
 	global $twig, $config, $nframework, $user;
+	$user->requireAuth();
 	$nframework->usecommon = true;
 	$template = $twig->load('profile.html');
 	echo $template->render([
@@ -506,6 +508,7 @@ $router->addRoute('/account/profile', function (string $route, array $p) {
 }, ['GET', 'POST']);
 $router->addRoute('/account/sessions', function (string $route, array $p) {
 	global $twig, $config, $nframework, $user;
+	$user->requireAuth();
 	$nframework->usecommon = true;
 	$template = $twig->load('sessions.html');
 	echo $template->render([
@@ -518,6 +521,7 @@ $router->addRoute('/account/sessions', function (string $route, array $p) {
 }, 'GET');
 $router->addRoute('/account/apitokens', function (string $route, array $p) {
 	global $twig, $config, $nframework, $user;
+	$user->requireAuth();
 	$nframework->usecommon = true;
 	$template = $twig->load('apitokens.html');
 	echo $template->render([
@@ -1143,24 +1147,30 @@ foreach ($m->{$config['sitedb']}->pages->distinct('path') as $d) {
 	}
 }
 $router->addRoute('/nftables/[s:collection]/', function (string $route, array $p) {
-	global $m, $config, $nframework, $javas;
+	global $m, $config, $nframework, $javas, $user;
+	requireGroup('admins', 'nftables');
 
 	require 'nftable.php';
 }, ['GET', 'POST']);
 
 $router->addRoute('/nftables/[s:collection]/import', function (string $route, array $p) {
-	global $m, $config, $nframework, $javas, $result;
+	global $m, $config, $nframework, $javas, $result, $user;
+	requireGroup('admins', 'nftables');
 	require 'nfimport.php';
 }, ['GET', 'POST']);
 
 $router->addRoute('/nftables/[s:collection]/[s:id]', function (string $route, array $p) {
-	global $m, $config, $nframework, $javas, $result;
+	global $m, $config, $nframework, $javas, $result, $user;
+	requireGroup('admins', 'nftables');
 	require 'nfdialog.php';
 }, ['GET', 'POST']);
 $router->addRoute('/nftables/[s:collection]/[s:id]', function (string $route, array $p) {
-	global $m, $config;
+	global $m, $config, $user;
+	requireGroup('admins', 'nftables');
 	$tabla = $m->{$config['sitedb']}->nftables->findOne(['nfcollection' => $p['collection']]);
-	$m->{$config['sitedb']}->{$tabla->nfcollection}->deleteOne(['_id' => tomongoid($p['id'])]);
+	if ($tabla && isValidObjectId($p['id'])) {
+		$m->{$config['sitedb']}->{$tabla->nfcollection}->deleteOne(['_id' => tomongoid($p['id'])]);
+	}
 },  'DELETE');
 
 $router->addRoute('/cachetest.png', function ($route, $arg) {
