@@ -116,6 +116,7 @@ $nframework->languages['en-US'] = [
     'theme' => 'Theme',
     'groups' => 'Groups',
     'logs' => 'Logs',
+    'statistics' => 'Statistics',
     'save' => 'Save',
     'close' => 'Close',
     'user' => 'User',
