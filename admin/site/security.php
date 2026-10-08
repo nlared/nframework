@@ -9,6 +9,43 @@ $dataset = new dataset(
 	]
 );
 
+$nfFileTrustedProxies = nfConfigList($config->fileValue('trusted_proxies'));
+$trustedProxies = new textarea([
+	'dataset' => &$dataset,
+	'field' => 'trusted_proxies',
+	'caption' => 'Proxies de confianza (una IP o rango CIDR por línea):',
+	'placeholder' => "203.0.113.10\n173.245.48.0/20",
+]);
+$allowedRedirectHosts = new textarea([
+	'dataset' => &$dataset,
+	'field' => 'allowed_redirect_hosts',
+	'caption' => 'Dominios externos permitidos para redirigir tras el login (uno por línea):',
+	'placeholder' => "sso.ejemplo.com\nportal.ejemplo.com",
+]);
+
+/**
+ * Valida las listas antes de guardar; devuelve el mensaje de error o ''.
+ */
+function securityListsError(array $data): string
+{
+	foreach (nfConfigList($data['trusted_proxies'] ?? '') as $proxy) {
+		[$address, $bits] = array_pad(explode('/', $proxy, 2), 2, null);
+		$isV6 = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
+		if (!filter_var($address, FILTER_VALIDATE_IP) || ($bits !== null && (!ctype_digit($bits) || (int) $bits > ($isV6 ? 128 : 32)))) {
+			return 'Proxy de confianza inválido: ' . $proxy;
+		}
+		if ($bits !== null && (int) $bits < 8) {
+			return 'El rango ' . $proxy . ' es demasiado amplio: cualquiera podría falsificar su IP.';
+		}
+	}
+	foreach (nfConfigList($data['allowed_redirect_hosts'] ?? '') as $host) {
+		if (!preg_match('/^(?=.{1,253}$)([a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i', $host)) {
+			return 'Dominio inválido: ' . $host . ' (escriba solo el dominio, sin https:// ni rutas).';
+		}
+	}
+	return '';
+}
+
 $blockips = new inputCheckbox([
 	'dataset' => &$dataset,
 	'field' => 'blockips',
@@ -128,6 +165,10 @@ $datatable->Ajax([
 
 
 if ($nframework->isAjax()) {
+	if ($_POST['op'] == 'save') {
+		$listsError = securityListsError((array) ($_POST['data'] ?? []));
+		$result = ['error' => $listsError !== '' ? $listsError : $dataset->save()];
+	}
 	if ($_POST['op'] == 'delete') {
 		$m->{$config['sitedb']}->nfsecurityrules->deleteOne(['_id' => tomongoid($_POST['_id'])]);
 		$result = [
@@ -184,6 +225,32 @@ if ($nframework->isAjax()) {
 			<div class="box-title">Security</div>
 			<?= secureform() ?>
 			<div class="grid">
+				<div class="row bg-cyan fg-white p-3">
+					<div class="cell">Proxies y redirecciones</div>
+				</div>
+				<div class="row">
+					<div class="cell-md-6">
+						<?= $trustedProxies ?>
+						<small>
+							Solo si el proxy (Nginx, Cloudflare, balanceador) llega desde una IP pública; las redes privadas y
+							<code>127.0.0.1</code> ya son de confianza. Sin esto todos los visitantes aparecen con la IP del proxy.<br>
+							Esta petición llegó desde <code><?= htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '') ?></code>
+							<? if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) { ?>
+								con <code>X-Forwarded-For: <?= htmlspecialchars($_SERVER['HTTP_X_FORWARDED_FOR']) ?></code>.
+								IP detectada del cliente: <code><?= htmlspecialchars($ip) ?></code>
+								<?= $nfTrustedProxy ? '<span class="fg-green">(proxy de confianza)</span>' : '<span class="fg-red">(proxy NO confiable: se ignora X-Forwarded-For)</span>' ?>
+							<? } else { ?>sin cabecera <code>X-Forwarded-For</code> (no hay proxy delante).<? } ?>
+							<? if (!empty($nfFileTrustedProxies)) { ?><br>Definidos en config.php (no editables aquí): <code><?= htmlspecialchars(implode(', ', $nfFileTrustedProxies)) ?></code><? } ?>
+						</small>
+					</div>
+					<div class="cell-md-6">
+						<?= $allowedRedirectHosts ?>
+						<small>
+							Solo para inicio de sesión entre sitios (<code>?login_redirect=</code> … <code>?uid=</code>).
+							Las rutas del propio sitio y el dominio de la URL pública siempre están permitidos; cualquier otro destino se redirige a <code>/</code>.
+						</small>
+					</div>
+				</div>
 				<div class="row bg-cyan fg-white p-3">
 					<div class="cell">Blockeds IPS</div>
 				</div>
