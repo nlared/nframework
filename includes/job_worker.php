@@ -1,5 +1,9 @@
 #!/usr/bin/env php
 <?php
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('CLI only script');
+}
 require 'include.php';
 
 $queue = $argv[1] ?? 'default';
@@ -17,14 +21,23 @@ while (true) {
     );
 
     if ($job) {
+        $instance = null;
         try {
+            // Solo se instancian clases Job: el nombre de clase viene de la base de datos.
+            if (!is_string($job->class) || !is_subclass_of($job->class, 'Job')) {
+                throw new RuntimeException('Clase de job inválida: ' . json_encode($job->class));
+            }
             $instance = new $job->class($job->payload);
             $instance->_id = $job->_id;
             $instance->attempts = $job->attempts;
             $instance->handle();
             $m->{$config['sitedb']}->jobs->deleteOne(['_id' => $job->_id]);
-        } catch (Exception $e) {
-            $instance->retry(5);
+        } catch (Throwable $e) {
+            if ($instance !== null) {
+                $instance->retry(5);
+            } else {
+                $m->{$config['sitedb']}->jobs->updateOne(['_id' => $job->_id], ['$set' => ['failed_at' => new MongoDB\BSON\UTCDateTime(), 'error' => $e->getMessage()]]);
+            }
         }
     } else {
         sleep(1);

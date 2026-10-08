@@ -2,15 +2,9 @@
 
 use Intervention\Image\ImageManager;
 use OTPHP\TOTP;
-use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
-use FontLib\Table\Type\head;
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
-use Google\Service\DriveActivity\Create;
-use MongoDB\Model\BSONDocument;
-use Rogierw\RwAcme\AcmeClient;
 
 require 'include.php';
 $loader1 = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates');
@@ -19,7 +13,7 @@ $loader3 = new \Twig\Loader\FilesystemLoader($nframework->include_path . '/i18n/
 $loader = new \Twig\Loader\ChainLoader([$loader1, $loader2, $loader3]);
 $twig = new \Twig\Environment($loader, [
 	'cache' => false, //__DIR__.'/../compilation_cache',
-	'debug' => true,
+	'debug' => !empty($developermode),
 	'auto_reload' => true,
 ]);
 
@@ -526,7 +520,7 @@ $router->addRoute('/robots.txt', function ($route, $variables) {
 Disallow: 
 Disallow: /nframework/
 Disallow: /account/
-Sitemap: http://' . $_SERVER['HTTP_HOST'] . '/sitemap.xml';
+Sitemap: https://' . nfSiteHost() . '/sitemap.xml';
 });
 
 
@@ -534,11 +528,13 @@ $router->addRoute('/sitemap.xml', function ($route, $variables) {
 	global $m, $config;
 	header("Content-type: text/xml; charset=utf-8");
 	$urls = [];
-	foreach ($m->{$config['sitedb']} as $url) {
+	$base = 'https://' . nfSiteHost();
+	foreach ($m->{$config['sitedb']}->pages->distinct('path') as $path) {
+		if (!is_string($path) || $path === '' || $path[0] === '_') {
+			continue;
+		}
 		$urls[] = '<url>
-  <loc>' . $url['url'] . '</loc>
-  <lastmod>' . $url['lastmod'] . '</lastmod>
-  <priority>' . $url['prioridad'] . '</priority>
+  <loc>' . htmlspecialchars($base . '/' . ltrim($path, '/'), ENT_XML1, 'UTF-8') . '</loc>
 </url>';
 	}
 	echo '<?xml version="1.0" encoding="UTF-8"?>
@@ -903,100 +899,51 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 $router->addRoute('/nf.webmanifest', function (string $route, array $p) {
 	global $config;
 	header('Content-Type: application/manifest+json; charset=utf-8');
-	echo '{
-    "name": "' . $config['title'] . '",
-    "short_name": "' . $config['shortname'] . '",
-    "id": "' . $config['shortname'] . '",
-    "theme_color": "' . $config['manifest']['theme_color'] . '",
-    "background_color": "' . $config['manifest']['background_color'] . '",
-    "display": "standalone",
-    "scope": "/",
-    "start_url": "/",
-    "description": "' . str_replace(array("\n", "\r"), '', $config['description']) . '",
-    "orientation": "any",
-    "launch_handler": {
-    	"client_mode": "auto"
-	},
-    "edge_side_panel": {
-    	"preferred_width": 1
-	},
-	"categories": [
-    "education"
-  ],
-  "dir": "auto",
-  "lang": "es",
-  "prefer_related_applications": false,
-  "iarc_rating_id": "16+",
-    "icons": [
-        {
-            "src": "https://' . $_SERVER['HTTP_HOST'] . '/images/config/72/logo.png",
-            "sizes": "72x72",
-            "type": "image/png",
-            "purpose":"any"
-        },
-        {
-            "src": "https://' . $_SERVER['HTTP_HOST'] . '/images/config/96/logo.png",
-            "sizes": "96x96",
-            "type": "image/png",
-            "purpose":"any"
-        },
-        {
-            "src": "https://' . $_SERVER['HTTP_HOST'] . '/images/config/144/logo.png",
-            "sizes": "144x144",
-            "type": "image/png",
-            "purpose":"any"
-        },
-        {
-            "src": "https://' . $_SERVER['HTTP_HOST'] . '/images/config/192/logo.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose":"any"
-        },
-        {
-            "src": "https://' . $_SERVER['HTTP_HOST'] . '/images/config/256/logo.png",
-            "sizes": "256x256",
-            "type": "image/png",
-            "purpose":"any"
-        },
-        {
-            "src": "https://' . $_SERVER['HTTP_HOST'] . '/images/config/384/logo.png",
-            "sizes": "384x384",
-            "type": "image/png",
-            "purpose":"any"
-        },
-        {
-            "src": "https://' . $_SERVER['HTTP_HOST'] . '/images/config/512/logo.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose":"any"
-        },
-        {
-            "src": "https://' . $_SERVER['HTTP_HOST'] . '/images/config/1024/logo.png",
-            "sizes": "1024x1024",
-            "type": "image/png",
-            "purpose":"any"
-        }
-    ]
-}';
+	$icons = [];
+	foreach ([72, 96, 144, 192, 256, 384, 512, 1024] as $size) {
+		$icons[] = [
+			'src' => 'https://' . nfSiteHost() . '/images/config/' . $size . '/logo.png',
+			'sizes' => $size . 'x' . $size,
+			'type' => 'image/png',
+			'purpose' => 'any',
+		];
+	}
+	echo json_encode([
+		'name' => (string) $config['title'],
+		'short_name' => (string) $config['shortname'],
+		'id' => (string) $config['shortname'],
+		'theme_color' => $config['manifest']['theme_color'],
+		'background_color' => $config['manifest']['background_color'],
+		'display' => 'standalone',
+		'scope' => '/',
+		'start_url' => '/',
+		'description' => str_replace(["\n", "\r"], '', (string) $config['description']),
+		'orientation' => 'any',
+		'launch_handler' => ['client_mode' => 'auto'],
+		'edge_side_panel' => ['preferred_width' => 1],
+		'categories' => ['education'],
+		'dir' => 'auto',
+		'lang' => 'es',
+		'prefer_related_applications' => false,
+		'iarc_rating_id' => '16+',
+		'icons' => $icons,
+	], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 	//72, 96, 144, 192, 256, 384, 512
 
 }, 'GET');
 
 $router->addRoute('/getPayload', function (string $route, array $p) {
 	global $m, $config;
-	if (!empty($_GET['endpoint'])) {
-		if ($_GET['endpoint'] != 'null') {
+	if (!empty($_GET['endpoint']) && is_string($_GET['endpoint'])) {
+		$endpoint = json_decode($_GET['endpoint'], true);
+		if (is_array($endpoint) && !empty($endpoint['endpoint']) && str_starts_with((string) $endpoint['endpoint'], 'https://')) {
 			$m->{$config['sitedb']}->endpoints->updateOne(
-				[['_id' => (string)session_id()]],
-				[
-					'$set' => [
-						'endpoint' => json_decode($_GET['endpoint'])
-					]
-				],
+				['_id' => (string)session_id()],
+				['$set' => ['endpoint' => nfSanitizeMongoQuery($endpoint)]],
 				['upsert' => true]
 			);
 		} else {
-			$m->{$config['sitedb']}->endpoints->deleteOne([['_id' => (string)session_id()]]);
+			$m->{$config['sitedb']}->endpoints->deleteOne(['_id' => (string)session_id()]);
 		}
 		echo "ok";
 	}

@@ -1,11 +1,13 @@
 <?php
+use Cocur\BackgroundProcess\BackgroundProcess;
+
 require 'include.php';
 header('Content-Type: application/json');  
   
 switch ($_GET['op'] ?? '') {  
     case 'status':  
         $pids = $_SESSION['pids'] ?? [];  
-        $running = array_filter($pids, fn($p) => (new BackgroundProcess())->createFromPID($p['pid'])->isRunning());  
+        $running = array_filter($pids, fn($p) => !empty($p['pid']) && BackgroundProcess::createFromPID($p['pid'])->isRunning());  
         echo json_encode(['pids' => $running]);  
         break;  
     case 'start':  
