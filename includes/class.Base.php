@@ -1172,6 +1172,8 @@ class SelectAjaxOptions
 }
 class Select extends baseOptions
 {
+    const formatMongoID = 'mongoid';
+    const formatString = 'string';
     public $combobox;
     public $multiple;
     public $invalid_feedback;
@@ -1179,7 +1181,7 @@ class Select extends baseOptions
     public $canadd;
     public $role;
     public $datafilter = true;
-    public $format; // mongoid    
+    public $format; // mongoid or string
 
     public $ajax;
 
@@ -1189,32 +1191,58 @@ class Select extends baseOptions
         parent::__construct($options);
     }
 
-    public function __toPhp($val)
+    private function isMongoIDFormat(): bool
+    {
+        return $this->format === self::formatMongoID || $this->format === DataformatSelectType::MongoID;
+    }
+
+    private static function toObjectID($val)
+    {
+        if ($val instanceof MongoDB\BSON\ObjectId) {
+            return $val;
+        }
+        if (is_string($val) && preg_match('/^[0-9a-fA-F]{24}$/', $val)) {
+            return new MongoDB\BSON\ObjectId($val);
+        }
+        return $val;
+    }
+
+    public function __toPHP($val)
     {
         if ($this->multiple) {
-            return (array) $val;
-        } else {
-            if ($this->format == DataformatSelectType::MongoID) {
-                return (string) $val;
+            $val = (array) $val;
+            if ($this->isMongoIDFormat()) {
+                $val = array_map(fn($v) => $v instanceof MongoDB\BSON\ObjectId ? (string) $v : $v, $val);
             }
             return $val;
         }
+        if ($this->isMongoIDFormat() && $val instanceof MongoDB\BSON\ObjectId) {
+            return (string) $val;
+        }
+        return $val;
     }
+
     public function __toMongo($val)
     {
         if ($this->multiple) {
-            return (array) $val;
-        } else {
-            if ($this->format == DataformatSelectType::MongoID) {
-                return  new MongoDB\BSON\ObjectID($val);
+            $val = (array) $val;
+            if ($this->isMongoIDFormat()) {
+                $val = array_values(array_map([self::class, 'toObjectID'], array_filter($val, fn($v) => $v !== '' && $v !== null)));
             }
             return $val;
         }
+        if ($this->isMongoIDFormat()) {
+            return self::toObjectID($val);
+        }
+        return $val;
     }
     public function __toString(): string
     {
         global $nframework, $javas;
         $result = '';
+        if ($this->isMongoIDFormat()) {
+            $this->value = $this->__toPHP($this->value);
+        }
         if ($this->combobox && $this->value != '' && !array_search($this->value, $this->options)) {
             $this->options += [$this->value];
         }
@@ -1460,6 +1488,7 @@ class inputCheckBoxs extends Select
 
     public function __toMongo($vals)
     {
+        $tomongo = [];
         foreach ($vals as $name => $val) {
             $tomongo[$name] = ($val == 'on' ? true : false);
         }
