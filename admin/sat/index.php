@@ -3,8 +3,9 @@ require '../common2.php';
 require_once __DIR__ . '/sat_ext.php';
 $nframework->usecommon = true;
 
-// Directorio del almacén de CAs del SAT (fuera de la carpeta pública).
-$satCaDir = '/etc/nframework/sat';
+// Directorio del almacén de CAs del SAT (fuera de la carpeta pública). No se usa /etc porque
+// PHP-FPM suele ejecutarse con ProtectSystem=full, que lo deja en solo lectura.
+$satCaDir = '/var/lib/nframework/sat';
 // Paquete oficial de certificados de producción del SAT (solo se publica por HTTP).
 $satCaUrl = $config['sat_ca_url'] ?? 'http://omawww.sat.gob.mx/tramitesyservicios/Paginas/documentos/Cert_Prod.zip';
 $csrf = csrfToken('/admin/sat/');
@@ -185,11 +186,12 @@ if ($dirWritable) {
 
         <? if (!$dirWritable) { ?>
             <div class="remark alert">
-                <? if (!$dirExists) { ?>El directorio no existe.<? } else { ?>El servidor web no tiene permiso de escritura en el directorio.<? } ?>
-                Ejecuta en el servidor:
-                <pre>sudo mkdir -p <?= $h($satCaDir) ?>
-sudo chown www-data:www-data <?= $h($satCaDir) ?>
-sudo chmod 750 <?= $h($satCaDir) ?></pre>
+                <b>El servidor web no puede escribir en <code><?= $h($satCaDir) ?></code>.</b>
+                <? foreach (satCaDirDiagnose($satCaDir) as [$problem, $commands]) { ?>
+                    <p><?= $problem ?> Ejecuta en el servidor:</p>
+                    <pre><?= $h($commands) ?></pre>
+                <? } ?>
+                <p>Después recarga esta página.</p>
             </div>
         <? } else { ?>
             <?= $uploader ?>

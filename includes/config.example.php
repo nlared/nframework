@@ -59,8 +59,8 @@ switch ($_SERVER['HTTP_HOST'] ?? 'localhost') {
 
             // --- e.firma del SAT ----------------------------------------------------------------------
             // Directorio (formato `openssl rehash`) o archivo PEM con las AC del SAT. Admin → SAT lo crea y
-            // lo configura solo en /etc/nframework/sat; defínalo aquí únicamente para usar otra ruta.
-            // 'sat_ca_bundle' => '/etc/nframework/sat',
+            // lo configura solo en /var/lib/nframework/sat; defínalo aquí únicamente para usar otra ruta.
+            // 'sat_ca_bundle' => '/var/lib/nframework/sat',
             // Paquete del que Admin → SAT descarga las AC (por defecto el de producción del SAT).
             // 'sat_ca_url' => 'http://omawww.sat.gob.mx/tramitesyservicios/Paginas/documentos/Cert_Prod.zip',
 

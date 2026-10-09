@@ -23,6 +23,67 @@ function satCaIsAuthority(array $info): bool
 }
 
 /**
+ * Explica por qué el servidor web no puede escribir en el directorio del almacén.
+ * Devuelve una lista de [problema, comandos para resolverlo].
+ */
+function satCaDirDiagnose(string $dir): array
+{
+    $user = function_exists('posix_geteuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? 'www-data') : 'www-data';
+    $group = function_exists('posix_getegid') ? (posix_getgrgid(posix_getegid())['name'] ?? $user) : $user;
+    $arg = escapeshellarg($dir);
+    $problems = [];
+
+    $basedir = (string) ini_get('open_basedir');
+    if ($basedir !== '') {
+        $allowed = false;
+        foreach (explode(PATH_SEPARATOR, $basedir) as $base) {
+            if ($base !== '' && str_starts_with(rtrim($dir, '/') . '/', rtrim($base, '/') . '/')) {
+                $allowed = true;
+            }
+        }
+        if (!$allowed) {
+            $problems[] = ['PHP tiene <code>open_basedir</code> activo (' . $basedir . ') y no incluye el directorio.',
+                "Agrega {$dir} a open_basedir en php.ini o en el pool de PHP-FPM y reinicia PHP-FPM."];
+        }
+    }
+
+    // Punto de montaje del directorio (o de su ancestro existente) visto por este proceso.
+    $path = $dir;
+    while (!file_exists($path) && $path !== '/' && $path !== '.') {
+        $path = dirname($path);
+    }
+    $mount = '';
+    $readOnly = false;
+    foreach (@file('/proc/self/mountinfo', FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+        $fields = explode(' ', $line);
+        $point = str_replace('\\040', ' ', $fields[4] ?? '');
+        if ($point !== '' && strlen($point) >= strlen($mount) && ($point === '/' || $path === $point || str_starts_with($path, rtrim($point, '/') . '/'))) {
+            $mount = $point;
+            $readOnly = in_array('ro', explode(',', $fields[5] ?? ''), true);
+        }
+    }
+    if ($readOnly) {
+        $service = 'php' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '-fpm';
+        $problems[] = ["Para PHP, <code>{$mount}</code> está montado como <b>solo lectura</b>. Normalmente se debe a "
+            . "<code>ProtectSystem</code> en el servicio systemd de PHP-FPM; cambiar el dueño o los permisos no basta. "
+            . 'Usa un directorio fuera de <code>/etc</code> y <code>/usr</code> (p. ej. <code>/var/lib/nframework/sat</code>) o permite la ruta en el servicio:',
+            "sudo mkdir -p {$arg} /etc/systemd/system/{$service}.service.d\n"
+            . "sudo chown {$user}:{$group} {$arg}\nsudo chmod 750 {$arg}\n"
+            . "printf '[Service]\\nReadWritePaths={$dir}\\n' | sudo tee /etc/systemd/system/{$service}.service.d/nframework-sat.conf\n"
+            . "sudo systemctl daemon-reload\nsudo systemctl restart {$service}"];
+    } elseif (!is_dir($dir)) {
+        $problems[] = ['El directorio no existe.',
+            "sudo mkdir -p {$arg}\nsudo chown {$user}:{$group} {$arg}\nsudo chmod 750 {$arg}"];
+    } else {
+        $owner = function_exists('posix_getpwuid') ? (posix_getpwuid(fileowner($dir))['name'] ?? fileowner($dir)) : fileowner($dir);
+        $perms = substr(sprintf('%o', fileperms($dir)), -4);
+        $problems[] = ["El directorio pertenece a <code>{$owner}</code> con permisos <code>{$perms}</code> y PHP se ejecuta como <code>{$user}</code>.",
+            "sudo chown {$user}:{$group} {$arg}\nsudo chmod 750 {$arg}"];
+    }
+    return $problems;
+}
+
+/**
  * Guarda un certificado de CA en el almacén. Devuelve el nombre del archivo creado,
  * o null si ya estaba instalado.
  */
