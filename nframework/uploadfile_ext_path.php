@@ -1,4 +1,4 @@
-<?
+<?php
 function onupload($filename, $upload)
 {
 	rename($filename, $upload['extensioninfo']['path']);

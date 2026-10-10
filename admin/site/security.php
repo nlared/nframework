@@ -1,4 +1,4 @@
-<?
+<?php
 require '../common2.php';
 $dataset = new dataset(
 	[
@@ -235,12 +235,12 @@ if ($nframework->isAjax()) {
 							Solo si el proxy (Nginx, Cloudflare, balanceador) llega desde una IP pública; las redes privadas y
 							<code>127.0.0.1</code> ya son de confianza. Sin esto todos los visitantes aparecen con la IP del proxy.<br>
 							Esta petición llegó desde <code><?= htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '') ?></code>
-							<? if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) { ?>
+							<?php if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) { ?>
 								con <code>X-Forwarded-For: <?= htmlspecialchars($_SERVER['HTTP_X_FORWARDED_FOR']) ?></code>.
 								IP detectada del cliente: <code><?= htmlspecialchars($ip) ?></code>
 								<?= $nfTrustedProxy ? '<span class="fg-green">(proxy de confianza)</span>' : '<span class="fg-red">(proxy NO confiable: se ignora X-Forwarded-For)</span>' ?>
-							<? } else { ?>sin cabecera <code>X-Forwarded-For</code> (no hay proxy delante).<? } ?>
-							<? if (!empty($nfFileTrustedProxies)) { ?><br>Definidos en config.php (no editables aquí): <code><?= htmlspecialchars(implode(', ', $nfFileTrustedProxies)) ?></code><? } ?>
+							<?php } else { ?>sin cabecera <code>X-Forwarded-For</code> (no hay proxy delante).<?php } ?>
+							<?php if (!empty($nfFileTrustedProxies)) { ?><br>Definidos en config.php (no editables aquí): <code><?= htmlspecialchars(implode(', ', $nfFileTrustedProxies)) ?></code><?php } ?>
 						</small>
 					</div>
 					<div class="cell-md-6">
@@ -302,4 +302,4 @@ if ($nframework->isAjax()) {
 			</form>
 		</div>
 	</div>
-<? } ?>
+<?php } ?>

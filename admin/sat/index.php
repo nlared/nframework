@@ -140,14 +140,14 @@ if ($dirWritable) {
             Certificados instalados: <b><?= $count ?></b>
         </p>
 
-        <? if ($dirWritable) { ?>
+        <?php if ($dirWritable) { ?>
             <form method="POST" class="mb-4">
                 <input type="hidden" name="CSRFToken" value="<?= $h($csrf) ?>">
                 <button class="button primary" name="op" value="download"><span class="mif-download"></span> Descargar certificados del SAT</button>
                 <small class="ml-2">Fuente: <code><?= $h($satCaUrl) ?></code></small>
             </form>
             <?= $downloadMessage ?>
-            <? if (!empty($candidates)) {
+            <?php if (!empty($candidates)) {
                 $labels = [
                     'new' => '<span class="tag success">Nuevo</span>',
                     'installed' => '<span class="tag">Ya instalado</span>',
@@ -165,9 +165,9 @@ if ($dirWritable) {
                     <table class="table striped compact">
                         <thead><tr><th></th><th>Archivo</th><th>Certificado</th><th>Emitido por</th><th>Vigencia</th><th>Estado</th><th>SHA-256</th></tr></thead>
                         <tbody>
-                        <? foreach ($candidates as $fingerprint => $c) { ?>
+                        <?php foreach ($candidates as $fingerprint => $c) { ?>
                             <tr>
-                                <td><? if ($c['status'] === 'new') { ?><input type="checkbox" name="fp[]" value="<?= $h($fingerprint) ?>" checked><? } ?></td>
+                                <td><?php if ($c['status'] === 'new') { ?><input type="checkbox" name="fp[]" value="<?= $h($fingerprint) ?>" checked><?php } ?></td>
                                 <td><?= $h($c['file']) ?></td>
                                 <td><?= $h($c['subject']) ?></td>
                                 <td><?= $c['root'] ? '<span class="tag">Raíz</span>' : $h($c['issuer']) ?></td>
@@ -175,38 +175,38 @@ if ($dirWritable) {
                                 <td><?= $labels[$c['status']] ?></td>
                                 <td><code style="font-size:.7em;word-break:break-all"><?= $h($fingerprint) ?></code></td>
                             </tr>
-                        <? } ?>
+                        <?php } ?>
                         </tbody>
                     </table>
                     <button class="button success" name="op" value="install"><span class="mif-checkmark"></span> Instalar seleccionados</button>
                     <button class="button" name="op" value="cancel">Cancelar</button>
                 </form>
-            <? } ?>
-        <? } ?>
+            <?php } ?>
+        <?php } ?>
 
-        <? if (!$dirWritable) { ?>
+        <?php if (!$dirWritable) { ?>
             <div class="remark alert">
                 <b>El servidor web no puede escribir en <code><?= $h($satCaDir) ?></code>.</b>
-                <? foreach (satCaDirDiagnose($satCaDir) as [$problem, $commands]) { ?>
+                <?php foreach (satCaDirDiagnose($satCaDir) as [$problem, $commands]) { ?>
                     <p><?= $problem ?> Ejecuta en el servidor:</p>
                     <pre><?= $h($commands) ?></pre>
-                <? } ?>
+                <?php } ?>
                 <p>Después recarga esta página.</p>
             </div>
-        <? } else { ?>
+        <?php } else { ?>
             <?= $uploader ?>
-        <? } ?>
+        <?php } ?>
 
-        <? if ($count > 0) { ?>
+        <?php if ($count > 0) { ?>
             <table class="table striped compact mt-4">
                 <thead>
                     <tr><th>Archivo</th><th>Certificado</th><th>Emitido por</th><th>Vigencia</th><th>SHA-256</th></tr>
                 </thead>
                 <tbody><?= $rows ?></tbody>
             </table>
-        <? } elseif ($dirExists && $count === 0) { ?>
+        <?php } elseif ($dirExists && $count === 0) { ?>
             <div class="remark warning mt-4">No hay certificados instalados: el inicio de sesión con e.firma será rechazado.</div>
-        <? } ?>
+        <?php } ?>
     </div>
 
     <div class="box shadow-large mt-4">

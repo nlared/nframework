@@ -1,4 +1,4 @@
-<?
+<?php
 require 'include.php';
 $nframework->usecommon = true;
 if (!$user->in('admins')) {

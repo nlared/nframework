@@ -1,3 +1,3 @@
 <?php
-require 'common2.php';
-$javas->addjs('hljs.highlightAll();');
+// Compatibilidad: las páginas antiguas incluyen common.php; todo vive en common2.php.
+require_once 'common2.php';

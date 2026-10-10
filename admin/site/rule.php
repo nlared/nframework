@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 $rule_field=new select(['nfembeded'=>&$arrayIps,'field'=>'field','caption'=>'Field:','options'=>[
 	'Hostname',
@@ -108,4 +108,4 @@ if ($nframework->isAjax()) {
 		</form>
 	</div>
 </div>
-<?}?>
+<?php }?>

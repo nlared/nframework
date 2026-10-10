@@ -1,4 +1,4 @@
-<?
+<?php
 class QRReader{
 	public String $exitpath='/';
 	public $setResult='defaultSetResult';

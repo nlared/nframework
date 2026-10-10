@@ -1,4 +1,4 @@
-<?
+<?php
 require '../common2.php';
 require 'timezonelist.php';
 $dataset = new dataset(
@@ -146,7 +146,7 @@ if ($nframework->isAjax()) {
 					<div class="cell-md-6"><small>
 						Se usa en los enlaces de los correos de activación y de restablecer contraseña, <code>robots.txt</code>, <code>sitemap.xml</code> y el manifiesto.
 						Si está vacía se toma la cabecera <code>Host</code> de la petición, que el visitante puede falsificar.
-						<? if (empty($config['url'])) { ?><br><span class="fg-red">Sin configurar.</span> Valor sugerido: <code>https://<?= htmlspecialchars($_SERVER['HTTP_HOST'] ?? '') ?></code><? } ?>
+						<?php if (empty($config['url'])) { ?><br><span class="fg-red">Sin configurar.</span> Valor sugerido: <code>https://<?= htmlspecialchars($_SERVER['HTTP_HOST'] ?? '') ?></code><?php } ?>
 					</small></div>
 				</div>
 				<div class="row">
@@ -259,4 +259,4 @@ if ($nframework->isAjax()) {
 		</form>
 	</div>
 	</div>
-<? } ?>
+<?php } ?>

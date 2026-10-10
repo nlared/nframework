@@ -3,7 +3,8 @@
 /includes/composer.lock
 /includes/composer.phar
 /test/*
-/doc/tmp/*
+/docs/tmp/*
+!/docs/tmp/long_process.php
 *.log
 
 # PHPUnit test artifacts

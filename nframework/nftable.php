@@ -126,4 +126,4 @@ jss
 			<?= $datatable; ?>
 		</div>
 	</div>
-<? }
+<?php }

@@ -454,7 +454,8 @@ class inputText extends baseInput
         if ($this->type === 'email') {
             $this->validate .= ' email';
         } elseif (empty($this->pattern)) {
-            $this->validate = ' text';
+            // Se agrega a las reglas del usuario ('validate' => 'email minlength=5'); antes las reemplazaba.
+            $this->validate .= ' text';
         } else {
             $this->validate .= ' pattern=(' . $this->pattern . ')';
         }
@@ -782,7 +783,8 @@ class inputDate extends baseInput
             if ($this->storagetype == self::ST_STRING) {
                 return $val;
             } else {
-                $orig_date = DateTime::createFromFormat($this->format, $val, $this->timezone);
+                // '!' pone en cero los campos que el formato no trae (la hora); sin él se guardaba la hora actual.
+                $orig_date = DateTime::createFromFormat('!' . $this->format, $val, $this->timezone);
                 $orig_date = $orig_date->getTimestamp();
                 $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
                 return $utcdatetime;

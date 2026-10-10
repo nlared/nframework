@@ -1,4 +1,4 @@
-<?
+<?php
 require '../common2.php';
 $developermode=true;
 
@@ -9,5 +9,5 @@ $tmp=unserialize($tmp, ['allowed_classes' => false]);
 
 ?>
 <div class="container">
-	<pre><?print_r($tmp)?></pre>	
+	<pre><?php print_r($tmp)?></pre>	
 </div>

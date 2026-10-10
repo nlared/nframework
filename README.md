@@ -19,7 +19,7 @@ A comprehensive PHP web framework designed for rapid application development wit
 
 ## 📋 Requirements
 
-- PHP 8.0 or higher
+- PHP 8.1 or higher
 - MongoDB PHP Extension
 - Composer
 - Web server (Apache/Nginx)
@@ -51,26 +51,42 @@ The package auto-registers artisan commands:
 - `php artisan make:databingajax {name?} {--path=docs} {--force}` (alias)
 - `php artisan make:datatableajax {name?} {--path=docs} {--force}`
 
-2. **Install dependencies:**
+2. **Install dependencies** (the framework's runtime dependencies live in `includes/`):
 ```bash
-composer install
+cd includes && composer install
 ```
 
 3. **Configure your environment:**
 ```bash
-cp config.example.php config.php
+cp includes/config.example.php includes/config.php
 ```
 
-4. **Set up MongoDB connection in `config.php`:**
+4. **Set up the site in `includes/config.php`.** The file picks a block by domain (`$_SERVER['HTTP_HOST']`);
+   see the comments in `config.example.php` for every option:
 ```php
-$config['mongodb_host'] = 'localhost';
-$config['mongodb_port'] = 27017;
-$config['mongodb_database'] = 'your_database';
+case 'www.example.com':
+    $config = [
+        'mongo_connection_string' => 'mongodb://127.0.0.1',
+        'sitedb' => 'example',
+        'cookie_domain' => 'www.example.com',
+        'url' => 'https://www.example.com',
+    ];
+    break;
 ```
 
-5. **Configure web server** to point to the nframework directory
+5. **Configure the web server**: document root at the repository root, `includes/` in PHP's
+   `include_path`, and every request that is not a static file rewritten to `/router.php`.
+   Keep PHP's `error_log` outside the document root (a relative `error_log = php_errors.log`
+   writes the log next to the script, where it can be downloaded).
+
+6. **Install the database** (users, groups, indexes): `php nframework/test.php --host=www.example.com`
 
 ## 🎯 Quick Start
+
+Runnable examples for every component (forms, databinding, tables, uploads, exports, jobs, security...)
+live in [`docs/`](docs/): open `/docs/` on your development site. Each page shows the result next to the
+code that produces it. To add a page, create it in `docs/` and register it in `$docsMenu` in
+`docs/common2.php`.
 
 ### Basic Usage
 
@@ -137,11 +153,14 @@ nframework/
 │   ├── class.User.php     # User management
 │   ├── functions.php      # Utility functions
 │   └── include.php        # Main bootstrap file
-├── templates/          # Twig templates
-├── api/               # API endpoints
-├── config.php         # Configuration file
-├── router.php         # Main routing file
-└── uploadfile.php     # File upload handler
+│   └── config.php         # Site configuration (copy of config.example.php, not versioned)
+├── nframework/         # Framework routes, endpoints and Twig templates
+│   ├── router.php         # Built-in routes (account, images, sitemap...)
+│   ├── templates/         # Twig templates
+│   └── uploadfile.php     # File upload handler
+├── admin/              # Admin panel
+├── sat/                # SAT (CFDI) classes
+└── router.php          # Front controller
 ```
 
 ## 🎨 UI Components

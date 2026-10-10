@@ -1,4 +1,4 @@
-<?
+<?php
 require '../common2.php';
 
 $json = file_get_contents(__DIR__ . '/security_rules.json');

@@ -1,4 +1,4 @@
-<?
+<?php
 $developermode=true;
 require '../common2.php';
 	$dataset=new dataset([

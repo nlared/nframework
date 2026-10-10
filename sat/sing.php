@@ -1,4 +1,4 @@
-<?
+<?php
 $developermode=true;
 $noobfuscate=true;
 $nframework->usecommon=true;

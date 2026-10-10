@@ -1,43 +1,39 @@
 <?php
-include 'common.php';
+require 'common.php';
 
-// Define the background process
-// We use a simple PHP script that prints progress for 20 seconds.
-$processParams = [
-    'id' => 'demo_process',
-    'cmd' => 'php ' . __DIR__ . '/tmp/long_process.php',
-    'logfile' => __DIR__ . '/tmp/demo_process.log'
-];
-
-$bg = new bgprocess($processParams);
-
+// Comando que tarda ~20 s: imprime su avance en el archivo de log.
+$bg = new bgprocess([
+	'id' => 'demo_process',
+	'cmd' => 'php ' . escapeshellarg(__DIR__ . '/tmp/long_process.php'),
+	'logfile' => __DIR__ . '/tmp/demo_process.log',
+]);
 ?>
 <div class="container">
-    <h1>Background Process Example</h1>
-    <p>This example demonstrates how to use the <code>bgprocess</code> class to manage background tasks.</p>
+	<?= docHeader('Procesos en segundo plano', '<code>bgprocess</code> lanza un comando del sistema que sigue corriendo aunque el usuario cierre la página, y permite consultar su avance o detenerlo. El PID se guarda en la sesión del usuario.') ?>
 
-    <h3>Code Usage</h3>
-    <pre class="stay-on"><code class="language-php">
-$processParams = [
-    'id' => 'demo_process',
-    'cmd' => 'php ' . __DIR__ . '/tmp/long_process.php',
-    'logfile' => __DIR__ . '/tmp/demo_process.log'
-];
+	<h3>Panel en vivo</h3>
+	<div class="p-4 border bd-default">
+		<?= $bg->renderDashboard() ?>
+	</div>
+	<p class="text-small">El proceso de ejemplo (<code>tmp/long_process.php</code>) cuenta hasta 20, un paso por segundo.</p>
 
-$bg = new bgprocess($processParams);
+	<h3>Código</h3>
+	<?= docCode(<<<'PHP'
+$bg = new bgprocess([
+    'id' => 'demo_process',                                    // identifica el proceso en la sesión
+    'cmd' => 'php ' . escapeshellarg(__DIR__ . '/tmp/long_process.php'),
+    'logfile' => __DIR__ . '/tmp/demo_process.log',            // salida del comando
+]);
+echo $bg->renderDashboard();     // botones iniciar/detener y log que se actualiza solo
+PHP) ?>
 
-// Render the dashboard control
-echo $bg->renderDashboard();
-    </code></pre>
-
-    <h3>Live Dashboard</h3>
-    <div class="p-4 border bd-default">
-        <?php echo $bg->renderDashboard(); ?>
-    </div>
-
-    <div class="mt-4">
-        <h5>About the Demo Process</h5>
-        <p>The background process runs a simple PHP script that counts to 20, sleeping for 1 second between each count.
-            You can see the output in the log file (status) when you start it.</p>
-    </div>
+	<h3>Desde PHP</h3>
+	<?= docCode(<<<'PHP'
+if (!$bg->isRunning()) {
+    $bg->start();
+}
+$estado = $bg->status();   // ['data' => contenido del log, 'isRunning' => bool]
+$bg->stop();
+PHP) ?>
+	<p class="remark warning">Nunca arme <code>cmd</code> con datos del usuario sin <code>escapeshellarg()</code>. Para tareas que deben reintentarse o repartirse entre varios trabajadores use <a href="jobs.php">colas de trabajo</a>.</p>
 </div>

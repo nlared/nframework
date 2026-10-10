@@ -1,4 +1,4 @@
-<?
+<?php
 // includes/class.Job.php
 
 /* Colección: jobs  

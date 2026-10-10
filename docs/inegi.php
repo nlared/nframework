@@ -1,10 +1,13 @@
 <?php
-if (empty($_GET['_id'])) {
-    $newid=new MongoDB\BSON\ObjectID();
-    header('Location: ?_id='.$newid);
+/*
+ * Caso completo: domicilio capturado con mapa y catálogos del Marco Geoestadístico de INEGI
+ * (gaia.inegi.org.mx/wscatgeo), guardado por AJAX con databinding.
+ */
+if (empty($_GET['_id']) || !preg_match('/^[a-f\d]{24}$/i', $_GET['_id'])) {
+    header('Location: ?_id=' . new MongoDB\BSON\ObjectId());
     exit();
 }
-require 'include.php';
+require 'common.php';
 $dataset=new dataset(
     [
     'collection'=>$m->{$config['sitedb']}->inegi,
@@ -12,7 +15,6 @@ $dataset=new dataset(
     'simpleid'=>false,
     'nameprefix'=>'data']
 );
-$developermode=true;
 $mapa=new mapmarker(['dataset'=>&$dataset,'field'=>'mapa','caption'=>'Mapa:','required'=>true,'onchange'=>'buscard();']);
 
 $estado=new inputtext(['dataset'=>&$dataset,'field'=>'estado','caption'=>'Estado:','data-autocomplete'=>'uno,dos','autocomplete'=>'none','required'=>true]);
@@ -46,7 +48,8 @@ if ($nframework->isAjax()) {
 	$nframework->usecommon=true;
 	$javas->addjs('llamarApiDenueBus();', 'ready'); 
 ?>
-<div class="container p-5">
+<div class="container">
+	<?= docHeader('Caso: domicilio INEGI', 'Formulario real que combina <code>mapmarker</code>, autocompletado con los catálogos de estados, municipios, localidades y asentamientos de INEGI, y guardado AJAX con <code>dataset</code>.') ?>
 	<div class="bg-cyan fg-white p-3"><h4>Dirección INEGI</h4></div>
 	<div class="bg-white p-3">
 	<?=secureform()?>
@@ -356,4 +359,4 @@ function buscard(){
 
 
 
-<?}?>
+<?php }?>

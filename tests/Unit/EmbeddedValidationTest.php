@@ -210,7 +210,8 @@ class EmbeddedValidationTest extends TestCase
         $array->__toString();
         $generatedJs = implode('', $GLOBALS['javas']->js);
 
-        $this->assertStringContainsString("errormsg ? '\\\\n' : ''", $generatedJs);
+        // El JS debe llevar el escape \n (barra + n), no un salto de línea real que rompería la cadena.
+        $this->assertStringContainsString("errormsg ? '\\n' : ''", $generatedJs);
         $this->assertStringNotContainsString("errormsg ? '\n' : ''", $generatedJs);
     }
 

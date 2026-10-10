@@ -192,4 +192,4 @@ addjs
             width: 800px;
         }
     </style>
-<? } ?>
+<?php } ?>

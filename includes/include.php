@@ -68,7 +68,6 @@ if (!class_exists(\PhpOffice\PhpWord\Element\Paragraph::class) && class_exists(\
 require __DIR__ . '/functions.php';
 require __DIR__ . '/class.UIManager.php';
 
-use FontLib\Table\Type\head;
 use MongoDB\Client;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\BSON\ObjectId;
@@ -78,7 +77,6 @@ use PhpOffice\PhpWord\Settings;
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use OpenTelemetry\SemConv\Incubating\Metrics\NfsIncubatingMetrics;
 
 class nFrameworkException extends Exception
 {
@@ -114,10 +112,16 @@ class class_config implements ArrayAccess
     public function loadfromdb(): void
     {
         global $m;
-        $dbconf = $m->{$this->contenedor['sitedb']}->configs->findOne(['_id' => 'site']);
-        $themeconf = $m->{$this->contenedor['sitedb']}->configs->findOne(['_id' => 'theme']);
-
-        $dbconf = mongoToArray($dbconf);
+        $db = $this->contenedor['sitedb'];
+        // Una sola consulta para ambos documentos, guardada en la caché local (ver nfCacheRemember).
+        $ttl = isset($this->contenedor['cache_ttl']) ? max(0, (int) $this->contenedor['cache_ttl']) : 60;
+        [$dbconf, $themeconf] = nfCacheRemember('configs', $ttl, function () use ($m, $db) {
+            $docs = ['site' => [], 'theme' => []];
+            foreach ($m->{$db}->configs->find(['_id' => ['$in' => ['site', 'theme']]]) as $doc) {
+                $docs[$doc['_id']] = mongoToArray($doc);
+            }
+            return [$docs['site'], $docs['theme']];
+        });
         $conf = array_merge($this->contenedor, $dbconf);
         // Las listas se suman: lo definido en config.php (infraestructura) no se puede quitar desde el panel.
         foreach (['trusted_proxies', 'allowed_redirect_hosts'] as $listKey) {
@@ -126,7 +130,7 @@ class class_config implements ArrayAccess
                 nfConfigList($dbconf[$listKey] ?? [])
             )));
         }
-        $conf['theme'] = mongoToArray($themeconf);
+        $conf['theme'] = $themeconf;
         if (empty($conf['session_key'])) {
             // Clave para cifrar los tokens de redirección entre sitios; se genera una sola vez.
             $conf['session_key'] = bin2hex(random_bytes(32));
@@ -135,6 +139,7 @@ class class_config implements ArrayAccess
                 ['$set' => ['session_key' => $conf['session_key']]],
                 ['upsert' => true]
             );
+            nfCacheForget('configs');
         }
         if (empty($conf['manifest']['theme_color'])) {
             $conf['manifest']['theme_color'] = '#1ba1e2';
@@ -218,6 +223,11 @@ class class_nframework
     public ?string $etag = null;
     public ?int $lastmodified = null;
     public ?int $expiretime = null;
+    /** Cache-Control public (CDN y proxies pueden guardar la respuesta) en lugar de private. */
+    public bool $cachepublic = false;
+    /** La respuesta ya se envió directamente (serveFile/serveContent/304): nfshutdown no la procesa. */
+    public bool $streamed = false;
+    public int $streamedBytes = 0;
     public array $metas = [];
 
     public function __construct()
@@ -260,12 +270,12 @@ class class_nframework
                 '100' => 'https://cdn.nlared.com/nframework/4.5.1/nframework.min.js',
             ];
 
-            $this->csss['050'] = 'https://cdn.metroui.org.ua/current/metro.css';
-            $this->csss['051'] = 'https://cdn.metroui.org.ua/current/icons.css';
+            $this->csss['050'] = 'https://cdn.metroui.org.ua/5.1.20/metro.css';
+            $this->csss['051'] = 'https://cdn.metroui.org.ua/5.1.20/icons.css';
             $this->csss['200'] = '/nframework/templates/panda/css.css';
 
 
-            $this->jss['050'] = 'https://cdn.metroui.org.ua/current/metro.js';
+            $this->jss['050'] = 'https://cdn.metroui.org.ua/5.1.20/metro.js';
             $this->jss['100'] = 'https://cdn.nlared.com/nframework/6.0.1/nframework.min.js';
 
             /*
@@ -291,7 +301,7 @@ class class_nframework
 
     public function getAuthorizationHeader(): string
     {
-        $headers = null;
+        $headers = '';
         if (isset($_SERVER['Authorization'])) {
             $headers = trim($_SERVER['Authorization']);
         } elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) { // Nginx or fast CGI
@@ -370,11 +380,8 @@ class class_nframework
         header('Content-Type: application/pdf');
         header('Content-Disposition: ' . $disposition . '; filename="' . $filename . '.pdf"');
         if ($converter == 'Dompdf') {
-            Settings::setPdfRendererName(Settings::PDF_RENDERER_DOMPDF);
-            // Optional since PHPWord can usually locate it via Composer autoload,
-            // but harmless to set explicitly:
-            Settings::setPdfRendererPath(__DIR__ . '/vendor/dompdf/dompdf');
-            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'PDF');
+            // PhpSpreadsheet registra su propio writer 'Dompdf' (Settings de PhpWord no aplica aquí).
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Dompdf');
             $writer->save('php://output');
         }
         if ($converter == 'unoconv') {
@@ -393,8 +400,8 @@ class class_nframework
     public function wordOut($word, $filename)
     {
         $filename = clean_filename($filename);
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: inline; filename="' . $filename . '.xlsx"');
+        header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        header('Content-Disposition: inline; filename="' . $filename . '.docx"');
         $word->save('php://output');
     }
 
@@ -409,6 +416,8 @@ class class_nframework
             // but harmless to set explicitly:
             Settings::setPdfRendererPath(__DIR__ . '/vendor/dompdf/dompdf');
 
+            header("Content-type: application/pdf; charset=utf-8");
+            header('Content-Disposition: inline; filename="' . $filename . '.pdf"');
             $writer = \PhpOffice\PhpWord\IOFactory::createWriter($word, 'PDF');
             $writer->save('php://output');
         } else {
@@ -442,12 +451,14 @@ class class_nframework
         $filename = clean_filename($filename);
         $tmpfname = tempnam(sys_get_temp_dir(), 'templatepdf');
         $template->saveAs($tmpfname . '.docx');
-        $config['word_pdf_converter'] = 'unoconv';
-        if ($config['word_pdf_converter'] == 'Dompdf' || empty($config['word_pdf_converter'])) {
+        // Las plantillas se convierten con unoconv salvo que el sitio pida Dompdf explícitamente
+        // (Dompdf pierde buena parte del formato de las plantillas).
+        $converter = empty($config['word_pdf_converter']) ? 'unoconv' : $config['word_pdf_converter'];
+        if ($converter == 'Dompdf') {
             $phpWord = \PhpOffice\PhpWord\IOFactory::load($tmpfname . '.docx');
             $this->wordOutPdf($phpWord, $filename);
         } else {
-            if ($config['word_pdf_converter'] == 'unoconv') {
+            if ($converter == 'unoconv') {
                 shell_exec('unoconv -f pdf ' . escapeshellarg($tmpfname . '.docx'));
             } else {
                 shell_exec("unoconv -f pdf --connection 'socket,host=127.0.0.1,port=2002;urp;StarOffice.ComponentContext' " . escapeshellarg($tmpfname . '.docx'));
@@ -464,28 +475,125 @@ class class_nframework
         if (file_exists($tmpfname . '.docx')) {
             unlink($tmpfname . '.docx');
         }
+        @unlink($tmpfname);
     }
-    function testcache()
+    /**
+     * Si el navegador ya tiene esta versión (If-None-Match con el ETag, o If-Modified-Since sin
+     * ETag) responde 304 sin cuerpo y termina. Asigne antes etag y/o lastmodified.
+     */
+    public function testcache(): void
     {
-
-        if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
-            $id = trim($_SERVER['HTTP_IF_NONE_MATCH']);
-            if (substr($id, 0, 2) == "W/") {
-                $id = substr($id, 2);
+        $ifNoneMatch = $_SERVER['HTTP_IF_NONE_MATCH'] ?? null;
+        $match = false;
+        if ($ifNoneMatch !== null) {
+            // Puede ser una lista ("a", W/"b") o "*"; si viene, If-Modified-Since se ignora (RFC 9110).
+            if ($this->etag !== null) {
+                foreach (explode(',', $ifNoneMatch) as $tag) {
+                    $tag = trim($tag);
+                    if ($tag === '*' || trim(str_starts_with($tag, 'W/') ? substr($tag, 2) : $tag, '"') === $this->etag) {
+                        $match = true;
+                        break;
+                    }
+                }
             }
-            $id = str_replace('"', '', $id);
-            $match = ($id == $this->etag);
-        } else {
-            $match = false;
+        } elseif ($this->lastmodified !== null && isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+            $since = strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']);
+            $match = $since !== false && $this->lastmodified <= $since;
         }
-        $ifModifiedSince = $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '';
-        $notModifiedByDate = ($ifModifiedSince !== '' && $ifModifiedSince === $this->lastmodified);
-        if ($match || $notModifiedByDate) {
-            // Unchanged → return 304 without body
+        if ($match) {
             http_response_code(304);
+            $this->sendCacheHeaders();
+            $this->startStream();
             exit();
         }
     }
+
+    /**
+     * Cabeceras de caché según etag, lastmodified, expiretime y cachepublic:
+     *  - expiretime: el navegador reutiliza la respuesta sin preguntar hasta esa hora.
+     *  - solo etag/lastmodified: la guarda pero la revalida siempre (304 si no cambió).
+     *  - nada: no se guarda (no-store).
+     */
+    public function sendCacheHeaders(): void
+    {
+        if ($this->etag !== null) {
+            header('ETag: "' . $this->etag . '"');
+        }
+        if ($this->lastmodified !== null) {
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $this->lastmodified) . ' GMT');
+        }
+        $scope = $this->cachepublic ? 'public' : 'private';
+        if ($this->expiretime !== null) {
+            header('Expires: ' . gmdate('D, d M Y H:i:s', $this->expiretime) . ' GMT');
+            header('Cache-Control: ' . $scope . ', max-age=' . max(0, $this->expiretime - time()));
+            header_remove('Pragma');
+        } elseif ($this->etag !== null || $this->lastmodified !== null) {
+            // session_start() envía Expires/Pragma de "nocache"; se quitan para que el navegador guarde la respuesta.
+            header('Cache-Control: ' . $scope . ', no-cache');
+            header_remove('Expires');
+            header_remove('Pragma');
+        } else {
+            header('Cache-Control: no-store, no-cache, must-revalidate');
+            header('Pragma: no-cache');
+        }
+    }
+
+    /**
+     * Envía un archivo con caché HTTP: ETag y Last-Modified a partir de la fecha y tamaño, 304 si
+     * el navegador ya lo tiene, y el contenido directo al cliente (sin cargarlo en memoria ni pasar
+     * por el buffer del framework).
+     * $maxAge: segundos que el navegador lo usa sin preguntar; 0 = revalida siempre; null = sin caché.
+     */
+    public function serveFile(string $path, string $mime, ?int $maxAge = 0, bool $public = false): void
+    {
+        clearstatcache(true, $path);
+        $size = (int) filesize($path);
+        if ($maxAge !== null) {
+            $this->lastmodified = (int) filemtime($path);
+            $this->etag = md5($path . '|' . $this->lastmodified . '|' . $size);
+            $this->expiretime = $maxAge > 0 ? time() + $maxAge : null;
+            $this->cachepublic = $public;
+            $this->testcache();
+        }
+        $this->sendCacheHeaders();
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . $size);
+        $this->startStream();
+        $this->streamedBytes = $size;
+        readfile($path);
+    }
+
+    /**
+     * Igual que serveFile() para contenido generado (JS, JSON, XML): el ETag es el hash del contenido.
+     */
+    public function serveContent(string $content, string $mime, ?int $maxAge = 0, bool $public = false): void
+    {
+        if ($maxAge !== null) {
+            $this->etag = md5($content);
+            $this->expiretime = $maxAge > 0 ? time() + $maxAge : null;
+            $this->cachepublic = $public;
+            $this->testcache();
+        }
+        $this->sendCacheHeaders();
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . strlen($content));
+        $this->startStream();
+        $this->streamedBytes = strlen($content);
+        echo $content;
+    }
+
+    /**
+     * Descarta el buffer del framework: lo que siga se envía tal cual y nfshutdown no lo procesa.
+     */
+    private function startStream(): void
+    {
+        header('X-Content-Type-Options: nosniff');
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        $this->streamed = true;
+    }
+
     public function downloadfrom($filename): void
     {
         header("Expires: Tue, 03 Jul 2001 06:00:00 GMT");
@@ -560,6 +668,7 @@ if (isset($config['security_ip_blacklist'])) {
                 } else {
                     // remove expired IP from blacklist
                     $m->{$config['sitedb']}->configs->updateOne(['_id' => 'site'], ['$pull' => ['security_ip_blacklist' => ['ip' => $tmp['ip']]]]);
+                    nfCacheForget('configs');
                 }
             } else {
                 $block_reason = 'IP is blacklisted';
@@ -585,52 +694,100 @@ if (isset($config['security_path_blacklist'])) {
 if (!empty($config['timezone'])) {
     date_default_timezone_set($config['timezone']);
 }
+
+/**
+ * Las estadísticas (nfuristats) se escriben sin esperar confirmación de MongoDB (w=0):
+ * así no suman una ida y vuelta al servidor en cada petición. El _id se genera aquí.
+ */
+function nfStatOptions(): array
+{
+    static $options = null;
+    return $options ??= ['writeConcern' => new MongoDB\Driver\WriteConcern(0)];
+}
+function nfStatUpdate(array $set): void
+{
+    global $m, $config, $nfStatId;
+    try {
+        $m->{$config['sitedb']}->nfuristats->updateOne(['_id' => $nfStatId], ['$set' => $set], nfStatOptions());
+    } catch (Throwable $e) {
+        error_log('nframework nfuristats: ' . $e->getMessage());
+    }
+}
+
+// Datos de la petición: se guardan en nfuristats y contra ellos se evalúan las reglas de seguridad.
+$nfRequestDoc = [
+    'ip' => $ip,
+    'host' => $_SERVER['HTTP_HOST'] ?? '',
+    'path' => $_SERVER['REQUEST_URI'] ?? '',
+    'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
+    'agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+];
+$nfStatId = new MongoDB\BSON\ObjectId();
+$eventAt = new MongoDB\BSON\UTCDateTime(time() * 1000);
+try {
+    $m->{$config['sitedb']}->nfuristats->insertOne(
+        ['_id' => $nfStatId, 'created_at' => $eventAt, 'createdAt' => $eventAt] + $nfRequestDoc
+            + ['block_reason' => $block_reason] + ($block_reason != '' ? ['status_code' => 403] : []),
+        nfStatOptions()
+    );
+} catch (Throwable $e) {
+    error_log('nframework nfuristats: ' . $e->getMessage());
+}
 if ($block_reason != "") {
-
-
     http_response_code(403);
     exit("Access denied.");
 }
-$eventAt = new MongoDB\BSON\UTCDateTime(time() * 1000);
-$nfuristat = $m->{$config['sitedb']}->nfuristats->insertOne([
-    'created_at' => $eventAt,
-    'createdAt' => $eventAt,
-    'ip' => $ip,
-    'host' => $_SERVER['HTTP_HOST'],
-    'path' => $_SERVER['REQUEST_URI'],
-    'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
-    'agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
-    'block_reason' => $block_reason
-]);
-$rules = [['host' => ['$exists' => false]]];
-foreach (
-    $m->{$config['sitedb']}->nfsecurityrules->find([
-        'enabled' => true,
-        'rule' => ['$ne' => null],
-    ]) as $rule
-) {
-    //if (!empty($rule->rule) && !empty($rule->enabled) && $rule->enabled === true) {
-    $rules[] = fixSingleQuery(json_decode($rule->rule, true));
-    //}
-}
 
-if ($attempts = $m->{$config['sitedb']}->nfuristats->count([
-    'ip' => $ip,
-    'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - (isset($config['windowSeconds']) ? $config['windowSeconds'] : 900)) * 1000)], // use DateTime for comparison; driver converts to BSON UTC datetime
-    'block_reason' => ['$ne' => ''],
-    '$or' => $rules,
-])) {
-} else {
-    $attempts = 0;
+/*
+ * Reglas de Admin → Seguridad: una petición que coincide con alguna es sospechosa. Se evalúan
+ * aquí en PHP (matchesQuery) y solo para las sospechosas se cuentan en MongoDB las de esta IP
+ * dentro de la ventana; más de 10 bloquean la IP durante windowSeconds.
+ */
+$nfSecurityRules = nfCacheRemember('securityrules', nfCacheTtl(), function () use ($m, $config) {
+    $rules = [];
+    foreach ($m->{$config['sitedb']}->nfsecurityrules->find(['enabled' => true, 'rule' => ['$ne' => null]]) as $rule) {
+        $query = json_decode((string) $rule->rule, true);
+        if (is_array($query) && $query !== []) {
+            $rules[] = fixSingleQuery($query);
+        }
+    }
+    return $rules;
+});
+$nfSuspicious = false;
+foreach ($nfSecurityRules as $rule) {
+    if (matchesQuery($nfRequestDoc, $rule)) {
+        $nfSuspicious = true;
+        break;
+    }
 }
-
-if ($attempts > 10) {
-    $doc = [
+if ($nfSuspicious) {
+    $window = (int) ($config['windowSeconds'] ?? 900);
+    // Las anteriores de esta IP + la actual (escrita sin confirmación, puede no verse todavía).
+    $attempts = 1 + $m->{$config['sitedb']}->nfuristats->countDocuments([
+        '_id' => ['$ne' => $nfStatId],
         'ip' => $ip,
-        'end' => new MongoDB\BSON\UTCDateTime((time() + (isset($config['windowSeconds']) ? $config['windowSeconds'] : 900)) * 1000)
-    ];
-    $m->{$config['sitedb']}->configs->updateOne(['_id' => 'site'], ['$addToSet' => ['security_ip_blacklist' => $doc]]);
-    $block_reason = 'IP is blacklisted';
+        'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - $window) * 1000)],
+        '$or' => $nfSecurityRules,
+    ]);
+    if ($attempts > 10) {
+        $m->{$config['sitedb']}->configs->updateOne(['_id' => 'site'], ['$addToSet' => ['security_ip_blacklist' => [
+            'ip' => $ip,
+            'end' => new MongoDB\BSON\UTCDateTime((time() + $window) * 1000),
+        ]]]);
+        nfCacheForget('configs');
+        nfStatUpdate(['block_reason' => 'IP is blacklisted', 'status_code' => 403]);
+        http_response_code(403);
+        exit("Access denied.");
+    }
+}
+
+// CSRF: un POST/PUT/DELETE originado en otro sitio se rechaza antes de llegar a cualquier página.
+if (php_sapi_name() != 'cli' && !nfIsTrustedRequestOrigin()) {
+    nfStatUpdate([
+        'csrf_rejected' => true,
+        'origin' => (string) ($_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? ''),
+        'status_code' => 403,
+    ]);
     http_response_code(403);
     exit("Access denied.");
 }
@@ -658,7 +815,7 @@ define('E_FATAL', E_ERROR | E_USER_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ER
 
 function nferrorhandler(int $errno, string $errstr, string $errfile, int $errline, array $errcontext = []): bool
 {
-    global $developermode, $m, $nframework, $config, $nfuristat;
+    global $developermode, $m, $nframework, $config;
     if (!$developermode) {
         if ($errno ^ E_NOTICE && $errno ^ E_WARNING) {
 
@@ -712,12 +869,12 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
     if ($errno & E_FATAL) {
         http_response_code(500);
     }
-    $m->{$config['sitedb']}->nfuristats->updateOne(['_id' => $nfuristat->getInsertedId()], ['$set' => [
+    nfStatUpdate([
         'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
         'session_id' => session_id(),
         'size_bytes' => ob_get_length(),
         'status_code' => http_response_code(),
-    ]]);
+    ]);
     return false;
 }
 $original = set_error_handler('nferrorhandler');
@@ -807,6 +964,13 @@ if (!empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^[
     if ($user->in('developers')) {
         $developermode = true;
     }
+    // Un POST del panel puede cambiar configuración, reglas, páginas o menús: se vacía la caché
+    // local al terminar la petición, después de que la página guardó.
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST'
+        && preg_match('#^/(admin|nftables)/#', (string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH))
+        && $user->in('admins')) {
+        register_shutdown_function('nfCacheForget');
+    }
 } else {
     if (isset($requiresession)) {
         header('Location: /');
@@ -835,7 +999,7 @@ function notify($title = 'nlared.com', $text = '', $options = [])
 
 function nfshutdown()
 {
-    global $nframework, $noobfuscate, $buffer, $developermode, $javas, $result, $config, $m, $nfuristat;
+    global $nframework, $noobfuscate, $buffer, $developermode, $javas, $result, $config, $m;
     $last_error = error_get_last();
     if (!empty($last_error) && ($last_error['type'] === E_ERROR || $last_error['type'] === E_USER_ERROR)) {
         nferrorhandler(E_ERROR, $last_error['message'], $last_error['file'], $last_error['line']);
@@ -857,7 +1021,19 @@ function nfshutdown()
         }
     }
 
-    ob_end_flush();
+    if ($nframework->streamed) {
+        // serveFile/serveContent/304 ya enviaron la respuesta completa.
+        nfStatUpdate([
+            'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
+            'session_id' => session_id(),
+            'size_bytes' => $nframework->streamedBytes,
+            'status_code' => http_response_code(),
+        ]);
+        return;
+    }
+    if (ob_get_level() > 0) {
+        ob_end_flush();
+    }
     $javasstr = '';
     $content = '';
     if (count($nframework->javas) > 0) {
@@ -871,32 +1047,19 @@ function nfshutdown()
 	<script>' . implode(";\n", $nframework->javas) . '</script>';
         }
     }
-    if (isset($nframework->etag)) {
-        header('ETag: "' . $nframework->etag . '"');
-    }
-
-    if (isset($nframework->lastmodified)) {
-        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $nframework->lastmodified) . ' GMT');
-    }
-    if (isset($nframework->expiretime)) {
-        header('Expires: ' . date('D, d M Y H:i:s', $nframework->expiretime) . ' GMT');
-        header('Cache-Control: max-age=' . ($nframework->expiretime - time()) . ', public');
-        header('Pragma: cache');
-    } else {
-        //	header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-        header('Cache-Control: no-store, no-cache, must-revalidate');
-        // header('Cache-Control: post-check=0, pre-check=0', FALSE);
-        header('Pragma: no-cache');
-    }
+    $nframework->sendCacheHeaders();
     // header('Content-Language: '.$nframework->lang);
     // header('P3P:CP="IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT"');
     //	if($xframe!='remove')	header('X-Frame-Options: '.$xframe);
     // header('Referrer-Policy ""'); nunca usar
-    // header( 'X-XSS-Protection: 1;mode=block' );
-    // header( 'X-Content-Type-Options: nosniff' );
+    header('X-Content-Type-Options: nosniff');
+    if ($nframework->https && !empty($config['hsts_max_age'])) {
+        // Opcional: una vez enviado, el navegador no volverá a aceptar HTTP en este host durante max-age.
+        header('Strict-Transport-Security: max-age=' . (int) $config['hsts_max_age']);
+    }
 
     if ($nframework->isAjax()) {
-        http_response_code(200);
+        // Se respeta el código ya fijado (403 de requireGroup, 500 por error fatal, etc.).
         header('Content-Type: application/json');
         $content = json_encode($result);
         // end();
@@ -965,9 +1128,7 @@ function nfshutdown()
                 $tmpkeyworsd2[]=trim($tmpkeyword);
             }//*/
 
-            header('X-Content-Type-Options: nosniff');
             header('X-Frame-Options: SAMEORIGIN');
-            header('X-XSS-Protection: 1;mode=block');
             header('Content-Type:text/html; charset=utf-8');
             $content = '<!DOCTYPE html>
 <html lang="' . $nframework->lang . '"' . $nframework->html_addtag . '>
@@ -992,12 +1153,12 @@ function nfshutdown()
         }
     }
     echo $content;
-    $m->{$config['sitedb']}->nfuristats->updateOne(['_id' => $nfuristat->getInsertedId()], ['$set' => [
+    nfStatUpdate([
         'response_time_ms' => (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]) * 1000,
         'session_id' => session_id(),
         'size_bytes' => strlen($content),
         'status_code' => http_response_code(),
-    ]]);
+    ]);
 }
 // $buffer='';
 if (php_sapi_name() != 'cli' && empty($nfshutdowndisable)) {
@@ -1035,16 +1196,28 @@ function mongoToArray($obj)
     return $m;
 }
 
+/**
+ * Valida el CSRFToken de un formulario generado con secureform(). El token se calcula con la
+ * acción del formulario: la URL actual o, para formularios AJAX (acción vacía), la acción interna.
+ */
 function csrfValidate(): bool
 {
     $token = $_POST['CSRFToken'] ?? '';
-    return is_string($token) && !empty($_SESSION['nf']['Anti-CSRF']) &&
-        hash_equals(hash('sha256', $_SESSION['nf']['Anti-CSRF'] . $_SERVER['HTTP_USER_AGENT'] . $_SERVER['REQUEST_URI']), $token);
+    if (!is_string($token) || $token === '' || empty($_SESSION['nf']['Anti-CSRF'])) {
+        return false;
+    }
+    foreach ([$_SERVER['REQUEST_URI'] ?? '', parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), NF_AJAX_FORM_ACTION] as $action) {
+        if (is_string($action) && hash_equals(csrfToken($action), $token)) {
+            return true;
+        }
+    }
+    return false;
 }
 function csrfToken($action): string
 {
-    return hash('sha256', $_SESSION['nf']['Anti-CSRF'] . $_SERVER['HTTP_USER_AGENT'] . $action);
+    return hash('sha256', ($_SESSION['nf']['Anti-CSRF'] ?? '') . ($_SERVER['HTTP_USER_AGENT'] ?? '') . $action);
 }
+const NF_AJAX_FORM_ACTION = 'javascript:" data-on-submit="nAjaxOnSubmit';
 function secureform(
     string $action = '',
     bool $files = false,
@@ -1060,7 +1233,7 @@ function secureform(
         $id = 'secureform' . ($nframework->counters('secureform'));
     }
     if ($action == '') {
-        $action = 'javascript:" data-on-submit="nAjaxOnSubmit';
+        $action = NF_AJAX_FORM_ACTION;
     }
     $addEnctype = $files ? ' enctype="multipart/form-data"' : '';
 

@@ -1,4 +1,4 @@
-<?
+<?php
 require '../common2.php';
 
 $dataset=new dataset(
@@ -121,4 +121,4 @@ if ($nframework->isAjax()) {
 	</form>
 	</div>
 </div>
-<?}?>
+<?php }?>

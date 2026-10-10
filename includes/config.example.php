@@ -57,6 +57,30 @@ switch ($_SERVER['HTTP_HOST'] ?? 'localhost') {
                 // 'portal.ejemplo.com',
             ],
 
+            // --- CSRF -----------------------------------------------------------------------------------
+            // Todo POST/PUT/PATCH/DELETE cuyo Origin (o Referer) sea de otro dominio se rechaza con 403.
+            // Los webhooks servidor a servidor no envían esas cabeceras y no se ven afectados.
+            // csrf_trusted_origins: dominios externos cuyos formularios sí pueden enviar POST aquí
+            //   (p.ej. una pasarela de pago que regresa con POST). Se suman a allowed_redirect_hosts.
+            // csrf_exempt_paths: prefijos de ruta que se omiten por completo.
+            // 'csrf_trusted_origins' => ['pagos.ejemplo.com'],
+            // 'csrf_exempt_paths' => ['/webhooks/'],
+
+            // --- Seguridad / mantenimiento ------------------------------------------------------------
+            // 'hsts_max_age' => 15552000,     // Envía Strict-Transport-Security en HTTPS (180 días). Una vez
+            //                                 // enviado el navegador ya no acepta HTTP en este dominio.
+            // 'enable_web_terminal' => false, // /admin/terminal.php (shell en el navegador, solo grupo developers).
+            // 'acme_challenge_dir' => '/var/www/letsencrypt/.well-known/acme-challenge', // tokens HTTP-01
+            // 'nfuristats_ttl_days' => 90,    // nframework/test.php crea un índice TTL que borra estadísticas viejas.
+
+            // --- Caché local ----------------------------------------------------------------------------
+            // Configuración, reglas de seguridad, páginas y menús se guardan en archivos locales para no
+            // consultarlos a MongoDB en cada petición. Un POST de un admin a /admin/ la vacía; otros servidores
+            // que compartan la base ven los cambios a más tardar en cache_ttl segundos.
+            // 'cache_ttl' => 60,               // 0 desactiva
+            // 'cache_dir' => '/var/cache/nframework',  // por defecto {tmp}/nframework_cache_{uid}
+            // 'twig_cache' => false,           // desactiva la caché de plantillas Twig compiladas
+
             // --- e.firma del SAT ----------------------------------------------------------------------
             // Directorio (formato `openssl rehash`) o archivo PEM con las AC del SAT. Admin → SAT lo crea y
             // lo configura solo en /var/lib/nframework/sat; defínalo aquí únicamente para usar otra ruta.

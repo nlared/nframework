@@ -1,4 +1,4 @@
-<?
+<?php
 $themeconfs[]=new inputtext(['dataset'=>&$dataset,'field'=>'headerclass','caption'=>'Header class']);
 $themeconfs[]=new inputtext(['dataset'=>&$dataset,'field'=>'menuclass','caption'=>'Menu class']);
 $themeconfs[]=new inputtext(['dataset'=>&$dataset,'field'=>'parallaxclass','caption'=>'Parallax class']);

@@ -1,4 +1,4 @@
-<?
+<?php
 // Path display mode when viewing file information
 // 'full' => show full path
 // 'relative' => show path relative to root_path

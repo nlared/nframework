@@ -61,4 +61,4 @@ if ($nframework->isAjax()) {
 			});
 		}
 	</script>
-<? } ?>
+<?php } ?>

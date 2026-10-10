@@ -84,13 +84,13 @@ if ($nframework->isAjax()) {
 				<div class="cell-md-6">
 					In:<br>
 					<ul data-role="drag-items" data-on-drag-drop-item="prueba" id="listain" class="border group-list list-group">
-					    <?if(count($listin))echo '<li class="list-group-item">'.implode('</li><li>',$listin ).'</li>' ?>
+					    <?php if(count($listin))echo '<li class="list-group-item">'.implode('</li><li>',$listin ).'</li>' ?>
 					</ul>
 				</div>
 				<div class="cell-md-6">
 					Out:<br>
 					<ul data-role="drag-items" data-on-drag-drop-item="prueba" id="listaout" class="border group-list list-group">
-					    <?if(count($listout))echo '<li class="list-group-item">'.implode('</li><li>',$listout ).'</li>' ?>
+					    <?php if(count($listout))echo '<li class="list-group-item">'.implode('</li><li>',$listout ).'</li>' ?>
 					</ul>
 				</div>
 			</div>
@@ -122,4 +122,4 @@ if ($nframework->isAjax()) {
 		$('#listastr').val(values.join(","));
 	}
 </script>
-<?}?>
+<?php }?>

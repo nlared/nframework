@@ -1,4 +1,4 @@
-<?
+<?php
 require 'include.php';
 $_GET['_id'] = (string) ($_GET['_id'] ?? '');
 if (isset($_SESSION['tinymceup'][$_GET['_id']])){

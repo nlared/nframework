@@ -103,15 +103,31 @@ function buildMetroMenu(array $nodes, string $menuClass = '', string $data_role 
 function nfMetroMenu($menuName, $menuClass = 'h-menu'): string
 {
     global $m, $config;
-    $menu = $m->{$config['sitedb']}->menus->findOne(['name' => $menuName]);
-    if ($menu) {
-        $json = $menu->code;
+    // El JSON del menú se guarda en la caché local; se vacía al guardar desde Admin → Menús.
+    $json = nfCacheRemember('menu:' . $menuName, nfCacheTtl(), function () use ($m, $config, $menuName) {
+        $menu = $m->{$config['sitedb']}->menus->findOne(['name' => $menuName], ['projection' => ['code' => 1]]);
+        return $menu ? (string) $menu->code : null;
+    });
+    if ($json !== null) {
         $nodes = json_decode($json, true);
         $html = buildMetroMenu($nodes, $menuClass);
     } else {
         $html = '';
     }
     return $html;
+}
+
+/**
+ * Documento de Admin → Páginas por path (incluye fragmentos como _header, _footer, _home), como
+ * arreglo y desde la caché local. null si no existe.
+ */
+function nfPage(string $path): ?array
+{
+    global $m, $config;
+    return nfCacheRemember('page:' . $path, nfCacheTtl(), function () use ($m, $config, $path) {
+        $doc = $m->{$config['sitedb']}->pages->findOne(['path' => $path]);
+        return $doc ? mongoToArray($doc) : null;
+    });
 }
 
 function renderEmbeddedFunctions(string $html): string
@@ -445,6 +461,90 @@ function decryptSessionId($encryptedData, $key)
 }
 
 /**
+ * Carpeta de la caché local del sitio, o null si no se puede usar.
+ * Por defecto {tmp}/nframework_cache_{uid}/{sitedb}: una por usuario del sistema (FPM y CLI no se
+ * mezclan) con permisos 0700, porque los archivos se deserializan. $config['cache_dir'] la cambia.
+ */
+function nfCacheDir(string $sub = ''): ?string
+{
+    global $config;
+    static $dirs = [];
+    $site = (string) ($config['sitedb'] ?? 'default');
+    $base = !empty($config['cache_dir'])
+        ? rtrim((string) $config['cache_dir'], '/')
+        : sys_get_temp_dir() . '/nframework_cache_' . (function_exists('posix_geteuid') ? posix_geteuid() : 'x');
+    $dir = $base . '/' . preg_replace('/[^A-Za-z0-9_.-]/', '_', $site) . ($sub !== '' ? '/' . $sub : '');
+    if (!array_key_exists($dir, $dirs)) {
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0700, true);
+        }
+        $owned = !function_exists('posix_geteuid') || @fileowner($dir) === posix_geteuid();
+        $dirs[$dir] = (is_dir($dir) && is_writable($dir) && $owned) ? $dir : null;
+    }
+    return $dirs[$dir];
+}
+
+/**
+ * Devuelve el valor guardado en caché bajo $key o, si no existe o caducó, lo calcula con $loader
+ * y lo guarda $ttl segundos. Para lo que se lee en cada petición y cambia poco (configuración,
+ * reglas, rutas): evita una consulta a MongoDB por petición. Con $ttl <= 0 o sin carpeta de
+ * caché siempre llama a $loader.
+ */
+function nfCacheRemember(string $key, int $ttl, callable $loader): mixed
+{
+    $dir = $ttl > 0 ? nfCacheDir() : null;
+    if ($dir === null) {
+        return $loader();
+    }
+    $file = $dir . '/' . md5($key) . '.cache';
+    $mtime = @filemtime($file);
+    if ($mtime !== false && $mtime + $ttl > time()) {
+        $data = @file_get_contents($file);
+        if ($data !== false) {
+            $value = @unserialize($data);
+            if ($value !== false || $data === serialize(false)) {
+                return $value;
+            }
+        }
+    }
+    $value = $loader();
+    // Escritura atómica: otra petición nunca lee un archivo a medias.
+    $tmp = @tempnam($dir, 'tmp');
+    if ($tmp !== false && @file_put_contents($tmp, serialize($value)) !== false) {
+        @rename($tmp, $file);
+    } elseif ($tmp !== false) {
+        @unlink($tmp);
+    }
+    return $value;
+}
+
+/**
+ * Borra una entrada de la caché local o, sin $key, todas las del sitio.
+ */
+function nfCacheForget(?string $key = null): void
+{
+    $dir = nfCacheDir();
+    if ($dir === null) {
+        return;
+    }
+    $files = $key === null ? (glob($dir . '/*.cache') ?: []) : [$dir . '/' . md5($key) . '.cache'];
+    foreach ($files as $file) {
+        @unlink($file);
+    }
+}
+
+/**
+ * Segundos que duran en caché la configuración, las reglas de seguridad y las rutas de páginas.
+ * Los cambios hechos desde /admin/ la vacían al momento; otros servidores que compartan la base
+ * los ven a más tardar en este tiempo. 0 desactiva la caché.
+ */
+function nfCacheTtl(): int
+{
+    global $config;
+    return isset($config['cache_ttl']) ? max(0, (int) $config['cache_ttl']) : 60;
+}
+
+/**
  * Normaliza una opción de configuración tipo lista: acepta arreglo, BSONArray o texto
  * separado por saltos de línea, comas o espacios (como se captura en el panel).
  */
@@ -534,6 +634,51 @@ function nfSiteHost(): string
     return preg_match('/^[A-Za-z0-9.\-]+(:\d+)?$/', $host) ? $host : 'localhost';
 }
 
+/**
+ * Protección CSRF para peticiones que modifican estado (POST/PUT/PATCH/DELETE): si el navegador
+ * envía Origin (o en su defecto Referer), debe apuntar a este sitio, a un host de
+ * $config['allowed_redirect_hosts'] o de $config['csrf_trusted_origins']. Las llamadas
+ * servidor a servidor (webhooks, callbacks) no envían esas cabeceras y no se ven afectadas.
+ * Las rutas en $config['csrf_exempt_paths'] (prefijos) se omiten.
+ */
+function nfIsTrustedRequestOrigin(): bool
+{
+    global $config;
+    $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+    if (in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
+        return true;
+    }
+    $path = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    foreach (nfConfigList($config['csrf_exempt_paths'] ?? []) as $prefix) {
+        if (str_starts_with($path, $prefix)) {
+            return true;
+        }
+    }
+    $source = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if ($source === '') {
+        $source = $_SERVER['HTTP_REFERER'] ?? '';
+        if ($source === '') {
+            return true;
+        }
+    }
+    // Origin: null (iframes con sandbox, redirecciones entre sitios) no identifica a nadie de confianza.
+    $parts = parse_url($source);
+    if (empty($parts['host'])) {
+        return false;
+    }
+    $host = strtolower($parts['host']);
+    $hostPort = $host . (isset($parts['port']) ? ':' . $parts['port'] : '');
+    if ($hostPort === strtolower($_SERVER['HTTP_HOST'] ?? '')) {
+        return true;
+    }
+    $allowed = array_map('strtolower', array_merge(
+        [nfSiteHost()],
+        nfConfigList($config['allowed_redirect_hosts'] ?? []),
+        nfConfigList($config['csrf_trusted_origins'] ?? [])
+    ));
+    return in_array($host, $allowed, true) || in_array($hostPort, $allowed, true);
+}
+
 function isValidObjectId($id): bool
 {
     return (is_string($id) && preg_match('/^[a-f\d]{24}$/i', $id) === 1) || $id instanceof MongoDB\BSON\ObjectId;
@@ -544,16 +689,20 @@ function isValidObjectId($id): bool
  */
 function requireGroup(string ...$groups): void
 {
-    global $user, $nframework;
+    global $user, $nframework, $result;
     foreach ($groups as $group) {
         if (isset($user) && $user->in($group)) {
             return;
         }
     }
     if (isset($nframework) && $nframework->isAjax()) {
+        // nfshutdown() responde con $result en peticiones AJAX; lo impreso aquí se descartaría.
         http_response_code(403);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => 'No autorizado']);
+        $result = ['error' => 'No autorizado'];
+        if (!empty($GLOBALS['nfshutdowndisable'])) {
+            header('Content-Type: application/json');
+            echo json_encode($result);
+        }
     } else {
         header('Location: /');
     }
@@ -600,6 +749,9 @@ function nfPasswordVerify(string $password, $stored): bool
     }
     return false;
 }
+
+/** Longitud mínima de contraseña para registro y restablecimiento. */
+const NF_PASSWORD_MIN_LENGTH = 8;
 
 function nfPasswordHash(string $password): string
 {
