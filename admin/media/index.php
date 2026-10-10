@@ -1,4 +1,4 @@
-<?
+<?php
 require 'include.php';
 requireGroup('admins');
 $nframework->usecommon=True;

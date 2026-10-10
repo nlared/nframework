@@ -1,4 +1,4 @@
-<?
+<?php
 $developermode=true;
 $noobfuscate=true;
 $nframework->usecommon=true;
@@ -122,7 +122,7 @@ function generateQRCode(text,ele) {
     <div class="dialog-title">Transefir llave</div>
     <div class="dialog-content">
     		<div id="capturados">0</div>
-	<?
+	<?php
 	$qrreader=new QRReader(['setResult'=>'setResult']);
 	$qrreader->setResult='setResult';
 	echo $qrreader;

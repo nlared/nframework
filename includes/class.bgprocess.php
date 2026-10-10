@@ -1,4 +1,4 @@
-<?
+<?php
 
 use Cocur\BackgroundProcess\BackgroundProcess;
 

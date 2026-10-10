@@ -48,7 +48,7 @@ A complete PHPUnit testing infrastructure has been added to the nframework proje
   - Placeholder tests for XMLS, Notifications, BreadCrumbs, Table classes
 
 #### Feature Tests
-- **tests/Feature/IntegrationTest.php** - Integration and feature tests
+- **tests/Feature/RequestSecurityTest.php** - CSRF origin check and safe redirects
   - Placeholder tests for Router, File Upload, Authentication
 
 ### Documentation

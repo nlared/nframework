@@ -1,4 +1,4 @@
-<?
+<?php
 require 'common2.php';
 echo $metro;
 echo '<br><br><br><pre>';

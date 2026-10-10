@@ -1,12 +1,11 @@
-<?
-require 'common.php';
-if (empty($_GET['_id'])) {
-	$newid = new MongoDB\BSON\ObjectID();
-	header('Location: ?_id=' . $newid);
+<?php
+if (empty($_GET['_id']) || !preg_match('/^[a-f\d]{24}$/i', $_GET['_id'])) {
+	header('Location: ?_id=' . new MongoDB\BSON\ObjectId());
 	exit();
 }
+$noobfuscate = true;
+require 'common.php';
 
-$nframework->usecommon = true;
 $dataset = new dataset(
 	[
 		'collection' => $m->{$config['sitedb']}->exampledata,
@@ -15,10 +14,7 @@ $dataset = new dataset(
 		'nameprefix' => 'data'
 	]
 );
-$noobfuscate = true;
-$developermode = true;
-
-
+// Diálogo con el formulario de un elemento de la lista.
 $dialog = new Dialog([
 	'title' => 'title',
 ]);
@@ -66,19 +62,17 @@ echo $arrayf;
 		width: 800px;
 	}
 </style>
-<div class="container p-5">
-	<div class="box shadow-large">
-		<div class="box-title">Embeded Data</div>
-		<div class="button" onclick="<?= htmlspecialchars($arrayf->function_new(), ENT_QUOTES) ?>">Agregar</div>
-		<div id="<?= htmlspecialchars($arrayf->containerid, ENT_QUOTES) ?>">
-
-		</div>
+<div class="container">
+	<?= docHeader('Arreglos embebidos', '<code>embededArray</code> edita una lista de subdocumentos (<code>texts: [{text: ...}, ...]</code>) dentro de un documento: agregar, editar y borrar elementos sin recargar. Cada elemento se edita en un <a href="dialog.php">Dialog</a> con controles ligados mediante <code>\'nfembeded\' => &$arrayf</code>, y la lista se dibuja con una plantilla Twig.') ?>
+	<div class="card p-4">
+		<div class="button primary" onclick="<?= htmlspecialchars($arrayf->function_new(), ENT_QUOTES) ?>"><span class="mif-plus"></span> Agregar</div>
+		<div id="<?= htmlspecialchars($arrayf->containerid, ENT_QUOTES) ?>" class="mt-2"></div>
 	</div>
-</div>
-
-
-
-<pre class="stay-on"><code class="language-plaintext">
-<?= tocode(__file__) ?>
-</code></pre>
+	<h3>Variables de la plantilla</h3>
+	<ul>
+		<li><code>items</code>: los elementos del arreglo; <code>key</code> es su posición.</li>
+		<li><code>function_get</code>, <code>function_delete</code>: nombres de las funciones JS para editar o borrar un elemento por <code>key</code>.</li>
+		<li><code>$arrayf->function_new()</code>: llamada JS que abre el diálogo vacío.</li>
+	</ul>
+	<?= docSource(__FILE__) ?>
 </div>

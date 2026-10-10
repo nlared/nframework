@@ -1,4 +1,4 @@
-<?
+<?php
 $developermode=true;
 require '../common2.php';
 	$dataset=new dataset([
@@ -35,11 +35,11 @@ if ($nframework->isAjax()) {
 	<div class="bg-white p-3">
 	<?=secureform()?>
 		<div class="grid">
-			<?foreach($themeconfs as $themeconf){?>
+			<?php foreach($themeconfs as $themeconf){?>
 			<div class="row">
 				<div class="cell"><?=$themeconf?></div>
 			</div>
-			<?}?>
+			<?php }?>
 			<div class="row">
 				<div class="cell-md-2 offset-md-8"><a href="./" class="button primary w-100"><span class="mif-exit"></span>&nbsp;Cerrar</a></div>
 				<div class="cell-md-2"><button class="button secureop success w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;Guardar</button></div>
@@ -49,4 +49,4 @@ if ($nframework->isAjax()) {
 	</form>
 	</div>
 </div>
-<?}?>
+<?php }?>

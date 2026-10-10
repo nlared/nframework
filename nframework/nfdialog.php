@@ -1,4 +1,4 @@
-<?
+<?php
 
 $tabla = $m->{$config['sitedb']}->nftables->findOne([
     'nfcollection' => $p['collection']
@@ -61,7 +61,7 @@ if ($nframework->isAjax()) {
         <div class="box shadow-large">
             <div class="box-title"><?= $tabla->singular  ?></div>
             <div class="grid">
-                <?
+                <?php
                 foreach ($elements as $element) {
                     echo '<div class="cell">' . $element . '</div>';
                 }
@@ -74,6 +74,6 @@ if ($nframework->isAjax()) {
         </div>
         </form>
     </div>
-<?
+<?php
 }
 ?>

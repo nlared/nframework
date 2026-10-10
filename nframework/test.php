@@ -370,9 +370,6 @@ if ($opcache_needs_update) {
 
 include('config.php');
 if (!isset($config)) {
-	$includepaths[] = explode(':', $includepath);
-	//TODO:buscar path
-
 	$errores[] = 'config.php not found OR include_path = "' . $includespath . '"';
 }
 
@@ -478,7 +475,14 @@ if ($config['sitedb'] == '') {
 		['colletion' => 'nfuristats', 'key' => ['ip' => 1, 'created_at' => 1]],
 		['colletion' => 'nfuristats', 'key' => ['created_at' => 1, 'ip' => 1]],
 		['colletion' => 'nfsecurityrules', 'key' => ['enabled' => 1]],
+		// User::in() consulta usersgroups por usuario y nombre en casi cada página.
+		['colletion' => 'usersgroups', 'key' => ['users' => 1, 'name' => 1]],
+		['colletion' => 'nf_attempts', 'key' => ['ip' => 1]],
 	];
+	// Opcional: borrar automáticamente las estadísticas de peticiones con más de N días.
+	if (!empty($config['nfuristats_ttl_days'])) {
+		$indexes[] = ['colletion' => 'nfuristats', 'key' => ['createdAt' => 1], 'options' => ['expireAfterSeconds' => (int) $config['nfuristats_ttl_days'] * 86400]];
+	}
 
 	foreach ($indexes as $idx) {
 		if (!isset($idx['options'])) {

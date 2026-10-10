@@ -11,8 +11,10 @@ $loader1 = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates');
 $loader2 = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates/panda');
 $loader3 = new \Twig\Loader\FilesystemLoader($nframework->include_path . '/i18n/' . $nframework->lang);
 $loader = new \Twig\Loader\ChainLoader([$loader1, $loader2, $loader3]);
+// Plantillas compiladas en la caché local: compilar en cada petición costaba ~20 ms.
+// auto_reload las recompila cuando cambia el .html. $config['twig_cache'] = false la desactiva.
 $twig = new \Twig\Environment($loader, [
-	'cache' => false, //__DIR__.'/../compilation_cache',
+	'cache' => (($config['twig_cache'] ?? true) !== false ? nfCacheDir('twig') : null) ?? false,
 	'debug' => !empty($developermode),
 	'auto_reload' => true,
 ]);
@@ -91,43 +93,41 @@ function nfClampImageSize($size, int $max = 2048): int
 $router = new \Mezon\Router\Router();
 
 $router->addRoute('index', function ($route, $variables) {
-	global $_SERVER, $twig, $nframework, $config, $m;
+	global $twig, $nframework, $config;
 
-	$header = $m->{$config['sitedb']}->pages->findOne(['path' => '_header']);
-	$footer = $m->{$config['sitedb']}->pages->findOne(['path' => '_footer']);
-	$parallax = $m->{$config['sitedb']}->pages->findOne(['path' => '_parallax']);
-	$menu = $m->{$config['sitedb']}->menus->findOne(['name' => '_nav']);
+	$header = nfPage('_header');
+	$footer = nfPage('_footer');
+	$parallax = nfPage('_parallax');
 
 	$nframework->usecommon = true;
 	$template = $twig->load('page.html');
 
+	$page = null;
 	if ($config['homepagetype'] == 'page') {
-		$page = $m->{$config['sitedb']}->pages->findOne(['path' => '_home']);
-		$nframework->metas['description'] = $page->description;
-		$nframework->metas['title'] = $page->title;
-		$nframework->metas['keywords'] = $page->keywords;
-	} else {
+		$page = nfPage('_home');
+		$nframework->metas['description'] = $page['description'] ?? null;
+		$nframework->metas['title'] = $page['title'] ?? null;
+		$nframework->metas['keywords'] = $page['keywords'] ?? null;
 	}
 
 	echo $template->render([
 		'theme' => $config['theme'],
-		'parallaxpage' => $parallax?->html,
-		'page' => $page->html,
-		'header' => $header->html,
-		'footer' => $footer->html,
-		'menu' => $menu->code,
+		'parallaxpage' => $parallax['html'] ?? null,
+		'page' => $page['html'] ?? null,
+		'header' => renderEmbeddedFunctions((string) ($header['html'] ?? '')),
+		'footer' => $footer['html'] ?? null,
+		'menu' => nfMetroMenu('_nav'),
 		'route' => 'index.php'
 	]);
 }, 'GET');
 
 
 $router->addRoute('/main.js', function (string $route, array $p) {
-	global $twig, $config;
-	header('Content-Type: text/javascript; charset=utf-8');
-	$template = $twig->load('main.js');
-	echo $template->render([
+	global $twig, $config, $nframework;
+	$js = $twig->load('main.js')->render([
 		'publicKey' => $config['notifications']['publicKey']
 	]);
+	$nframework->serveContent($js, 'text/javascript; charset=utf-8');   // 304 si no cambió
 }, 'GET');
 
 $router->addRoute('/account/login', function (string $route, array $p) {
@@ -144,7 +144,8 @@ $router->addRoute('/account/login', function (string $route, array $p) {
 
 		if ($user !== null && !empty($user->_id)) {
 			nflogReset('login:' . $GLOBALS['ip']);
-			if (!empty($user->disabled) && $user->disabled == true) {
+			// active === false: registrada por /account/signup y aún sin confirmar el correo.
+			if ((!empty($user->disabled) && $user->disabled == true) || $user->active === false) {
 				$msgError = 'La cuenta no está activada.';
 				$nframework->usecommon = true;
 				$template = $twig->load('login.html');
@@ -246,27 +247,29 @@ $router->addRoute('/account/signup', function (string $route, array $p) {
 			$msgError = 'Demasiados intentos, intente más tarde.';
 		} elseif ($signup['password'] != $signup['confirmpassword']) {
 			$msgError = 'Las contraseñas no coinciden';
-		} elseif (strlen($signup['password']) < 6) {
-			$msgError = 'La contraseña debe tener al menos 6 caracteres';
+		} elseif (strlen($signup['password']) < NF_PASSWORD_MIN_LENGTH) {
+			$msgError = $lng['password_too_short'];
 		} elseif (empty($signup['username']) || !filter_var($signup['username'], FILTER_VALIDATE_EMAIL)) {
 			$msgError = 'Debe indicar un email válido';
 		} else {
+			$username = strtolower(trim($signup['username']));
+			// Sin distinguir mayúsculas: las cuentas anteriores pueden estar guardadas con mayúsculas.
 			$user = new User([
-				'username' => strtolower(trim($signup['username'])),
+				'username' => new MongoDB\BSON\Regex('^' . preg_quote($username, '/') . '$', 'i'),
 			]);
 			if (!empty($user->_id)) {
 				$msgError = 'Ya existe un usuario con ese email';
 			} else {
 				$token = bin2hex(random_bytes(16));
 				$nuser = User::create([
-					'username' => trim($signup['username']),
+					'username' => $username,
 					'name' => trim($signup['name']),
 					'password' => $signup['password'],
 					'active' => false,
 					'created_at' => time(),
 					'updated_at' => time(),
 					'sessions' => [],
-					'activatetoken' => $token,
+					'activatetoken' => hash('sha256', $token),
 					'activatetokenexp' => time() + (60 * 60 * 24),
 				]);
 				try {
@@ -358,7 +361,7 @@ $router->addRoute('/account/reset', function (string $route, array $p) {
 			if ($password !== '' && $confirm !== '') {
 				if ($password !== $confirm) {
 					$msgError = $lng['passwords_do_not_match'];
-				} elseif (strlen($password) < 6) {
+				} elseif (strlen($password) < NF_PASSWORD_MIN_LENGTH) {
 					$msgError = $lng['password_too_short'];
 				} else {
 					$user->password = nfPasswordHash($password);
@@ -392,10 +395,11 @@ $router->addRoute('/account/activate/', function (string $route, array $p) {
 	$msgError = '';
 	if (!empty($_GET['token']) && is_string($_GET['token']) && isValidObjectId($_GET['user'] ?? null)) {
 		// token se fuerza a string: token[$ne]=x iniciaría sesión como cualquier usuario.
+		// Se acepta el token con hash (actual) o en claro (enlaces enviados antes del cambio).
 		$user = new User([
 			'_id' => toMongoId($_GET['user']),
-			'activatetoken' => $_GET['token'],
-			//	'activatetokenexp' => ['$gt' => time()]
+			'activatetoken' => ['$in' => [hash('sha256', $_GET['token']), $_GET['token']]],
+			'activatetokenexp' => ['$gt' => time()],
 		]);
 		if (!empty($user->_id)) {
 			$user->activatetoken = null;
@@ -535,12 +539,8 @@ $router->addRoute('/account/logout', function (string $route, array $p) {
 	}
 	session_destroy();
 	header('Location: ' . nfSafeRedirect($_GET['to'] ?? '/'));
-	$nframework->usecommon = true;
-	$template = $twig->load('logout.html');
-	echo $template->render([
-		'lng' => $nframework->language()
-	]);
-}, 'GET');
+	exit();
+}, ['GET', 'POST']);
 
 $router->addRoute('/login-google/oauth', function (string $route, array $p) {
 	global $twig, $config, $nframework, $m;
@@ -608,36 +608,28 @@ $router->addRoute('/sitemap.xml', function ($route, $variables) {
 }, 'GET');
 
 
+// Validación HTTP-01 de Let's Encrypt: el cliente ACME (certbot --webroot, acme.sh, ...) deja el
+// token en $config['acme_challenge_dir'] y aquí solo se sirve. Sin esa opción responde 404.
 $router->addRoute('/.well-known/acme-challenge/[s:filename]', function ($route, $variables) {
-	global $m, $config;
-	$client = new Api($config['letsencrypt_email'], __DIR__ . '/__account');
-	$account = $client->account()->get();
-	try {
-		$client->domainValidation()->start($account, $validationStatus[0], AuthorizationChallengeEnum::HTTP);
-		$privateKey = \Rogierw\RwAcme\Support\OpenSsl::generatePrivateKey();
-		$csr = \Rogierw\RwAcme\Support\OpenSsl::generateCsr(['example.com'], $privateKey);
-		if ($order->isReady() && $client->domainValidation()->allChallengesPassed($order)) {
-			$client->order()->finalize($order, $csr);
-		}
-		if ($order->isFinalized()) {
-			$certificateBundle = $client->certificate()->getBundle($order);
-		}
-		$config->letsencryptvalidtruh = strtotime('+90 days');
-	} catch (DomainValidationException $exception) {
-		// The local HTTP challenge test has been failed...
+	global $config;
+	$dir = rtrim((string) ($config['acme_challenge_dir'] ?? ''), '/');
+	$file = (string) $variables['filename'];
+	if ($dir === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $file) || !is_file($dir . '/' . $file)) {
+		http_response_code(404);
+		return;
 	}
-	foreach ($validationData as $vd) {
-		if ($vd['identifier'] == $_SERVER['HTTP_HOST'] && $vd['filename'] == $variables['filename']) {
-			echo $vd['content'];
-			exit();
-		}
-	}
-});
+	header('Content-Type: text/plain');
+	readfile($dir . '/' . $file);
+}, 'GET');
 
 
 $router->addRoute('/images/config/[i:size]/logo.png', function (string $route, array $p) {
 	global $m, $config, $nframework;
 	$logo = $_SERVER['DOCUMENT_ROOT'] . '/img/nf/logo.png';
+	if (!is_file($logo)) {
+		http_response_code(404);
+		return;
+	}
 	$dir = 'img/nf/config/';
 	$p['size'] = nfClampImageSize($p['size']);
 	$dst = $dir . '/logo_' . $p['size'] . '.png';
@@ -653,159 +645,116 @@ $router->addRoute('/images/config/[i:size]/logo.png', function (string $route, a
 		});
 		$img->save($dst);
 	}
-	$toetag = $dst . filemtime($dst);
-	$lasttimedst = filemtime($dst);
-	$nframework->lastmodified = $lasttimedst;
-	$nframework->etag = md5($toetag);
-	$nframework->testcache();
-	header('Content-Length: ' . filesize($dst));
-	header('Content-Type: image/png');
-	echo file_get_contents($dst);
+	// El logo es igual para todos: el navegador y los proxies lo reutilizan un día.
+	$nframework->serveFile($dst, 'image/png', 86400, true);
 }, 'GET');
 
-$router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].png', function (string $route, array $p) {
-	$options = $_SESSION['frompdf'][$p['id']];
-	if (file_exists($options['filename'])) {
-		$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
-		mkdir($options['directory']);
-		$pdf->format(\Spatie\PdfToImage\Enums\OutputFormat::Png);
-		$pdf->selectPage($p['p'])->size($p['w'])->save($options['directory'] . $p['p'] . '.png');
-		header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-		header('Content-Length: ' . filesize($options['directory'] . '/' . $p['p'] . '.png'));
-		header('Content-Type: image/png');
-		echo file_get_contents($options['directory'] . '/' . $p['p'] . '.png');
-		if (!empty($options['deletefile']) && $options['deletefile'] == true) {
-			unlink($options['directory'] . '/' . $p['p'] . '.png');
-		}
-		if (!empty($options['deletedirectory']) && $options['deletedirectory'] == true) {
-			rmdir($options['directory']);
-		}
+/**
+ * Sirve la página $page de un PDF registrado en $_SESSION['frompdf'][$id] como imagen.
+ * La imagen se guarda en $options['directory'] y se regenera si el PDF cambia; con
+ * 'deletefile' se borra tras enviarla y con 'deletedirectory' se elimina la carpeta si queda vacía.
+ */
+function nfServePdfPage(string $id, int $width, int $page, string $format): void
+{
+	global $nframework;
+	$formats = [
+		'png' => [\Spatie\PdfToImage\Enums\OutputFormat::Png, 'image/png'],
+		'jpg' => [\Spatie\PdfToImage\Enums\OutputFormat::Jpg, 'image/jpeg'],
+		'webp' => [\Spatie\PdfToImage\Enums\OutputFormat::Webp, 'image/webp'],
+	];
+	$options = $_SESSION['frompdf'][$id] ?? null;
+	if (!is_array($options) || empty($options['filename']) || !is_file($options['filename']) || $page < 1) {
+		http_response_code(404);
+		return;
 	}
-}, 'GET');
-$router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].jpg', function (string $route, array $p) {
-	global $nframework, $m, $config;
-	$options = $_SESSION['frompdf'][$p['id']];
-
-	if (file_exists($options['filename'])) {
-		$dst = $options['directory'] . $p['p'] . '.jpg';
-		if (!file_exists($dst) || filemtime($dst) < filemtime($options['filename'])) {
-			if (!file_exists($options['directory'])) {
-				mkdir($options['directory'], 0777, true);
-			}
+	$dir = rtrim((string) ($options['directory'] ?? ''), '/');
+	if ($dir === '') {
+		$dir = sys_get_temp_dir() . '/nffrompdf_' . md5($options['filename']);
+	}
+	$width = nfClampImageSize($width);
+	$dst = $dir . '/' . $page . '_' . $width . '.' . $format;
+	if (!is_file($dst) || filemtime($dst) < filemtime($options['filename'])) {
+		if (!is_dir($dir)) {
+			mkdir($dir, 0777, true);
+		}
+		try {
 			$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
-			$pdf->format(\Spatie\PdfToImage\Enums\OutputFormat::Jpg);
-			$pdf->setResolution(150);
-			$pdf->selectPage($p['p'])->size($p['w'])->save($options['directory'] . $p['p'] . '.jpg');
-
-			if (!empty($options['deletefile']) && $options['deletefile'] == true) {
-				unlink($options['directory'] . '/' . $p['p'] . '.jpg');
+			$pdf->format($formats[$format][0]);
+			if ($format === 'jpg') {
+				$pdf->resolution(150);
 			}
-			if (!empty($options['deletedirectory']) && $options['deletedirectory'] == true) {
-				rmdir($options['directory']);
-			}
+			$pdf->selectPage($page)->size($width)->save($dst);
+		} catch (\Throwable $e) {
+			// Página fuera de rango o PDF dañado.
+			error_log('nframework frompdf: ' . $e->getMessage());
+			http_response_code(404);
+			return;
 		}
-		$toetag = $dst . filemtime($dst);
-		$lasttimedst = filemtime($dst);
-		$nframework->lastmodified = $lasttimedst;
-		$nframework->etag = md5($toetag);
-		$nframework->testcache();
-		header('Content-Length: ' . filesize($dst));
-		header('Content-Type: image/jpeg');
-		echo file_get_contents($dst);
 	}
-}, 'GET');
-
-$router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].webp', function (string $route, array $p) {
-	global $nframework, $m, $config;
-	$options = $_SESSION['frompdf'][$p['id']];
-
-	if (file_exists($options['filename'])) {
-		$dst = $options['directory'] . $p['p'] . '.webp';
-		if (!file_exists($dst) || filemtime($dst) < filemtime($options['filename'])) {
-			if (!file_exists($options['directory'])) {
-				mkdir($options['directory'], 0777, true);
-			}
-			$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
-			$pdf->format(\Spatie\PdfToImage\Enums\OutputFormat::Webp);
-			$pdf->selectPage($p['p'])->size($p['w'])->save($options['directory'] . $p['p'] . '.webp');
-
-			if (!empty($options['deletefile']) && $options['deletefile'] == true) {
-				unlink($options['directory'] . '/' . $p['p'] . '.webp');
-			}
-			if (!empty($options['deletedirectory']) && $options['deletedirectory'] == true) {
-				rmdir($options['directory']);
-			}
-		}
-		$toetag = $dst . filemtime($dst);
-		$lasttimedst = filemtime($dst);
-		$nframework->lastmodified = $lasttimedst;
-		$nframework->etag = md5($toetag);
-		$nframework->testcache();
-		header('Content-Length: ' . filesize($dst));
-		header('Content-Type: image/webp');
-		echo file_get_contents($dst);
+	$deleteAfter = !empty($options['deletefile']);
+	// Si la imagen se borra al enviarla no tiene sentido que el navegador la revalide.
+	$nframework->serveFile($dst, $formats[$format][1], $deleteAfter ? null : 0);
+	if ($deleteAfter) {
+		unlink($dst);
 	}
-}, 'GET');
+	if (!empty($options['deletedirectory'])) {
+		@rmdir($dir);
+	}
+}
 
-
-
+foreach (['png', 'jpg', 'webp'] as $nfPdfFormat) {
+	$router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].' . $nfPdfFormat, function (string $route, array $p) use ($nfPdfFormat) {
+		nfServePdfPage((string) $p['id'], (int) $p['w'], (int) $p['p'], $nfPdfFormat);
+	}, 'GET');
+}
 
 $router->addRoute('/images/frompdf/[s:id]/info.json', function (string $route, array $p) {
 	global $nframework;
 	$nframework->isAjax = false;
-	$options = $_SESSION['frompdf'][$p['id']];
-	if (file_exists($options['filename'])) {
-		$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
-		//$size = $pdf->getSize();
-
-		$cmd = sprintf(
-			'gs -q -dNODISPLAY -c "(%s) (r) file runpdfbegin pdfpagecount = quit" 2>&1',
-			escapeshellarg($options['filename'])
-		);
-		$out = trim(shell_exec($cmd) ?? '');
-		if (ctype_digit($out)) {
-			$count = (int)$out;
-		} else {
-			$count = $pdf->pageCount();
-		}
-		$result = [
-			'numberOfPages' => $count,
-			//	'width' => $size->width,
-			//	'height' => $size->height,
-		];
-		header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-		header('Content-Type: application/json');
-		echo json_encode($result);
+	$options = $_SESSION['frompdf'][$p['id']] ?? null;
+	if (!is_array($options) || empty($options['filename']) || !is_file($options['filename'])) {
+		http_response_code(404);
+		return;
 	}
+	// Ghostscript cuenta páginas mucho más rápido que Imagick; si falla se usa pageCount().
+	$cmd = 'gs -q -dNODISPLAY --permit-file-read=' . escapeshellarg($options['filename']) . ' -c '
+		. escapeshellarg('(' . addcslashes($options['filename'], '()\\') . ') (r) file runpdfbegin pdfpagecount = quit') . ' 2>&1';
+	$out = trim(shell_exec($cmd) ?? '');
+	if (ctype_digit($out)) {
+		$count = (int) $out;
+	} else {
+		$count = (new \Spatie\PdfToImage\Pdf($options['filename']))->pageCount();
+	}
+	header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+	header("Pragma: no-cache");
+	header('Content-Type: application/json');
+	echo json_encode(['numberOfPages' => $count]);
 }, 'GET');
 
+// Vista previa (primera página) del PDF de un control inputFile con 'preview' habilitado.
 $router->addRoute('/images/[s:id]/[i:w]/[i:h]/preview.png', function (string $route, array $p) {
-
+	$upload = $_SESSION['uploads4'][$p['id']] ?? null;
+	$filename = $upload['extensioninfo']['path'] ?? '';
+	if (empty($upload['preview']) || !is_string($filename) || !is_file($filename)
+		|| strtolower(pathinfo($filename, PATHINFO_EXTENSION)) !== 'pdf') {
+		http_response_code(404);
+		return;
+	}
+	$dst = tempnam(sys_get_temp_dir(), 'pdftopng');
+	try {
+		$pdf = new \Spatie\PdfToImage\Pdf($filename);
+		$pdf->format(\Spatie\PdfToImage\Enums\OutputFormat::Png);
+		$pdf->selectPage(1)->size(nfClampImageSize($p['w']))->save($dst . '.png');
+	} catch (\Throwable $e) {
+		error_log('nframework preview: ' . $e->getMessage());
+		@unlink($dst);
+		http_response_code(404);
+		return;
+	}
 	global $nframework;
-	$upload = $_SESSION['uploads4'][$p['id']];
-	$extension = pathinfo($filename, PATHINFO_EXTENSION);
-
-	$dst = sys_get_temp_dir() . '/' . uniqid('pdftopng', true);
-	mkdir($dst);
-	$pdf = new \Spatie\PdfToImage\Pdf($filename);
-	$pdf->format(\Spatie\PdfToImage\Enums\OutputFormat::Png);
-	$pdf->selectPage($p['p'])->size($p['w'])->save($dst);
-
-	/*	header('dst:'.$dst);
-	header('dstf:'.$filename);
-	header('dstp:'.$p['p']);//*/
-	header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-	header("Cache-Control: post-check=0, pre-check=0", false);
-	header("Pragma: no-cache");
-	header('Content-Length: ' . filesize($dst . '/' . $p['p'] . '.png'));
-	header('Content-Type: image/png');
-	echo file_get_contents($dst . '/' . $p['p'] . '.png');
-	unlink($dst . '/' . $p['p'] . '.png');
-	rmdir($dst);
+	$nframework->serveFile($dst . '.png', 'image/png', null);
+	unlink($dst . '.png');
+	unlink($dst);
 }, 'GET');
 
 $router->addRoute('/images/config/[i:w]/[i:h]/logo.png', function (string $route, array $p) {
@@ -814,28 +763,25 @@ $router->addRoute('/images/config/[i:w]/[i:h]/logo.png', function (string $route
 	$p['w'] = nfClampImageSize($p['w']);
 	$p['h'] = nfClampImageSize($p['h']);
 	$dst = $dir . '/logo_' . $p['w'] . 'x' . $p['h'] . '.png';
-	if (!file_exists($dst) || filemtime($dst) < filemtime($config['image'])) {
+	// $config['image'] puede ser una URL: filemtime() fallaría y el logo se regeneraría en cada petición.
+	$src = (!empty($config['image']) && is_file($config['image'])) ? $config['image'] : $_SERVER['DOCUMENT_ROOT'] . '/img/nf/logo.png';
+	if (!is_file($src)) {
+		http_response_code(404);
+		return;
+	}
+	if (!file_exists($dst) || filemtime($dst) < filemtime($src)) {
 		if (!file_exists($dir)) {
 			mkdir($dir, 0777, true);
 		}
 		$manager = new ImageManager(array('driver' => 'gd'));
-		$img = $manager->make($config['image']);
+		$img = $manager->make($src);
 		$img->fit($p['w'], $p['h'], function ($constraint) {
 			$constraint->aspectRatio();
 			//$constraint->upsize();
 		});
 		$img->save($dst);
 	}
-	$toetag = $dst . filemtime($dst);
-	$lasttimedst = filemtime($dst);
-
-	$nframework->lastmodified = $lasttimedst;
-	$nframework->etag = md5($toetag);
-	$nframework->testcache();
-
-	header('Content-Length: ' . filesize($dst));
-	header('Content-Type: image/png');
-	echo file_get_contents($dst);
+	$nframework->serveFile($dst, 'image/png', 86400, true);
 }, 'GET');
 
 $router->addRoute('/images/resize/[s:id]/[i:w]/[i:h]/[s:file]', function (string $route, array $p) {
@@ -884,15 +830,8 @@ $router->addRoute('/images/resize/[s:id]/[i:w]/[i:h]/[s:file]', function (string
 			$lasttimedst = filemtime($dst);
 		}
 
-		$toetag = $dst . $lasttimedst;
-		$nframework->lastmodified = $lasttimedst;
-		$nframework->etag = md5($toetag);
-		//	$nframework->expiretime = time() + (60);
-		$nframework->testcache();
-
-		header('Content-Length: ' . filesize($dst));
-		header('Content-Type: image/png');
-		echo file_get_contents($dst);
+		// 'maxage' en la configuración de la sesión: segundos sin revalidar (por defecto revalida siempre).
+		$nframework->serveFile($dst, 'image/png', (int) ($conf['maxage'] ?? 0));
 	}
 }, 'GET');
 $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (string $route, array $p) {
@@ -940,23 +879,14 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 			$lasttimedst = filemtime($dst);
 		}
 
-		$toetag = $dst . $lasttimedst;
-		$nframework->lastmodified = $lasttimedst;
-		$nframework->etag = md5($toetag);
-		//	$nframework->expiretime = time() + (60);
-
-		$nframework->testcache();
-		header('Content-Length: ' . filesize($dst));
-		header('Content-Type: image/webp');
-		echo file_get_contents($dst); //*/
+		$nframework->serveFile($dst, 'image/webp', (int) ($conf['maxage'] ?? 0));
 	}
 }, 'GET');
 
 
 
 $router->addRoute('/nf.webmanifest', function (string $route, array $p) {
-	global $config;
-	header('Content-Type: application/manifest+json; charset=utf-8');
+	global $config, $nframework;
 	$icons = [];
 	foreach ([72, 96, 144, 192, 256, 384, 512, 1024] as $size) {
 		$icons[] = [
@@ -966,7 +896,7 @@ $router->addRoute('/nf.webmanifest', function (string $route, array $p) {
 			'purpose' => 'any',
 		];
 	}
-	echo json_encode([
+	$nframework->serveContent(json_encode([
 		'name' => (string) $config['title'],
 		'short_name' => (string) $config['shortname'],
 		'id' => (string) $config['shortname'],
@@ -985,7 +915,7 @@ $router->addRoute('/nf.webmanifest', function (string $route, array $p) {
 		'prefer_related_applications' => false,
 		'iarc_rating_id' => '16+',
 		'icons' => $icons,
-	], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+	], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'application/manifest+json; charset=utf-8', 3600, true);
 	//72, 96, 144, 192, 256, 384, 512
 
 }, 'GET');
@@ -1056,46 +986,47 @@ $router->addRoute('/privacidad', function (string $route, array $p) {
 
 $router->addRoute('/sw.js', function (string $route, array $p) {
 	global $nframework, $twig, $config;
-	$template = $twig->load('sw.js');
-	header('Content-Type: application/javascript; charset=utf-8');
-	echo $template->render([
+	$js = $twig->load('sw.js')->render([
 		'publicKey' => $config['notifications']['publicKey'],
 		'tocache' => array_values(array_merge($nframework->csss, $nframework->jss)),
 		'csss' => implode("','", $nframework->csss),
 		'jss' => implode("','", $nframework->jss)
 	]);
+	// El navegador revisa el service worker al navegar; con ETag la respuesta es un 304 vacío.
+	$nframework->serveContent($js, 'application/javascript; charset=utf-8');
 }, 'GET');
 
-foreach ($m->{$config['sitedb']}->pages->distinct('path') as $d) {
-	if (!empty($d)) {
-		$router->addRoute($d, function ($route, $arg) {
-			global $m, $config, $nframework, $twig;
-			$page = $m->{$config['sitedb']}->pages->findOne(['path' => $route]);
-			$nframework->metas['description'] = $page->description;
-			$nframework->metas['title'] = $page->title;
-			$nframework->metas['keywords'] = $page->keywords;
-
-			$menud = $m->{$config['sitedb']}->menus->findOne(['name' => '_nav']);
-			if ($menud) {
-				$menu = nfMetroMenu($menud->code);
-			}
-
-			$header = $m->{$config['sitedb']}->pages->findOne(['path' => '_header']);
-			$footer = $m->{$config['sitedb']}->pages->findOne(['path' => '_footer']);
-			$nframework->usecommon = true;
-			$template = $twig->load('page.html');
-
-
-			echo $template->render([
-				'theme' => $config['theme'],
-				'page' => $page->html,
-				'header' => renderEmbeddedFunctions($header->html),
-				'footer' => $footer->html,
-				'route' => $route,
-			]);
-			//echo $page->html;
-		}, 'GET'); // this handler will be called for POST requests
+// Rutas de las páginas de Admin → Páginas, en la caché local (se vacía al guardar desde el panel).
+$nfPagePaths = nfCacheRemember('pagepaths', nfCacheTtl(), fn() => array_values(array_filter(
+	iterator_to_array($m->{$config['sitedb']}->pages->distinct('path'), false),
+	'is_string'
+)));
+foreach ($nfPagePaths as $d) {
+	// Las páginas que empiezan con '_' (_header, _footer, _home, _404...) son fragmentos, no rutas públicas.
+	if (!is_string($d) || $d === '' || $d[0] === '_') {
+		continue;
 	}
+	$router->addRoute($d, function ($route, $arg) use ($d) {
+		global $config, $nframework, $twig;
+		$page = nfPage($d);
+		$nframework->metas['description'] = $page['description'] ?? null;
+		$nframework->metas['title'] = $page['title'] ?? null;
+		$nframework->metas['keywords'] = $page['keywords'] ?? null;
+
+		$header = nfPage('_header');
+		$footer = nfPage('_footer');
+		$nframework->usecommon = true;
+		$template = $twig->load('page.html');
+
+		echo $template->render([
+			'theme' => $config['theme'],
+			'page' => $page['html'] ?? null,
+			'header' => renderEmbeddedFunctions((string) ($header['html'] ?? '')),
+			'footer' => $footer['html'] ?? null,
+			'menu' => nfMetroMenu('_nav'),
+			'route' => $route,
+		]);
+	}, 'GET');
 }
 $router->addRoute('/nftables/[s:collection]/', function (string $route, array $p) {
 	global $m, $config, $nframework, $javas, $user;
@@ -1124,10 +1055,3 @@ $router->addRoute('/nftables/[s:collection]/[s:id]', function (string $route, ar
 	}
 },  'DELETE');
 
-$router->addRoute('/cachetest.png', function ($route, $arg) {
-	global $m;
-	//$developermode=true;
-	$cache = new cache(__DIR__ . '/profilepict.png');
-	$cache->contentType = 'image/png';
-	$cache->cache();
-});

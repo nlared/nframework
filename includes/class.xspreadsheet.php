@@ -1,4 +1,4 @@
-<?
+<?php
 class xspreadsheet
 {
     public $id;

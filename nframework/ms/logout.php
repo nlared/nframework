@@ -1,4 +1,4 @@
-<?
+<?php
 require_once __DIR__ . '/vendor/autoload.php';
 require 'config.php';
 $m = new MongoDB\Client($config['mongo_connection_string']);

@@ -109,5 +109,5 @@ if ($nframework->isAjax()) {
 				</div>
 			</div>
 		</div>
-<?}?>
+<?php }?>
 		

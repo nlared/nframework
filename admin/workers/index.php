@@ -1,4 +1,4 @@
-<?
+<?php
 require '../common2.php';
 $supervisorConfig =
     '[program:nframework-worker]  

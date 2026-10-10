@@ -5,7 +5,7 @@ class User implements ArrayAccess
     public $info;
     private $m;
     private $db;
-    private array $groupCache = [];
+    private ?array $groupCache = null;
     public $notifications;
     public function __construct($info)
     {
@@ -16,7 +16,11 @@ class User implements ArrayAccess
         if ($config['sitedb'] != '') {
             $this->db = $config['sitedb']; // /checar usuario no injection
             if (isset($info['_id'])) {
-                $info['_id'] = tomongoid($info['_id']);
+                // Se busca con el ObjectId: antes $find conservaba el texto y new User(['_id' => '...'])
+                // (p.ej. /account/twofa con $_SESSION['tmp_user']) nunca encontraba al usuario.
+                if (isValidObjectId($info['_id'])) {
+                    $find['_id'] = tomongoid($info['_id']);
+                }
             }
             $password = null;
             if (array_key_exists('password', $find)) {
@@ -95,14 +99,18 @@ class User implements ArrayAccess
         if (empty($this->info['_id'])) {
             return false;
         }
-        // Se cachea por petición: in('admins') se consulta varias veces en cada página.
-        if (!array_key_exists($verb, $this->groupCache)) {
-            $this->groupCache[$verb] = !empty($this->m->{$config['sitedb']}->usersgroups->findOne(
-                ['users' => tomongoid($this->info['_id']), 'name' => $verb],
-                ['projection' => ['_id' => 1]]
-            ));
+        // Una sola consulta por petición trae todos los grupos del usuario; in('admins'),
+        // in('developers'), etc. se responden después sin volver a MongoDB.
+        if ($this->groupCache === null) {
+            $this->groupCache = [];
+            foreach ($this->m->{$config['sitedb']}->usersgroups->find(
+                ['users' => tomongoid($this->info['_id'])],
+                ['projection' => ['_id' => 0, 'name' => 1]]
+            ) as $group) {
+                $this->groupCache[(string) ($group['name'] ?? '')] = true;
+            }
         }
-        return $this->groupCache[$verb];
+        return isset($this->groupCache[(string) $verb]);
     }
 
     public static function create($info): User

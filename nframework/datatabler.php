@@ -1,4 +1,4 @@
-<?
+<?php
 //Datatable reorder
 require 'include.php';
 $datainfo = $_SESSION['datatable'][(string) ($_GET['id'] ?? '')] ?? null;

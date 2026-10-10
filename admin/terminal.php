@@ -8,16 +8,16 @@
  * Released under the MIT license
  */
 define('VERSION', '0.2.4');
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
 require 'include.php';
-if(!$user->in('admins')){
+// Ejecuta comandos arbitrarios en el servidor: solo para desarrolladores y solo si el sitio
+// lo habilita explícitamente con $config['enable_web_terminal'] = true.
+if (empty($config['enable_web_terminal']) || !$user->in('developers')) {
+	http_response_code(403);
 	die('sin permiso');
 }
 
 // leave blank or delete if don't want password protection
-$config = array(
+$terminalConfig = array(
     //'password' => 'admin',
     'root' => getcwd(),
     'storage' => true,
@@ -265,17 +265,17 @@ function token() {
     return sha1($time) . substr(md5($time), 4);
 }
 function password_set() {
-    global $config;
-    return isset($config['password']) && $config['password'] != '';
+    global $terminalConfig;
+    return isset($terminalConfig['password']) && $terminalConfig['password'] != '';
 }
 //session_start();
 
-$path = isset($_POST['path']) ? $_POST['path'] : $config['root'];
-$app = new App($config['root'], $path, $config);
+$path = isset($_POST['path']) ? $_POST['path'] : $terminalConfig['root'];
+$app = new App($terminalConfig['root'], $path, $terminalConfig);
 try {
-    $config['executables'] = $app->executables();
+    $terminalConfig['executables'] = $app->executables();
 } catch(Exception $e) {
-    $config['executables'] = array();
+    $terminalConfig['executables'] = array();
 }
 
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
@@ -306,7 +306,7 @@ EOF;
     if ($_POST['action'] != 'login' && password_set() && !isset($_SESSION['token'])) {
         echo json_encode(array('error' => "Error no Token"));
     } if ($_POST['action'] == 'login') {
-        if ($_POST['password'] == $config['password']) {
+        if ($_POST['password'] == $terminalConfig['password']) {
             $_SESSION['token'] = token();
             echo json_encode(array("result" => $_SESSION['token']));
         } else {
@@ -386,7 +386,7 @@ body {
 <body>
 <script>
  jQuery(function($) {
-     var config = <?= json_encode(array_merge($config, array('password' => isset($config['password']) && $config['password'] != ''))) ?>;
+     var config = <?= json_encode(array_merge($terminalConfig, array('password' => isset($terminalConfig['password']) && $terminalConfig['password'] != ''))) ?>;
      var cwd = config.root;
      // --------------------------------------------------------------------------------------------
      function init(term, token) {

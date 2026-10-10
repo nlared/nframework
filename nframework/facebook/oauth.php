@@ -1,4 +1,4 @@
-<?
+<?php
 //require 'include.php';
 
 $provider = new \League\OAuth2\Client\Provider\Facebook([

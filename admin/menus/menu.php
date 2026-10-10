@@ -1,4 +1,4 @@
-<?
+<?php
 if (empty($_GET['_id'])) {
     $newid=new MongoDB\BSON\ObjectID();
     header('Location: ?_id='.$newid);
@@ -271,4 +271,4 @@ js
 		</div>
 	</div>
 </div>
-<?}?>
+<?php }?>

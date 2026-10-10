@@ -1,4 +1,4 @@
-<?
+<?php
 use Mezon\Router\Router;
 use Mezon\Router\RouterInterface;
 // El modo desarrollador muestra trazas de error; se activa solo para el grupo 'developers' (ver include.php).
@@ -65,7 +65,7 @@ if (file_exists($_SERVER['DOCUMENT_ROOT'].'/crouter.php')){
 try{
 	$router->callRoute($uri);
 }catch(exception $e){
-	//header('HTTP/1.0 404 Not Found');
-	$page=$m->{$config['sitedb']}->pages->findOne(['path'=>'_404']);
-	echo $page['html'];
+	http_response_code(404);
+	$page=nfPage('_404');
+	echo $page['html'] ?? 'Not Found';
 }

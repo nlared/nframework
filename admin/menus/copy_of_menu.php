@@ -1,4 +1,4 @@
-<?
+<?php
 if (empty($_GET['_id'])) {
     $newid=new MongoDB\BSON\ObjectID();
     header('Location: ?_id='.$newid);
@@ -122,4 +122,4 @@ if ($nframework->isAjax()) {
 				<div class="cell-md-2"><button class="button secureop success w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;Guardar</button></div>
 			</div>
 		</div>
-<?}?>
+<?php }?>

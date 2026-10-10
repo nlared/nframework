@@ -90,7 +90,7 @@ if ($nframework->isAjax()) {
 				<div class="row">
 					<div class="cell"><?= $permisos ?></div>
 				</div>
-				<?
+				<?php
 				if (file_exists(include $_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.ui.php')) {
 					include $_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.ui.php';
 				}
@@ -157,4 +157,4 @@ if ($nframework->isAjax()) {
 				}
 			});
 		}
-	</script><? } ?>
+	</script><?php } ?>

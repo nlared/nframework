@@ -1,4 +1,4 @@
-<?
+<?php
 //https://codeshack.io/implement-google-login-php/
 ?>
 <!DOCTYPE html>
