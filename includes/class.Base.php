@@ -28,6 +28,25 @@ function mongo_auto_increment($campo)
     return $result->seq;
 }
 
+/**
+ * Convierte el texto de un campo numérico al tipo que se guarda en Mongo.
+ * $rules son las reglas de validación ("integer", "digits", "float"...): con integer/digits se guarda int, si no float.
+ * Acepta separador de miles ("1,234.5"), igual que la validación con FILTER_FLAG_ALLOW_THOUSAND.
+ */
+function nfnumbertomongo($val, ...$rules)
+{
+    if ($val === null || $val === '') {
+        return null;
+    }
+    $number = filter_var((string) $val, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_THOUSAND);
+    if ($number === false) {
+        return null;
+    }
+    $rules = preg_split('/\s+/', trim(implode(' ', array_map('strval', $rules))));
+
+    return array_intersect(['integer', 'digits'], $rules) ? (int) $number : $number;
+}
+
 #[\AllowDynamicProperties]
 class Base
 {
@@ -606,11 +625,7 @@ class inputNumber extends baseInput
 
     public function __toMongo($val)
     {
-        if ($val === null || $val === '') {
-            return null;
-        }
-
-        return $this->data_validate == 'integer' || $this->data_validate == 'digits' ? (int) $val : (float) $val;
+        return nfnumbertomongo($val, $this->data_validate, $this->validate);
     }
 
     public function __toString()
@@ -656,11 +671,8 @@ class inputSpinner extends baseInput
     public $addclass;
     public function __toMongo($val)
     {
-        if ($val === null || $val === '') {
-            return null;
-        }
-
-        return ($this->data_validate == 'integer' || $this->data_validate == 'digits' ? (int) $val : (float) $val);
+        // inputSpinner no tiene propiedad $data_validate: el tipo sale de validate (integer, float...).
+        return nfnumbertomongo($val, $this->validate);
     }
 
     public function __toString()
@@ -785,6 +797,9 @@ class inputDate extends baseInput
             } else {
                 // '!' pone en cero los campos que el formato no trae (la hora); sin él se guardaba la hora actual.
                 $orig_date = DateTime::createFromFormat('!' . $this->format, $val, $this->timezone);
+                if ($orig_date === false) {
+                    return null;
+                }
                 $orig_date = $orig_date->getTimestamp();
                 $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
                 return $utcdatetime;
@@ -800,7 +815,8 @@ class inputDate extends baseInput
             return $val;
         } elseif ($this->storagetype == self::ST_MONGODATE) {
             if ($val instanceof MongoDB\BSON\UTCDateTime) {
-                $datetime = $val->toDateTime();
+                // Se muestra en la misma zona con la que se guardó; toDateTime() regresa UTC.
+                $datetime = $val->toDateTime()->setTimezone($this->timezone ?? new DateTimeZone('UTC'));
                 $date = $datetime->format($this->format);
             } else {
                 $date = $val;
@@ -893,6 +909,9 @@ class inputDateTime extends baseInput
                 return $val;
             } else {
                 $orig_date = DateTime::createFromFormat('Y-m-d\TH:i', $val, $this->timezone);
+                if ($orig_date === false) {
+                    return null;
+                }
                 $orig_date = $orig_date->getTimestamp();
                 $utcdatetime = new MongoDB\BSON\UTCDateTime($orig_date * 1000);
                 return $utcdatetime;
@@ -908,7 +927,8 @@ class inputDateTime extends baseInput
             return $val;
         } elseif ($this->storagetype == self::ST_MONGODATE) {
             if ($val instanceof MongoDB\BSON\UTCDateTime) {
-                $datetime = $val->toDateTime();
+                // Se muestra en la misma zona con la que se guardó; toDateTime() regresa UTC.
+                $datetime = $val->toDateTime()->setTimezone($this->timezone ?? new DateTimeZone('UTC'));
                 $date = $datetime->format('Y-m-d\TH:i');
             } else {
                 $date = $val;
@@ -1451,15 +1471,6 @@ class SelectIcon extends baseOptions
         // TODO: PROBAR return !is_array($newval);
         return true;
     }
-
-    public function __toMongo($val)
-    {
-        return $val == 'on' ? true : false;
-    }
-    public function __toPHP($val)
-    {
-        return $val ? 'on' : '';
-    }
 }
 class inputCheckBoxs extends Select
 {
@@ -1477,7 +1488,7 @@ class inputCheckBoxs extends Select
         foreach ($this->options as $value => $text) {
             $result .= ($this->horizontal ? '<br>' : '') . '<input labelid="' . $this->id . '" type="checkbox" data-role="checkbox" id="' . $this->id . '_' . $value . '" name="' .
                 $this->name . "[$value]\"" .
-                ($tempcheck[$value] === true ? ' checked' : '') .
+                (($tempcheck[$value] ?? null) === true ? ' checked' : '') .
                 " data-caption=\"$text\" data-caption-position=\"" . $this->captionposition . '">' .
                 ($this->nometro ? '<label for="' . $this->id . '_' . $value . '">' . $text . '</label>' : '');
             // $fields.=str_replace('%field%', $result, $this->format['fields'][2]);
@@ -2234,17 +2245,19 @@ class dataset
                     // Los campos deshabilitados no se aceptan desde el navegador.
                     if (!$element->backreadonly && !$element->disabled) {
                         $results['addata'][] = str_replace('$', $this->position, $this->fieldprefix . $element->field);
-                        if ($_POST[$this->nameprefix][$element->field] == '') {
+                        // Una casilla sin marcar no viene en el POST.
+                        $posted = $_POST[$this->nameprefix][$element->field] ?? null;
+                        if ($posted == '') {
                             $changes['$unset'][str_replace('$', $this->position, $this->fieldprefix . $element->field)] = 1;
                         } else {
                             $changes['$set'][str_replace('$', $this->position, $this->fieldprefix . $element->field)] =
-                                $element->__toMongo($_POST[$this->nameprefix][$element->field]);
+                                $element->__toMongo($posted);
                             $results['addata'][] = str_replace('$', $this->position, $this->fieldprefix . $element->field);
                         }
                         if (strpos($element->field, '.') !== false) {
                             $punto = true;
                         } else {
-                            $this->info[$element->field] = $element->__toMongo($_POST[$this->nameprefix][$element->field]);
+                            $this->info[$element->field] = $element->__toMongo($posted);
                         }
                     }
                 }
