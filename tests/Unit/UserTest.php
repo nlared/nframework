@@ -134,18 +134,15 @@ class UserTest extends TestCase
     }
 
     /**
-     * Helper method to create a mock User object
+     * Helper method to create a User object without touching MongoDB
      */
     private function getMockUser(array $userData): User
     {
-        // Create a partial mock that bypasses the constructor
-        $user = $this->getMockBuilder(User::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['__construct'])
-            ->getMock();
+        // Bypass the constructor (it queries MongoDB)
+        $reflection = new \ReflectionClass(User::class);
+        $user = $reflection->newInstanceWithoutConstructor();
 
         // Manually set the info property
-        $reflection = new \ReflectionClass($user);
         $property = $reflection->getProperty('info');
         $property->setValue($user, $userData);
 
