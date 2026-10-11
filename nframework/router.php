@@ -1,6 +1,7 @@
 <?php
 
 use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use OTPHP\TOTP;
 use Endroid\QrCode\Writer\PngWriter;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -637,12 +638,9 @@ $router->addRoute('/images/config/[i:size]/logo.png', function (string $route, a
 		if (!file_exists($dir)) {
 			mkdir($dir, 0777, true);
 		}
-		$manager = new ImageManager(array('driver' => 'gd'));
-		$img = $manager->make($logo);
-		$img->fit($p['size'], $p['size'], function ($constraint) {
-			$constraint->aspectRatio();
-			// $constraint->upsize();
-		});
+		$manager = new ImageManager(new GdDriver());
+		$img = $manager->decodePath($logo);
+		$img->cover($p['size'], $p['size']);
 		$img->save($dst);
 	}
 	// El logo es igual para todos: el navegador y los proxies lo reutilizan un día.
@@ -773,12 +771,9 @@ $router->addRoute('/images/config/[i:w]/[i:h]/logo.png', function (string $route
 		if (!file_exists($dir)) {
 			mkdir($dir, 0777, true);
 		}
-		$manager = new ImageManager(array('driver' => 'gd'));
-		$img = $manager->make($src);
-		$img->fit($p['w'], $p['h'], function ($constraint) {
-			$constraint->aspectRatio();
-			//$constraint->upsize();
-		});
+		$manager = new ImageManager(new GdDriver());
+		$img = $manager->decodePath($src);
+		$img->cover($p['w'], $p['h']);
 		$img->save($dst);
 	}
 	$nframework->serveFile($dst, 'image/png', 86400, true);
@@ -817,15 +812,12 @@ $router->addRoute('/images/resize/[s:id]/[i:w]/[i:h]/[s:file]', function (string
 			}
 		}
 		if ($actualizar) {
-			$manager = new ImageManager(array('driver' => 'gd'));
+			$manager = new ImageManager(new GdDriver());
 			if (!file_exists($src)) {
 				$src = $conf['default'];
 			}
-			$img = $manager->make($src);
-			$img->fit($p['w'], $p['h'], function ($constraint) {
-				$constraint->aspectRatio();
-				//$constraint->upsize();
-			});
+			$img = $manager->decodePath($src);
+			$img->cover($p['w'], $p['h']);
 			$img->save($dst);
 			$lasttimedst = filemtime($dst);
 		}
@@ -865,16 +857,12 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 			}
 		}
 		if ($actualizar) {
-			$manager = new ImageManager(array('driver' => 'gd'));
+			$manager = new ImageManager(new GdDriver());
 			if (!file_exists($src)) {
 				$src = $conf['default'];
 			}
-			$img = $manager->make($src);
-			$img->fit($p['w'], $p['h'], function ($constraint) {
-				$constraint->aspectRatio();
-				//$constraint->upsize();
-			});
-			$img->encode('webp');
+			$img = $manager->decodePath($src);
+			$img->cover($p['w'], $p['h']);
 			$img->save($dst);
 			$lasttimedst = filemtime($dst);
 		}
