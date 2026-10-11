@@ -49,7 +49,7 @@ foreach($archivos as $prefix=>$archivo){
 			$campos=[];
 			$tindex=[];
 			for($columna=1;$columna<=$columnasno;$columna++){
-				$valor=$hoja->getCellByColumnAndRow($columna ,$ren)->getValue();
+				$valor=$hoja->getCell([$columna, $ren])->getValue();
 				if(str_starts_with($valor,'c_')){
 					$tindex[]=$valor;
 				}
@@ -64,7 +64,7 @@ foreach($archivos as $prefix=>$archivo){
 		do{
 			$data=[];
 			foreach($campos as $idx=>$campo){
-				$valor=$hoja->getCellByColumnAndRow($idx+1 ,$ren)->getValue();
+				$valor=$hoja->getCell([$idx + 1, $ren])->getValue();
 				if(!empty($valor)){
 					$data[$campo]=$valor;
 				}
