@@ -34,7 +34,7 @@ if (isset($_GET['mid']) && isset($_SESSION['nfxspreadsheet'][$_GET['mid']])) {
                 foreach ($datarow['cells'] as $cell => $datacell) {
                     if ($dataArray[$row][$cell] != $datacell['text']) {
                         $cambios[$row][$cell] = $datacell['text'];
-                        $worksheet->setCellValueByColumnAndRow($cell + 1, $row + 1, $datacell['text']);
+                        $worksheet->setCellValue([$cell + 1, $row + 1], $datacell['text']);
                         $save = true;
                     }
                 }
