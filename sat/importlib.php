@@ -10,6 +10,7 @@ require_once __DIR__ . '/classes/nomina12/NominaPercepciones.php';
 require_once __DIR__ . '/classes/nomina12/NominaPercepcionesPercepcion.php';
 require_once __DIR__ . '/classes/nomina12/NominaDeducciones.php';
 require_once __DIR__ . '/classes/nomina12/NominaDeduccionesDeduccion.php';
+require_once __DIR__ . '/cfdinormalizar.php';
 
 
 
@@ -245,13 +246,25 @@ function processExtractedFile($file)
     }
     file_put_contents($destinationPath, $dom->saveXML());
 
-    if ($m->{$config['sitedb']}->sat_comprobantes->findOne([
+    $coleccion = $m->{$config['sitedb']}->sat_comprobantes;
+    if ($coleccion->findOne([
         '$or' => [
             ['Complemento.TimbreFiscalDigital.UUID' => $uuid],
             ['Complemento.TimbreFiscalDigital.Uuid' => $uuid],
         ],
     ]) === null) {
-        $m->{$config['sitedb']}->sat_comprobantes->insertOne($cfdi);
+        $insertedId = $coleccion->insertOne($cfdi)->getInsertedId();
+        // Las clases XMLS guardan los atributos como texto: se convierten fechas e importes (ver cfdinormalizar.php).
+        $inserted = $coleccion->findOne(['_id' => $insertedId], [
+            'typeMap' => ['root' => 'array', 'document' => 'array', 'array' => 'array'],
+        ]);
+        if ($inserted !== null) {
+            $tipos = cfdiTiposDocumento($inserted);
+            $coleccion->updateOne(['_id' => $insertedId], ['$set' => $tipos['set']]);
+            if ($tipos['errores']) {
+                echo 'Valores sin convertir: ' . implode(', ', $tipos['errores']) . "\n";
+            }
+        }
     }
 
     $conceptCount = 0;
