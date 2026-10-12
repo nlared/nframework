@@ -236,8 +236,9 @@ function processExtractedFile($file)
     }
 
 
-    // En CLI (worker de descargasat) DOCUMENT_ROOT viene vacío, por eso se usa la raíz del sitio relativa a este archivo
-    $documentRoot = !empty($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : dirname(__DIR__);
+    // En CLI (worker de descargasat) se usa la raíz del sitio relativa a este archivo: DOCUMENT_ROOT viene vacío o,
+    // si el worker se lanzó desde la web con bgprocess, heredado de otro sitio (pasó con /var/www/nframework).
+    $documentRoot = (PHP_SAPI !== 'cli' && !empty($_SERVER['DOCUMENT_ROOT'])) ? $_SERVER['DOCUMENT_ROOT'] : dirname(__DIR__);
     $destinationPath = $documentRoot . '/comprobantes/xmls/' . $emisorRfc . '/' . $uuid . '.xml';
     echo "Extracted file will be saved to: " . $destinationPath . "\n";
     echo "Destination path: " . $destinationPath . "\n";
