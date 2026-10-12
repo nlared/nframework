@@ -478,6 +478,8 @@ if ($config['sitedb'] == '') {
 		// User::in() consulta usersgroups por usuario y nombre en casi cada página.
 		['colletion' => 'usersgroups', 'key' => ['users' => 1, 'name' => 1]],
 		['colletion' => 'nf_attempts', 'key' => ['ip' => 1]],
+		// Efirma: una entrada por usuario y certificado.
+		['colletion' => 'efirmas', 'key' => ['owner' => 1, 'nocert' => 1], 'options' => ['unique' => true]],
 	];
 	// Opcional: borrar automáticamente las estadísticas de peticiones con más de N días.
 	if (!empty($config['nfuristats_ttl_days'])) {

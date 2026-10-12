@@ -27,6 +27,7 @@ $docsMenu = [
 		'validations.php' => ['Validaciones', 'mif-checkmark', 'required, pattern, validate y validación del lado del servidor.'],
 		'files.php' => ['Archivos', 'mif-upload', 'inputFile e inputFiles: subir, previsualizar, descargar y eliminar.'],
 		'signature.php' => ['Firma', 'mif-pencil', 'Signature_pad: capturar una firma y guardarla como imagen.'],
+		'efirma.php' => ['e.firma y CSD', 'mif-key', 'Efirma: registrar y seleccionar e.firma o CSD, en el navegador o cifrada en el servidor.'],
 	],
 	'Datos' => [
 		'databinding.php' => ['Databinding', 'mif-database', 'Formulario ligado a un documento de MongoDB con dataset.'],
