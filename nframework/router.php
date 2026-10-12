@@ -30,30 +30,6 @@ function replaceVarsAtUrl($url, $vars)
 }
 
 /**
- * Crea un PHPMailer configurado con los datos SMTP del sitio.
- */
-function nfMailer(): PHPMailer
-{
-	global $config;
-	$mail = new PHPMailer(true);
-	$mail->isSMTP();
-	$mail->CharSet = 'UTF-8';
-	$mail->Host = $config['smtp']['host'];
-	$mail->SMTPAuth = boolval($config['smtp']['auth']);
-	$mail->Username = $config['smtp']['username'];
-	$mail->Password = $config['smtp']['password'];
-	if (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'ssl') {
-		$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-	} elseif (!empty($config['smtp']['secure']) && $config['smtp']['secure'] == 'tls') {
-		$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-	}
-	$mail->Port = $config['smtp']['port'];
-	$mail->setFrom($config['smtp']['fromemail'], $config['smtp']['fromname']);
-	$mail->isHTML(true);
-	return $mail;
-}
-
-/**
  * Marca la sesión como autenticada (regenerando el id para evitar fijación de sesión)
  * y redirige al destino guardado o al inicio correspondiente.
  */

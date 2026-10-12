@@ -166,4 +166,36 @@ class FunctionsTest extends TestCase
         $this->assertStringContainsString('dropdown-toggle', $html);
         $this->assertStringContainsString('d-menu', $html);
     }
+
+    /**
+     * Test nfMailer builds a PHPMailer from $config['smtp']
+     */
+    public function testNfMailerUsesSiteSmtpConfig(): void
+    {
+        $previous = $GLOBALS['config'];
+        $GLOBALS['config']['smtp'] = [
+            'host' => 'smtp.example.com',
+            'port' => '587',
+            'auth' => '1',
+            'username' => 'mailer',
+            'password' => 'secret',
+            'secure' => 'tls',
+            'fromemail' => 'noreply@example.com',
+            'fromname' => 'Example',
+        ];
+        try {
+            $mail = nfMailer();
+        } finally {
+            $GLOBALS['config'] = $previous;
+        }
+
+        $this->assertSame('smtp', $mail->Mailer);
+        $this->assertSame('smtp.example.com', $mail->Host);
+        $this->assertSame(587, $mail->Port);
+        $this->assertTrue($mail->SMTPAuth);
+        $this->assertSame('tls', $mail->SMTPSecure);
+        $this->assertSame('noreply@example.com', $mail->From);
+        $this->assertSame('Example', $mail->FromName);
+        $this->assertSame('UTF-8', $mail->CharSet);
+    }
 }
