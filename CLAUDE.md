@@ -113,6 +113,9 @@ Constructor con arreglo de opciones; se imprimen con `echo`/`<?= ?>` (`__toStrin
   para búsqueda en servidor), `SelectIcon`, `inputCheckBox`, `inputCheckBoxs`, `inputRadios`.
 - Archivos: `inputFile`, `inputFiles` (`dir`, `path`, `accept`, `countlimit`, `sizelimit`, `preview`,
   `delete`, `download`, `extension` + `onupload`/`ondelete`). La carpeta destino la decide el servidor.
+- e.firma/CSD del SAT: `Efirma` (`tipo` `fiel`|`csd`|`any`, `storage` `client`|`server`). En el navegador
+  `nfEfirma[id].sign(cadena)`; con llave en servidor solo firma PHP: `Efirma::sign()` / `Efirma::credential()`
+  (requiere `efirma_key` en `config.php`). Ver `docs/efirma.php`.
 - Otros: `Signature_pad`, `mapmarker`, `inputaddress`, `Dialog`, `BreadCrumbs`, `Sidebar`, `TreeView`, `Icon`,
   `ThemeSwitcher`, `QRReader`, `xspreadsheet`.
 

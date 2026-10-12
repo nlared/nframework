@@ -87,6 +87,11 @@ switch ($_SERVER['HTTP_HOST'] ?? 'localhost') {
             // 'sat_ca_bundle' => '/var/lib/nframework/sat',
             // Paquete del que Admin → SAT descarga las AC (por defecto el de producción del SAT).
             // 'sat_ca_url' => 'http://omawww.sat.gob.mx/tramitesyservicios/Paginas/documentos/Cert_Prod.zip',
+            // Llave (32 bytes en base64) para cifrar las e.firmas/CSD que Efirma guarda en el servidor
+            // (storage => 'server'). Genérela con: php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'
+            // Va solo en este archivo, nunca en MongoDB: así un respaldo de la base no basta para firmar.
+            // Si se pierde o cambia, hay que volver a registrar las e.firmas.
+            // 'efirma_key' => '',
 
             // --- Otras opcionales ---------------------------------------------------------------------
             // 'github_token' => '',      // Admin → Update (repositorio privado)
