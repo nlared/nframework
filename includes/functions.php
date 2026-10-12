@@ -757,6 +757,32 @@ function nfPasswordHash(string $password): string
 {
     return password_hash($password, PASSWORD_DEFAULT);
 }
+
+/**
+ * Crea un PHPMailer configurado con los datos SMTP del sitio ($config['smtp']).
+ * Vive aquí y no en nframework/router.php para que también funcione en páginas y en job_worker.php.
+ */
+function nfMailer(): \PHPMailer\PHPMailer\PHPMailer
+{
+    global $config;
+    $smtp = $config['smtp'] ?? [];
+    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+    $mail->isSMTP();
+    $mail->CharSet = 'UTF-8';
+    $mail->Host = $smtp['host'] ?? '';
+    $mail->SMTPAuth = boolval($smtp['auth'] ?? false);
+    $mail->Username = $smtp['username'] ?? '';
+    $mail->Password = $smtp['password'] ?? '';
+    if (($smtp['secure'] ?? '') === 'ssl') {
+        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+    } elseif (($smtp['secure'] ?? '') === 'tls') {
+        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+    }
+    $mail->Port = (int) ($smtp['port'] ?? 25);
+    $mail->setFrom($smtp['fromemail'] ?? '', $smtp['fromname'] ?? '');
+    $mail->isHTML(true);
+    return $mail;
+}
 function isValidSession($encryptedSessionId, $key)
 {
     if (empty($encryptedSessionId) || empty($key)) {

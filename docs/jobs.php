@@ -30,7 +30,7 @@ class EnviarCorreoJob extends Job
     }
 }
 PHP) ?>
-	<p class="remark"><code>nfMailer()</code> se define en <code>nframework/router.php</code>; si el trabajador no carga el router, configure PHPMailer en la clase.</p>
+	<p class="remark"><code>nfMailer()</code> está en <code>includes/functions.php</code>: disponible en páginas, rutas y en <code>job_worker.php</code>. Toma el servidor y remitente de <code>$config['smtp']</code> (Admin → Sitio).</p>
 
 	<h3>2. Encolar desde una página</h3>
 	<?= docCode(<<<'PHP'
