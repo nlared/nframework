@@ -9,7 +9,7 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
 ?>
 
 <div class="container">
-    <div class="box shadow-large">
+    <div class="box shadow-large stats-print-area">
         <div class="box-title">Estadisticas de trafico</div>
         <p>Panel avanzado con multiples graficas de sesiones, rutas, transferencia, latencia, IPs y agentes.</p>
 
@@ -77,6 +77,16 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
                 color: #fff;
                 font-weight: 700;
                 cursor: pointer;
+            }
+
+            .stats-btn.secondary {
+                background: #fff;
+                color: var(--brand);
+                border: 1px solid var(--border);
+            }
+
+            .stats-print-filters {
+                display: none;
             }
 
             .stats-status {
@@ -149,6 +159,67 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
                     margin-left: 0;
                 }
             }
+
+            @media print {
+                @page {
+                    size: letter;
+                    margin: 12mm;
+                }
+
+                /* Solo se imprime el reporte, sin menu ni plantilla */
+                body * {
+                    visibility: hidden;
+                }
+
+                .stats-print-area,
+                .stats-print-area * {
+                    visibility: visible;
+                }
+
+                .stats-print-area {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    box-shadow: none !important;
+                    margin: 0;
+                }
+
+                .stats-print-area * {
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+
+                .stats-dashboard {
+                    background: #fff;
+                    padding: 0;
+                }
+
+                .stats-toolbar {
+                    display: none;
+                }
+
+                .stats-print-filters {
+                    display: block;
+                    font-size: 12px;
+                    margin-bottom: 10px;
+                }
+
+                .stats-summary {
+                    grid-template-columns: repeat(5, 1fr);
+                }
+
+                .stats-grid {
+                    grid-template-columns: 1fr 1fr;
+                }
+
+                .stats-card,
+                .stats-panel {
+                    break-inside: avoid;
+                    page-break-inside: avoid;
+                    box-shadow: none;
+                }
+            }
         </style>
 
         <div class="stats-dashboard">
@@ -199,8 +270,10 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
                     </select>
                 </div>
                 <button class="stats-btn" id="reloadBtn" type="button">Actualizar</button>
+                <button class="stats-btn secondary" id="printBtn" type="button">Imprimir</button>
                 <div class="stats-status" id="status">Cargando...</div>
             </div>
+            <div class="stats-print-filters" id="printFilters"></div>
 
             <div class="stats-summary">
                 <div class="stats-card">
@@ -819,18 +892,56 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
                 }
                 const payload = await response.json();
                 renderCharts(payload);
-                statusEl.textContent = `Ultima actualizacion: ${formatLocalDateTime(new Date())}`;
+                statusEl.textContent = `Ultima actualizacion: ${formatLocalDateTime(new Date())}`
+                    + (rangeIncludesToday() ? ' (en vivo)' : '');
             } catch (error) {
                 statusEl.textContent = `Error de carga: ${error.message}`;
             }
         }
 
+        function todayIso() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        // Solo tiene sentido refrescar si el rango aun puede recibir datos nuevos
+        function rangeIncludesToday() {
+            return !!dateEndEl.value && dateEndEl.value >= todayIso();
+        }
+
         function startPolling() {
             if (timer) {
                 clearInterval(timer);
+                timer = null;
             }
-            timer = setInterval(loadStats, POLL_MS);
+            if (rangeIncludesToday()) {
+                timer = setInterval(loadStats, POLL_MS);
+            }
         }
+
+        function selectedText(el) {
+            return el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : '';
+        }
+
+        function printReport() {
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+            document.getElementById('printFilters').textContent =
+                `Periodo: ${dateIniEl.value} a ${dateEndEl.value} | Metodo: ${selectedText(methodFilterEl)}`
+                + ` | Status: ${selectedText(statusFilterEl)} | Bloqueos: ${selectedText(blockedFilterEl)}`
+                + ` | Generado: ${formatLocalDateTime(new Date())}`;
+            window.print();
+        }
+
+        window.addEventListener('beforeprint', () => {
+            Object.values(charts).forEach((chart) => chart.resize());
+        });
+        window.addEventListener('afterprint', () => {
+            Object.values(charts).forEach((chart) => chart.resize());
+            startPolling();
+        });
 
         function reloadAndRestartPolling() {
             loadStats();
@@ -841,6 +952,9 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
         methodFilterEl.addEventListener('change', reloadAndRestartPolling);
         statusFilterEl.addEventListener('change', reloadAndRestartPolling);
         blockedFilterEl.addEventListener('change', reloadAndRestartPolling);
+        dateIniEl.addEventListener('change', reloadAndRestartPolling);
+        dateEndEl.addEventListener('change', reloadAndRestartPolling);
+        document.getElementById('printBtn').addEventListener('click', printReport);
 
         loadStats();
         startPolling();
