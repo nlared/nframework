@@ -198,4 +198,25 @@ class FunctionsTest extends TestCase
         $this->assertSame('Example', $mail->FromName);
         $this->assertSame('UTF-8', $mail->CharSet);
     }
+
+    /**
+     * Test nfMailer accepts an explicit SMTP config instead of $config['smtp']
+     */
+    public function testNfMailerAcceptsExplicitSmtpConfig(): void
+    {
+        $mail = nfMailer([
+            'host' => 'mail.example.org',
+            'port' => 465,
+            'secure' => 'ssl',
+            'timeout' => 15,
+            'fromemail' => 'test@example.org',
+        ]);
+
+        $this->assertSame('mail.example.org', $mail->Host);
+        $this->assertSame(465, $mail->Port);
+        $this->assertFalse($mail->SMTPAuth);
+        $this->assertSame('ssl', $mail->SMTPSecure);
+        $this->assertSame(15, $mail->Timeout);
+        $this->assertSame('test@example.org', $mail->From);
+    }
 }
