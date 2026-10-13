@@ -166,23 +166,27 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
                     margin: 12mm;
                 }
 
-                /* Solo se imprime el reporte, sin menu ni plantilla */
-                body * {
-                    visibility: hidden;
+                /* Solo se imprime el reporte (movido a <body> al imprimir), sin menu ni plantilla */
+                html.stats-printing,
+                html.stats-printing body {
+                    height: auto !important;
+                    min-height: 0 !important;
+                    overflow: visible !important;
+                    display: block !important;
+                    background: #fff !important;
                 }
 
-                .stats-print-area,
-                .stats-print-area * {
-                    visibility: visible;
+                html.stats-printing body > *:not(.stats-print-area) {
+                    display: none !important;
                 }
 
                 .stats-print-area {
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    width: 100%;
+                    position: static !important;
+                    width: 100% !important;
+                    height: auto !important;
+                    overflow: visible !important;
                     box-shadow: none !important;
-                    margin: 0;
+                    margin: 0 !important;
                 }
 
                 .stats-print-area * {
@@ -935,10 +939,24 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
             window.print();
         }
 
+        // Al imprimir se mueve el reporte directo a <body> para que ningun contenedor
+        // de la plantilla (altura fija u overflow oculto) lo recorte a una sola hoja.
+        const printArea = document.querySelector('.stats-print-area');
+        const printPlaceholder = document.createComment('stats-print-area');
+
         window.addEventListener('beforeprint', () => {
+            if (!printPlaceholder.parentNode) {
+                printArea.parentNode.insertBefore(printPlaceholder, printArea);
+                document.body.appendChild(printArea);
+            }
+            document.documentElement.classList.add('stats-printing');
             Object.values(charts).forEach((chart) => chart.resize());
         });
         window.addEventListener('afterprint', () => {
+            document.documentElement.classList.remove('stats-printing');
+            if (printPlaceholder.parentNode) {
+                printPlaceholder.parentNode.replaceChild(printArea, printPlaceholder);
+            }
             Object.values(charts).forEach((chart) => chart.resize());
             startPolling();
         });
