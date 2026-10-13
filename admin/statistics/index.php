@@ -213,8 +213,18 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
                     grid-template-columns: repeat(5, 1fr);
                 }
 
+                /* Una grafica por renglon: el ancho del canvas en pantalla no cabe en la hoja */
                 .stats-grid {
-                    grid-template-columns: 1fr 1fr;
+                    display: block;
+                }
+
+                .stats-grid .stats-panel {
+                    margin-bottom: 12px;
+                }
+
+                .stats-canvas canvas {
+                    width: 100% !important;
+                    height: 100% !important;
                 }
 
                 .stats-card,
