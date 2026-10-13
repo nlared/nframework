@@ -761,11 +761,12 @@ function nfPasswordHash(string $password): string
 /**
  * Crea un PHPMailer configurado con los datos SMTP del sitio ($config['smtp']).
  * Vive aquí y no en nframework/router.php para que también funcione en páginas y en job_worker.php.
+ * $smtp permite usar otra configuración (p. ej. probar la del formulario de Admin → Sitio antes de guardarla).
  */
-function nfMailer(): \PHPMailer\PHPMailer\PHPMailer
+function nfMailer(?array $smtp = null): \PHPMailer\PHPMailer\PHPMailer
 {
     global $config;
-    $smtp = $config['smtp'] ?? [];
+    $smtp ??= $config['smtp'] ?? [];
     $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
     $mail->isSMTP();
     $mail->CharSet = 'UTF-8';
@@ -779,6 +780,9 @@ function nfMailer(): \PHPMailer\PHPMailer\PHPMailer
         $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
     }
     $mail->Port = (int) ($smtp['port'] ?? 25);
+    if (!empty($smtp['timeout'])) {
+        $mail->Timeout = (int) $smtp['timeout'];
+    }
     $mail->setFrom($smtp['fromemail'] ?? '', $smtp['fromname'] ?? '');
     $mail->isHTML(true);
     return $mail;
