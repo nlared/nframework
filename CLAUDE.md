@@ -117,7 +117,10 @@ Constructor con arreglo de opciones; se imprimen con `echo`/`<?= ?>` (`__toStrin
 - e.firma/CSD del SAT: `Efirma` (`tipo` `fiel`|`csd`|`any`, `storage` `client`|`server`). En el navegador
   `nfEfirma[id].sign(cadena)`; con llave en servidor solo firma PHP: `Efirma::sign()` / `Efirma::credential()`
   (requiere `efirma_key` en `config.php`). Ver `docs/efirma.php`.
-- Otros: `Signature_pad`, `mapmarker`, `inputaddress`, `Dialog`, `BreadCrumbs`, `Sidebar`, `TreeView`, `Icon`,
+- Firma: `Signature_pad` (`path`; `dataset` + `field` registra la firma; `extension` + `onsave` = evento en el
+  servidor; `submit => 'op'` envía el formulario contenedor al guardar). En el navegador lanza
+  `signature:beforesave|saved|error|clear`. Ver `docs/signature.php`.
+- Otros: `mapmarker`, `inputaddress`, `Dialog`, `BreadCrumbs`, `Sidebar`, `TreeView`, `Icon`,
   `ThemeSwitcher`, `QRReader`, `xspreadsheet`.
 
 **Databinding** — `dataset` representa un documento:
