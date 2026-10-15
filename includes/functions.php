@@ -16,6 +16,67 @@ function clean_filename($filename)
 {
     return preg_replace('/[^a-zA-Z0-9._-]/', '', $filename);
 }
+/**
+ * Valida el nombre de un archivo subido por /nframework/uploadfile.php.
+ * Rechaza archivos ocultos (.htaccess), rutas (../), caracteres especiales y extensiones protegidas
+ * (ejecutables o de configuración), revisando todas las extensiones (x.php.jpg) sin distinguir mayúsculas.
+ * $allowext: extensiones protegidas que el control acepta explícitamente (opción 'allowext').
+ * Las que ejecuta PHP (php, phtml, phar...) solo se aceptan si $dir está fuera de $docroot.
+ */
+function nfValidUploadFilename(string $filename, array $allowext = [], string $dir = '', ?string $docroot = null): bool
+{
+    if ($filename === '' || $filename[0] === '.' || str_contains($filename, '..') || strlen($filename) > 255) {
+        return false;
+    }
+    if (strpbrk($filename, "?[]/\\=<>:;'\"\$#*|~`!{}%+\0") !== false) {
+        return false;
+    }
+    $protected = '/^(php\d*|phtml|pht|phar|phps|pgif|inc|shtml|htaccess|htpasswd|ini|asp|aspx|ascx|jsp|jspx|cgi|pl|py|rb|exe|bat|cmd|com|sh|bash|ps1|vbs|scr|msi|dll|so)$/i';
+    $phpexec = '/^(php\d*|phtml|pht|phar|phps|pgif|inc|shtml)$/i';
+    $allowext = array_map(fn($ext) => strtolower(ltrim((string) $ext, '.')), $allowext);
+    $docroot ??= $_SERVER['DOCUMENT_ROOT'] ?? '';
+    foreach (array_slice(explode('.', $filename), 1) as $extension) {
+        if (!preg_match($protected, $extension)) {
+            continue;
+        }
+        if (!in_array(strtolower($extension), $allowext, true)) {
+            return false;
+        }
+        // Un .php dentro del document root se podría ejecutar con solo abrir su URL.
+        if (preg_match($phpexec, $extension) && nfPathInside($dir, $docroot)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * true si $path está dentro de $base (o si no se puede determinar: ante la duda, se asume que sí).
+ */
+function nfPathInside(string $path, string $base): bool
+{
+    if ($base === '') {
+        return true;
+    }
+    $realbase = realpath($base);
+    if ($realbase === false) {
+        return true;
+    }
+    // La carpeta puede no existir aún (create_dir): se resuelve el ancestro existente más cercano.
+    $realpath = false;
+    for ($probe = $path; $probe !== '' && $realpath === false; $probe = $parent) {
+        $realpath = realpath($probe);
+        $parent = dirname($probe);
+        if ($parent === $probe) {
+            break;
+        }
+    }
+    if ($realpath === false) {
+        return true;
+    }
+    $realbase = rtrim($realbase, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    return str_starts_with(rtrim($realpath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR, $realbase);
+}
 function array_diff_recursive($array1, $array2)
 {
     $result = [];
