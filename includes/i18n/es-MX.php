@@ -280,6 +280,7 @@ $nframework->languages['es-MX'] = [
     'selectfile' => 'Seleccionar archivo',
     'signature_empty' => 'Por favor firma antes de enviar.',
     'upload_success' => 'Carga exitosa.',
+    'upload_error' => 'No se pudo guardar el archivo.',
     'error' => 'Error',
     'required' => 'Este campo es obligatorio',
     'pattern' => 'Formato inválido',

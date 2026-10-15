@@ -258,6 +258,7 @@ $nframework->languages['en-US'] = [
     'selectfile' => 'Select file',
     'signature_empty' => 'Please sign before sending.',
     'upload_success' => 'Upload successful.',
+    'upload_error' => 'The file could not be saved.',
     'error' => 'Error',
     'required' => 'This field is required',
     'pattern' => 'Invalid format',
