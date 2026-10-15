@@ -23,7 +23,7 @@ function bsonFormato($valor): array
 		default => 'object',
 	};
 	$json = MongoDB\BSON\Document::fromPHP(['v' => $valor])->toRelaxedExtendedJSON();
-	return [$tipo, substr($json, 7, -2)];   // quita el envoltorio { "v" : ... }
+	return [$tipo, trim(substr($json, 7, -2))];   // quita el envoltorio { "v" : ... }
 }
 
 /**
