@@ -1502,7 +1502,8 @@ class inputCheckBoxs extends Select
     public function __toMongo($vals)
     {
         $tomongo = [];
-        foreach ($vals as $name => $val) {
+        // Sin ninguna casilla marcada el navegador no envía el campo (null).
+        foreach ((array) $vals as $name => $val) {
             $tomongo[$name] = ($val == 'on' ? true : false);
         }
 

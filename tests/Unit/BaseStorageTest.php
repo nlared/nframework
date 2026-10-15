@@ -363,6 +363,9 @@ class BaseStorageTest extends TestCase
         $this->assertMatchesRegularExpression('/id="permisos_leer"[^>]* checked/', $html);
         $this->assertDoesNotMatchRegularExpression('/id="permisos_escribir"[^>]* checked/', $html);
         $this->assertMatchesRegularExpression('/id="permisos_borrar"[^>]* checked/', $html);
+
+        // Sin casillas marcadas no llega nada en el POST.
+        $this->assertSame([], $input->__toMongo(null));
     }
 
     // ---------------------------------------------------------------- select
