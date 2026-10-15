@@ -32,6 +32,7 @@ $docsMenu = [
 	'Datos' => [
 		'databinding.php' => ['Databinding', 'mif-database', 'Formulario ligado a un documento de MongoDB con dataset.'],
 		'databindingajax.php' => ['Databinding AJAX', 'mif-database', 'El mismo formulario guardando por AJAX con secureform().'],
+		'mongoformats.php' => ['Formatos en MongoDB', 'mif-database', 'Tipo BSON que guarda cada control (int, double, date, ObjectId, bool, GeoJSON) y cómo guardar a mano.'],
 		'arraylist.php' => ['Arreglos embebidos', 'mif-list', 'embededArray: editar una lista dentro de un documento.'],
 		'datatable.php' => ['DataTable', 'mif-table', 'Tabla con datos generados en PHP.'],
 		'datatableajax.php' => ['DataTable AJAX', 'mif-table', 'Tabla paginada en el servidor desde una colección.'],
