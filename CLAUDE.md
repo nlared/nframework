@@ -156,6 +156,10 @@ $t->Ajax([   // paginado/búsqueda/orden en MongoDB vía /nframework/datatable.p
 // JS: datatables['tabla1'].clearPipeline(); datatables['tabla1'].draw();
 ```
 
+`TablefIA` (`docs/tablefia.php`): el usuario pregunta en lenguaje natural y Claude genera el pipeline (requiere
+`anthropic_api_key`). Declare `collections` (con `match` obligatorio y `hidden`) y `relations` (únicos `$lookup`
+permitidos); el servidor valida el pipeline y guarda cada consulta en `nftablesfia` por `uso` para reutilizarla.
+
 **JavaScript desde PHP**: `$javas->addjs($codigo, 'general'|'ready'|'resize'|'scroll')`. Pase datos con
 `json_encode()`, nunca interpolando strings. `notify($titulo, $texto)` y `speak($texto)` son atajos.
 En el navegador están jQuery, Metro UI 5 (`Metro.*`), SweetAlert2 (`Swal.fire`) y `toast()`.

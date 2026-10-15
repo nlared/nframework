@@ -36,6 +36,9 @@ $docsMenu = [
 		'arraylist.php' => ['Arreglos embebidos', 'mif-list', 'embededArray: editar una lista dentro de un documento.'],
 		'datatable.php' => ['DataTable', 'mif-table', 'Tabla con datos generados en PHP.'],
 		'datatableajax.php' => ['DataTable AJAX', 'mif-table', 'Tabla paginada en el servidor desde una colección.'],
+		'tablef.php' => ['TableF: filtros', 'mif-filter-list', 'Constructor visual de filtros sobre una DataTable AJAX, con exportación a CSV y Excel.'],
+		'tablefia.php' => ['TablefIA: consultas con IA', 'mif-search', 'Preguntas en lenguaje natural convertidas en pipelines de MongoDB, guardadas para reutilizarlas.'],
+		'datasetpdo.php' => ['Databinding SQL (PDO)', 'mif-database', 'datasetpdo: los mismos controles ligados a un registro de MySQL, PostgreSQL o SQLite.'],
 		'inegi.php' => ['Caso: domicilio INEGI', 'mif-location', 'Formulario completo con mapa y catálogos de INEGI.'],
 	],
 	'Interfaz' => [
@@ -53,6 +56,12 @@ $docsMenu = [
 		'images.php' => ['Imágenes', 'mif-image', 'Miniaturas, conversión a WebP y páginas de PDF como imagen.'],
 		'backgroundps.php' => ['Procesos en segundo plano', 'mif-cogs', 'bgprocess: lanzar y vigilar un comando largo.'],
 		'jobs.php' => ['Colas de trabajo', 'mif-timer', 'Job y job_worker.php: tareas diferidas con reintentos.'],
+		'cms.php' => ['Páginas y menús del CMS', 'mif-files-empty', 'nfPage(), nfMetroMenu() y renderEmbeddedFunctions(): contenido editable desde el panel.'],
+	],
+	'Servicios' => [
+		'mail.php' => ['Correo', 'mif-mail', 'nfMailer(): enviar correos con el SMTP del sitio, adjuntos y servidor alterno.'],
+		'cache.php' => ['Caché', 'mif-history', 'nfCacheRemember() en el servidor y serveFile()/testcache() en el navegador.'],
+		'i18n.php' => ['Idiomas', 'mif-language', 'Detección de idioma, $nframework->language y cómo agregar textos.'],
 	],
 ];
 
@@ -118,6 +127,37 @@ function docSource(string $file): string
 {
 	return '<details class="mt-6 mb-6"><summary class="text-bold">Código fuente de esta página</summary>'
 		. '<pre class="stay-on"><code class="language-php">' . tocode($file, true) . '</code></pre></details>';
+}
+
+/**
+ * Colecciones de ejemplo demo_clientes y demo_pedidos (TableF, TablefIA). Se crean la primera vez.
+ */
+function docDemoVentas(): void
+{
+	global $m, $config;
+	$db = $m->{$config['sitedb']};
+	if ($db->demo_clientes->estimatedDocumentCount() > 0) {
+		return;
+	}
+	$ciudades = ['Saltillo', 'Monterrey', 'Torreón', 'Monclova'];
+	$clientes = [];
+	foreach (['Abarrotes Ruiz', 'Ferretería El Clavo', 'Papelería Lupita', 'Farmacia Central', 'Taller Hermanos Díaz', 'Café La Esquina', 'Refaccionaria Norte', 'Panadería San José'] as $i => $nombre) {
+		$clientes[] = ['_id' => new MongoDB\BSON\ObjectId(), 'nombre' => $nombre, 'ciudad' => $ciudades[$i % 4], 'credito' => ($i % 3) === 0, 'alta' => new MongoDB\BSON\UTCDateTime(strtotime('-' . (400 - $i * 40) . ' days') * 1000)];
+	}
+	$db->demo_clientes->insertMany($clientes);
+	$pedidos = [];
+	mt_srand(42);
+	for ($i = 1; $i <= 300; $i++) {
+		$pedidos[] = [
+			'folio' => $i,
+			'cliente' => $clientes[mt_rand(0, count($clientes) - 1)]['_id'],
+			'fecha' => new MongoDB\BSON\UTCDateTime(strtotime('-' . mt_rand(0, 365) . ' days') * 1000),
+			'importe' => round(mt_rand(15000, 900000) / 100, 2),
+			'estado' => ['pagado', 'pagado', 'pendiente', 'cancelado'][mt_rand(0, 3)],
+			'productos' => mt_rand(1, 12),
+		];
+	}
+	$db->demo_pedidos->insertMany($pedidos);
 }
 
 if (!$nframework->isAjax()) {
