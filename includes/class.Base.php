@@ -1907,6 +1907,9 @@ class example extends Base
 class datasetpdo
 {
     public $elements;
+    public $pdo;   // conexión PDO
+    public $table; // tabla
+    public $key;   // columna llave primaria
     private $collection;
     private $_id;
     public $info = [];
@@ -1978,6 +1981,7 @@ class datasetpdo
             $sql = 'INSERT INTO ' . self::identifier($this->table)
                 . ' (' . implode(',', array_keys($changes)) . ') VALUES (' . implode(',', array_fill(0, count($changes), '?')) . ')';
             $params = array_values($changes);
+            $this->exists = true;   // el siguiente save() de este objeto actualiza en lugar de insertar
         } else {
             $sets = array_map(fn($column) => $column . ' = ?', array_keys($changes));
             $sql = 'UPDATE ' . self::identifier($this->table) . ' SET ' . implode(',', $sets) . ' WHERE ' . self::identifier($this->key) . ' = ?';
