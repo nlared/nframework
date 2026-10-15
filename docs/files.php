@@ -60,7 +60,7 @@ $pdf = new inputFile([
 ]);
 ?>
 <div class="container">
-	<?= docHeader('Archivos', '<code>inputFile</code> maneja un archivo con ruta fija; <code>inputFiles</code> una carpeta con varios archivos. La subida va a <code>/nframework/uploadfile.php</code>, que solo acepta los controles registrados en la sesión y rechaza extensiones ejecutables (<code>.php</code>, <code>.phtml</code>, <code>.htaccess</code>...).') ?>
+	<?= docHeader('Archivos', '<code>inputFile</code> maneja un archivo con ruta fija; <code>inputFiles</code> una carpeta con varios archivos. La subida va a <code>/nframework/uploadfile.php</code>, que solo acepta los controles registrados en la sesión y rechaza extensiones ejecutables (<code>.php</code>, <code>.phtml</code>, <code>.htaccess</code>...) salvo las que el control permita con <a href="#extensiones"><code>allowext</code></a>.') ?>
 
 	<h3>Un archivo (<code>inputFile</code>)</h3>
 	<?= $imagen ?>
@@ -108,12 +108,33 @@ $_SESSION['frompdf']['docspdf'] = [
 ];
 PHP) ?>
 
+	<h3 id="extensiones">Extensiones protegidas</h3>
+	<p>Por seguridad, <code>/nframework/uploadfile.php</code> rechaza los archivos con extensiones ejecutables o de configuración en <strong>cualquier</strong> parte del nombre (<code>x.php.jpg</code>), sin distinguir mayúsculas:
+		<code>php</code> (y <code>php5</code>, <code>php7</code>…), <code>phtml</code>, <code>pht</code>, <code>phar</code>, <code>phps</code>, <code>pgif</code>, <code>inc</code>, <code>shtml</code>, <code>htaccess</code>, <code>htpasswd</code>, <code>ini</code>, <code>asp</code>, <code>aspx</code>, <code>ascx</code>, <code>jsp</code>, <code>jspx</code>, <code>cgi</code>, <code>pl</code>, <code>py</code>, <code>rb</code>, <code>exe</code>, <code>bat</code>, <code>cmd</code>, <code>com</code>, <code>sh</code>, <code>bash</code>, <code>ps1</code>, <code>vbs</code>, <code>scr</code>, <code>msi</code>, <code>dll</code>, <code>so</code>.</p>
+	<p>Si un control realmente necesita recibir alguno de esos archivos (scripts, instaladores), indíquelo con <code>allowext</code>. La lista se guarda en la sesión del servidor; el navegador no la puede modificar.</p>
+	<?= docCode(<<<'PHP'
+$scripts = new inputFiles([
+    'name' => 'scripts',
+    'caption' => 'Scripts de migración',
+    'dir' => '/var/data/migraciones/',     // fuera del document root
+    'accept' => '.py,.sh',                 // solo filtra el selector del navegador
+    'allowext' => ['py', 'sh'],            // el servidor acepta estas extensiones protegidas
+]);
+PHP) ?>
+	<ul>
+		<li>Cada extensión protegida del nombre debe estar en la lista: con <code>['py']</code>, <code>x.py.exe</code> se sigue rechazando.</li>
+		<li>Las que ejecuta PHP (<code>php</code>, <code>phtml</code>, <code>pht</code>, <code>phar</code>, <code>phps</code>, <code>pgif</code>, <code>inc</code>, <code>shtml</code>) solo se aceptan si la carpeta destino está <strong>fuera del document root</strong>; dentro, cualquiera podría ejecutarlas abriendo su URL.</li>
+		<li>Los archivos ocultos (<code>.htaccess</code>, <code>.user.ini</code>), las rutas (<code>../</code>) y los caracteres especiales se rechazan siempre.</li>
+		<li>Guarde estos archivos en una carpeta sin acceso web y entréguelos con <code>download</code> (que los sirve como descarga), nunca enlazándolos directamente.</li>
+	</ul>
+
 	<h3>Opciones</h3>
 	<table class="table striped compact">
 		<thead><tr><th>Opción</th><th>Descripción</th></tr></thead>
 		<tbody>
 			<tr><td><code>dir</code></td><td>Carpeta destino. <code>create_dir</code> la crea si no existe.</td></tr>
 			<tr><td><code>path</code></td><td>Solo <code>inputFile</code>: ruta completa del archivo final.</td></tr>
+			<tr><td><code>allowext</code></td><td>Extensiones protegidas que este control sí acepta, p. ej. <code>['py', 'sh']</code>. Ver <a href="#extensiones">Extensiones protegidas</a>.</td></tr>
 			<tr><td><code>accept</code></td><td>Tipos permitidos en el selector (<code>image/*</code>, <code>application/pdf</code>, <code>.xlsx</code>).</td></tr>
 			<tr><td><code>delete</code>, <code>preview</code>, <code>download</code></td><td>Botones de borrar, ver y descargar (activos por defecto).</td></tr>
 			<tr><td><code>mode</code></td><td><code>input</code> (por defecto), <code>drop</code> o <code>button</code>.</td></tr>

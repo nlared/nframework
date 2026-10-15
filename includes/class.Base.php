@@ -1520,6 +1520,7 @@ abstract class BaseFileInput extends baseInput
     public $disabled;
     public $create_dir;
     public $accept;
+    public $allowext = []; // extensiones protegidas que se aceptan (p. ej. ['py', 'sh']); ver nfValidUploadFilename()
     public $capture;
     public $mode = 'input'; // input,drop,button
     public $limit_time_start = '';
@@ -1568,6 +1569,7 @@ abstract class BaseFileInput extends baseInput
             'onupload' => $this->onupload,
             'ondelete' => $this->ondelete,
             'create_dir' => $this->create_dir,
+            'allowext' => array_values((array) $this->allowext),
             'onlist' => $this->onlist,
             'oncountcheck' => $this->oncountcheck,
             'limit_time_start' => $this->limit_time_start ?: time(),

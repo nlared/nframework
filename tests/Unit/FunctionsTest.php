@@ -219,4 +219,49 @@ class FunctionsTest extends TestCase
         $this->assertSame(15, $mail->Timeout);
         $this->assertSame('test@example.org', $mail->From);
     }
+
+    public function testUploadFilenameRejectsProtectedExtensionsByDefault(): void
+    {
+        $this->assertTrue(nfValidUploadFilename('foto.jpg'));
+        $this->assertTrue(nfValidUploadFilename('reporte final.pdf'));
+        $this->assertFalse(nfValidUploadFilename('script.py'));
+        $this->assertFalse(nfValidUploadFilename('x.PHP'));
+        $this->assertFalse(nfValidUploadFilename('x.php.jpg'));
+        $this->assertFalse(nfValidUploadFilename('.htaccess'));
+        $this->assertFalse(nfValidUploadFilename('../x.jpg'));
+        $this->assertFalse(nfValidUploadFilename('a;b.jpg'));
+        $this->assertFalse(nfValidUploadFilename(''));
+    }
+
+    public function testUploadFilenameAcceptsAllowedProtectedExtensions(): void
+    {
+        $this->assertTrue(nfValidUploadFilename('script.py', ['py']));
+        $this->assertTrue(nfValidUploadFilename('instala.SH', ['.sh']));
+        $this->assertFalse(nfValidUploadFilename('instala.sh', ['py']));
+        // Cada extensión protegida debe estar permitida.
+        $this->assertFalse(nfValidUploadFilename('x.py.exe', ['py']));
+        // allowext no relaja las demás reglas.
+        $this->assertFalse(nfValidUploadFilename('.x.py', ['py']));
+        $this->assertFalse(nfValidUploadFilename('a$b.py', ['py']));
+    }
+
+    public function testUploadFilenameAllowsPhpOnlyOutsideDocumentRoot(): void
+    {
+        $base = sys_get_temp_dir() . '/nfupload_' . uniqid();
+        mkdir($base . '/public/archivos', 0777, true);
+        mkdir($base . '/privado', 0777, true);
+        try {
+            $docroot = $base . '/public';
+            $this->assertFalse(nfValidUploadFilename('plugin.php', ['php'], $base . '/public/archivos', $docroot));
+            // Carpeta que aún no existe (create_dir) dentro del document root.
+            $this->assertFalse(nfValidUploadFilename('plugin.php', ['php'], $base . '/public/nueva/sub', $docroot));
+            $this->assertTrue(nfValidUploadFilename('plugin.php', ['php'], $base . '/privado', $docroot));
+            // Sin document root conocido se asume que la carpeta es pública.
+            $this->assertFalse(nfValidUploadFilename('plugin.php', ['php'], $base . '/privado', ''));
+            // Las demás extensiones protegidas no dependen de la carpeta.
+            $this->assertTrue(nfValidUploadFilename('script.py', ['py'], $base . '/public/archivos', $docroot));
+        } finally {
+            delTree($base);
+        }
+    }
 }

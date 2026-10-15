@@ -112,7 +112,8 @@ Constructor con arreglo de opciones; se imprimen con `echo`/`<?= ?>` (`__toStrin
 - Opciones: `Select` (`'options' => ['valor' => 'Texto']`, o `'ajax' => [db, collection, columns, label, value, pipeline]`
   para búsqueda en servidor), `SelectIcon`, `inputCheckBox`, `inputCheckBoxs`, `inputRadios`.
 - Archivos: `inputFile`, `inputFiles` (`dir`, `path`, `accept`, `countlimit`, `sizelimit`, `preview`,
-  `delete`, `download`, `extension` + `onupload`/`ondelete`). La carpeta destino la decide el servidor.
+  `delete`, `download`, `extension` + `onupload`/`ondelete`, `allowext` para aceptar extensiones
+  protegidas como `py`/`sh`; las de PHP solo fuera del document root). La carpeta destino la decide el servidor.
 - e.firma/CSD del SAT: `Efirma` (`tipo` `fiel`|`csd`|`any`, `storage` `client`|`server`). En el navegador
   `nfEfirma[id].sign(cadena)`; con llave en servidor solo firma PHP: `Efirma::sign()` / `Efirma::credential()`
   (requiere `efirma_key` en `config.php`). Ver `docs/efirma.php`.

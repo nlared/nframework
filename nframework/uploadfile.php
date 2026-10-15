@@ -2,52 +2,10 @@
 set_time_limit(0);
 require 'include.php';
 header('Content-Type: application/json');
-function isValidFilename(string $filename): bool
+function isValidFilename(string $filename, array $upload): bool
 {
-	// Archivos ocultos (.htaccess, .user.ini) o rutas relativas permiten ejecutar código en el servidor.
-	if ($filename === '' || $filename[0] === '.' || str_contains($filename, '..') || strlen($filename) > 255) {
-		return false;
-	}
-	// Se revisan todas las extensiones (x.php.jpg) sin distinguir mayúsculas (x.PHP, x.phtml, x.phar).
-	$dangerous = '/^(php\d*|phtml|pht|phar|phps|pgif|inc|shtml|htaccess|htpasswd|ini|asp|aspx|ascx|jsp|jspx|cgi|pl|py|rb|exe|bat|cmd|com|sh|bash|ps1|vbs|scr|msi|dll|so)$/i';
-	foreach (array_slice(explode('.', $filename), 1) as $extension) {
-		if (preg_match($dangerous, $extension)) {
-			return false;
-		}
-	}
-	$forbidden = [
-		'?',
-		'[',
-		']',
-		'/',
-		'\\',
-		'=',
-		'<',
-		'>',
-		':',
-		';',
-		"'",
-		'"',
-		'$',
-		'#',
-		'*',
-		'|',
-		'~',
-		'`',
-		'!',
-		'{',
-		'}',
-		'%',
-		'+',
-		"\0"
-	];
-
-	foreach ($forbidden as $char) {
-		if (strpos($filename, $char) !== false) {
-			return false;
-		}
-	}
-	return true;
+	// Ver nfValidUploadFilename() en includes/functions.php; 'allowext' sale de la sesión, no del navegador.
+	return nfValidUploadFilename($filename, (array) ($upload['allowext'] ?? []), (string) ($upload['dir'] ?? ''));
 }
 
 function sanitizeFilename(string $filename): string
@@ -101,7 +59,7 @@ function handleFileDelete(array $upload): array
 
 	$filename = sanitizeFilename(rawurldecode((string) ($_POST['file'] ?? '')));
 
-	if (!isValidFilename($filename)) {
+	if (!isValidFilename($filename, $upload)) {
 		return ['error' => 'Nombre de archivo inválido', 'onresult' => []];
 	}
 
@@ -151,7 +109,7 @@ function handleFileUploadProcess(array $upload): array
 		}
 	}
 	$filename = sanitizeFilename(rawurldecode($ufile['name']));
-	if (!isValidFilename($filename)) {
+	if (!isValidFilename($filename, $upload)) {
 		unlink($ufile['tmp_name']);
 		return ['error' => 'Nombre de archivo inválido', 'onresult' => []];
 	}
