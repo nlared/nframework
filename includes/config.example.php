@@ -93,6 +93,11 @@ switch ($_SERVER['HTTP_HOST'] ?? 'localhost') {
             // Si se pierde o cambia, hay que volver a registrar las e.firmas.
             // 'efirma_key' => '',
 
+            // --- IA ------------------------------------------------------------------------------------
+            // Llave de la API de Anthropic para TablefIA (consultas en lenguaje natural). Si no se define se
+            // usa la variable de entorno ANTHROPIC_API_KEY. Va solo en este archivo, nunca en MongoDB.
+            // 'anthropic_api_key' => '',
+
             // --- Otras opcionales ---------------------------------------------------------------------
             // 'github_token' => '',      // Admin → Update (repositorio privado)
             // 'session_key' => '',       // Se genera solo en MongoDB la primera vez; no lo ponga aquí salvo

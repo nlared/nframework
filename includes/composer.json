@@ -35,7 +35,8 @@
         "spomky-labs/otphp": "^11.3",
         "phpcfdi/sat-ws-descarga-masiva": "^1.1",
         "phpcfdi/cfdi-expresiones": "^3.3",
-        "phpcfdi/sat-estado-cfdi": "^2.0"
+        "phpcfdi/sat-estado-cfdi": "^2.0",
+        "anthropic-ai/sdk": "^0.58"
     },
     "require-dev": {
         "laravel/pint": "^1.24",

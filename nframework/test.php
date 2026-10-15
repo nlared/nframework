@@ -480,6 +480,9 @@ if ($config['sitedb'] == '') {
 		['colletion' => 'nf_attempts', 'key' => ['ip' => 1]],
 		// Efirma: una entrada por usuario y certificado.
 		['colletion' => 'efirmas', 'key' => ['owner' => 1, 'nocert' => 1], 'options' => ['unique' => true]],
+		// TablefIA: listado de consultas guardadas por uso y búsqueda de la misma pregunta.
+		['colletion' => 'nftablesfia', 'key' => ['uso' => 1, 'ultimaejecucion' => -1]],
+		['colletion' => 'nftablesfia', 'key' => ['uso' => 1, 'prompt' => 1, 'confighash' => 1]],
 	];
 	// Opcional: borrar automáticamente las estadísticas de peticiones con más de N días.
 	if (!empty($config['nfuristats_ttl_days'])) {
