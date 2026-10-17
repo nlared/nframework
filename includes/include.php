@@ -624,6 +624,8 @@ try {
     $m = new MongoDB\Client($config['mongo_connection_string']);
 
     $config->loadfromdb();
+    // Con versión en la URL main.js se guarda un año en el navegador (antes se revalidaba en cada página).
+    $nframework->jss['000'] = '/main.js?v=' . nfMainJsVersion();
 } catch (Exception $e) {
     error_log('nframework: ' . $e->getMessage());
     if (php_sapi_name() == 'cli') {

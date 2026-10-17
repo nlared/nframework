@@ -138,6 +138,8 @@ class User implements ArrayAccess
         global $themecolor, $config, $themeswitcher;
         $addtheme = ' ' . $themecolor;
         $csrfToken = csrfToken('/account/login');
+        // Marcador de la sesión para main.js (reenvía la suscripción push solo si cambia); no revela el id.
+        $pushSync = substr(hash('sha256', session_id()), 0, 16);
         $registerButton = '';
         if ($this->info['username'] != 'guest' && $this->info['username'] != '') {
             $safeUsername = htmlspecialchars((string) $this->info['username'], ENT_QUOTES, 'UTF-8');
@@ -195,7 +197,7 @@ HTML;
                 <span class="check"></span>
                 <span class="caption">Recordar me</span>
             </label>
-            <button class="button mini js-push-btn"></button><br>
+            <button class="button mini js-push-btn" data-sync="{$pushSync}"></button><br>
             {$themeswitcher}
             <div class="d-inline-flex">
                 <button class="button" onclick="Metro.getPlugin('#logindrop','dropdown').close();">Cerrar</button>

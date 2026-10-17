@@ -167,6 +167,101 @@ class FunctionsTest extends TestCase
         $this->assertStringContainsString('d-menu', $html);
     }
 
+    public function testNormalizeMenuNodesKeepsOnlyKnownFields(): void
+    {
+        // Formato de jstree tal como lo manda el editor (con state, li_attr, id...).
+        $nodes = nfNormalizeMenuNodes([
+            ['id' => 'j1_1', 'text' => ' Inicio ', 'state' => ['opened' => true], 'li_attr' => ['id' => 'x'],
+                'data' => ['link' => '/', 'icon' => 'mif-home"><script>', 'target' => '_blank', 'extra' => 1]],
+            ['text' => '', 'data' => ['link' => '/sin-texto']],
+            'basura',
+            ['text' => 'Más', 'children' => [['text' => 'Hijo', 'data' => []]]],
+        ]);
+
+        $this->assertSame([
+            ['text' => 'Inicio', 'data' => ['link' => '/', 'icon' => 'mif-homescript', 'onfunction' => '', 'target' => '_blank']],
+            ['text' => 'Más', 'data' => ['link' => '#', 'icon' => '', 'onfunction' => '', 'target' => ''],
+                'children' => [['text' => 'Hijo', 'data' => ['link' => '#', 'icon' => '', 'onfunction' => '', 'target' => '']]]],
+        ], $nodes);
+        $this->assertSame(3, nfCountMenuNodes($nodes));
+    }
+
+    public function testNormalizeMenuNodesLimitsDepthAndRejectsNonLists(): void
+    {
+        $deep = [['text' => '1', 'children' => [['text' => '2', 'children' => [['text' => '3']]]]]];
+        $this->assertArrayNotHasKey('children', nfNormalizeMenuNodes($deep, 2)[0]['children'][0]);
+
+        foreach ([null, 'texto', ['text' => 'objeto, no lista']] as $invalid) {
+            try {
+                nfNormalizeMenuNodes($invalid);
+                $this->fail('Se aceptó ' . var_export($invalid, true));
+            } catch (\InvalidArgumentException $e) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function testMenuConditionAcceptsExpressionsAndReturn(): void
+    {
+        $this->assertTrue(nfMenuCondition(''));
+        $this->assertTrue(nfMenuCondition('1 + 1 === 2'));
+        $this->assertTrue(nfMenuCondition('1 + 1 === 2;'));
+        $this->assertFalse(nfMenuCondition('return false;'));
+        $this->assertTrue(nfMenuCondition('$a = 3; return $a > 2;'));
+        $this->assertSame('test_db', $GLOBALS['config']['sitedb']);
+        $this->assertTrue(nfMenuCondition('$config["sitedb"] === "test_db"'));   // globales disponibles
+        $this->assertFalse(nfMenuCondition('esto no es php ('));                  // error de sintaxis = oculto
+    }
+
+    public function testBuildMetroMenuRendersIconAndTarget(): void
+    {
+        $html = buildMetroMenu([
+            ['text' => 'Inicio', 'data' => ['link' => '/', 'icon' => 'mif-home']],
+            ['text' => 'Ayuda', 'data' => ['link' => 'https://ejemplo.com', 'target' => '_blank']],
+            ['text' => 'Oculto', 'data' => ['link' => '/x', 'onfunction' => 'false']],
+        ], 'h-menu');
+
+        $this->assertStringContainsString('<span class="mif-home icon"></span> Inicio', $html);
+        $this->assertStringContainsString('href="https://ejemplo.com" target="_blank" rel="noopener"', $html);
+        $this->assertStringNotContainsString('Oculto', $html);
+    }
+
+    public function testBuildMetroMenuSkipsMalformedNodes(): void
+    {
+        $html = buildMetroMenu(['texto suelto', null, ['data' => ['link' => '/sin-texto']], ['text' => 'Padre', 'children' => 'no es arreglo']]);
+
+        $this->assertStringContainsString('/sin-texto', $html);
+        $this->assertStringContainsString('Padre', $html);
+        $this->assertStringNotContainsString('dropdown-toggle', $html);
+    }
+
+    /**
+     * Un menú sin código o con JSON inválido no debe romper la página (antes: TypeError en buildMetroMenu).
+     */
+    public function testNfMetroMenuWithEmptyOrInvalidCodeReturnsEmpty(): void
+    {
+        $previous = $GLOBALS['m'];
+        foreach (['', '[{"text": "Inicio",}]', '"texto"', null] as $code) {
+            $GLOBALS['m'] = new class ($code) {
+                public function __construct(private $code)
+                {
+                }
+
+                public function __get($name)
+                {
+                    return $this;
+                }
+
+                public function findOne()
+                {
+                    return $this->code === null ? null : (object) ['code' => $this->code];
+                }
+            };
+            $this->assertSame('', nfMetroMenu('prueba_' . uniqid()), var_export($code, true));
+        }
+        $GLOBALS['m'] = $previous;
+    }
+
     /**
      * Test nfMailer builds a PHPMailer from $config['smtp']
      */

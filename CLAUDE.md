@@ -166,6 +166,8 @@ permitidos); el servidor valida el pipeline y guarda cada consulta en `nftablesf
 **JavaScript desde PHP**: `$javas->addjs($codigo, 'general'|'ready'|'resize'|'scroll')`. Pase datos con
 `json_encode()`, nunca interpolando strings. `notify($titulo, $texto)` y `speak($texto)` son atajos.
 En el navegador están jQuery, Metro UI 5 (`Metro.*`), SweetAlert2 (`Swal.fire`) y `toast()`.
+El filtro de los `Select` de Metro y cualquier input con `data-nf-noautofill` se marcan sin autocompletado del
+navegador ni de gestores de contraseñas (`nfNoAutofill()` en `class.Javas.php`).
 
 ## Usuarios y permisos
 

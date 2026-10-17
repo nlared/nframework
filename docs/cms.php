@@ -8,7 +8,7 @@ $nodos = [
 		['text' => 'Primeros pasos', 'data' => ['link' => '/docs/intro.php']],
 		['text' => 'Rutas', 'data' => ['link' => '/docs/routes.php']],
 	]],
-	['text' => 'Solo administradores', 'data' => ['link' => '/admin/', 'onfunction' => 'global $user; return $user->in("admins");']],
+	['text' => 'Solo administradores', 'data' => ['link' => '/admin/', 'onfunction' => '$user->in("admins")']],
 ];
 $menuHtml = buildMetroMenu($nodos, 'h-menu');
 
@@ -53,10 +53,11 @@ echo buildMetroMenu([
     ['text' => 'Documentación', 'children' => [
         ['text' => 'Primeros pasos', 'data' => ['link' => '/docs/intro.php']],
     ]],
-    ['text' => 'Solo administradores', 'data' => ['link' => '/admin/', 'onfunction' => 'global $user; return $user->in("admins");']],
+    ['text' => 'Solo administradores', 'data' => ['link' => '/admin/', 'onfunction' => '$user->in("admins")']],
 ], 'h-menu');
 PHP) ?>
-	<p>El campo <strong>OnFunction</strong> de un nodo es código PHP que se evalúa con <code>eval()</code>: si devuelve un valor falso, el nodo no se muestra (en el ejemplo, «Solo administradores» aparece solo si usted está en el grupo <code>admins</code>). Un error en ese código oculta el nodo.</p>
+	<p>Cada nodo tiene <code>text</code> y en <code>data</code>: <code>link</code>, <code>icon</code> (clase de Metro Icons, p. ej. <code>mif-home</code>), <code>target</code> (<code>_blank</code> abre otra pestaña) y <code>onfunction</code>. Los menús que guarda el panel pasan por <code>nfNormalizeMenuNodes()</code>, que descarta todo lo demás.</p>
+	<p>La <strong>condición</strong> (<code>onfunction</code>, «Condición» en el editor) es código PHP evaluado con <code>nfMenuCondition()</code>: el nodo se muestra solo si da verdadero. Puede ser una expresión (<code>$user->in('admins')</code>, <code>!$user->isLoggedIn()</code>) o código con <code>return</code>; <code>$user</code>, <code>$config</code>, <code>$m</code> y <code>$nframework</code> ya están disponibles. Un error en ese código oculta el nodo y queda en el log.</p>
 
 	<h3>Funciones incrustadas: <code>renderEmbeddedFunctions($html)</code></h3>
 	<p>Reemplaza cada <code>{{ funcion(arg1, arg2) }}</code> del HTML por lo que devuelve esa función de PHP. Los argumentos son texto (se les quitan las comillas). El router lo aplica al fragmento <code>_header</code>.</p>

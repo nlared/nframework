@@ -36,19 +36,22 @@ function updateBtn() {
 	pushButton.disabled = false;
 }
 
+// /getPayload guarda la suscripción por sesión del servidor. Solo se envía cuando cambia la suscripción o la
+// sesión (data-sync del botón es un hash del id de sesión, que cambia al iniciar sesión): antes se enviaba en
+// cada página.
 function updateSubscriptionOnServer(subscription) {
-  // TODO: Send subscription to application server
-  fetch('/getPayload?endpoint=' + JSON.stringify(subscription));
- // const subscriptionJson = document.querySelector('.js-subscription-json');
-  //const subscriptionDetails =
-    //document.querySelector('.js-subscription-details');
-
-  if (subscription) {
-    //subscriptionJson.textContent = JSON.stringify(subscription);
-    //subscriptionDetails.classList.remove('is-invisible');
-  } else {
-    //subscriptionDetails.classList.add('is-invisible');
-  }
+  var key = (pushButton && pushButton.dataset.sync ? pushButton.dataset.sync : '') + '|' + (subscription ? subscription.endpoint : '');
+  try {
+    if (localStorage.getItem('nfPushSync') === key) {
+      return;
+    }
+  } catch (e) {}
+  fetch('/getPayload?endpoint=' + encodeURIComponent(JSON.stringify(subscription)), { credentials: 'same-origin' })
+    .then(function (response) {
+      if (response.ok) {
+        try { localStorage.setItem('nfPushSync', key); } catch (e) {}
+      }
+    });
 }
 
 function subscribeUser() {

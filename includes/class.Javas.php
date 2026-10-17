@@ -38,6 +38,42 @@ class Javas
 			var datatables=[];
 var tomselects=[];
 var ajaxdialogs=[];
+
+// El campo de filtro que Metro agrega a los Select (y cualquier input con data-nf-noautofill) no debe mostrar
+// el autocompletado ni el autollenado del navegador o de los gestores de contraseñas: se encimaba con la lista.
+var nfNoAutofillSelector = '.select .drop-container input, input[data-nf-noautofill]';
+function nfNoAutofill(input) {
+	if (input.dataset.nfNoautofillDone) { return; }
+	input.dataset.nfNoautofillDone = '1';
+	input.setAttribute('autocomplete', 'off');
+	input.setAttribute('autocorrect', 'off');
+	input.setAttribute('autocapitalize', 'off');
+	input.setAttribute('spellcheck', 'false');
+	input.setAttribute('data-lpignore', 'true');      // LastPass
+	input.setAttribute('data-1p-ignore', 'true');     // 1Password
+	input.setAttribute('data-bwignore', 'true');      // Bitwarden
+	input.setAttribute('data-form-type', 'other');    // Dashlane
+	// Sin name a propósito: dentro de un formulario se enviaría junto con los datos.
+}
+function nfNoAutofillIn(root) {
+	if (!root || !root.querySelectorAll) { return; }
+	if (root.matches && root.matches(nfNoAutofillSelector)) { nfNoAutofill(root); }
+	root.querySelectorAll(nfNoAutofillSelector).forEach(nfNoAutofill);
+}
+(function () {
+	function start() {
+		nfNoAutofillIn(document.body);
+		// Los Select se crean también después (diálogos, AJAX, Select con 'ajax'): se vigila el DOM.
+		new MutationObserver(function (mutations) {
+			mutations.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) { nfNoAutofillIn(n); } }); });
+		}).observe(document.body, { childList: true, subtree: true });
+		// Respaldo: al enfocar, por si el campo se creó de otra forma.
+		document.addEventListener('focusin', function (e) {
+			if (e.target.matches && e.target.matches(nfNoAutofillSelector)) { nfNoAutofill(e.target); }
+		}, true);
+	}
+	if (document.body) { start(); } else { document.addEventListener('DOMContentLoaded', start); }
+})();
 {$this->js['general']}
 
 
