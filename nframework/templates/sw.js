@@ -1,111 +1,93 @@
-var urlsToCache = {{tocache|json_encode()|raw}};
+// Service worker de nframework: notificaciones push y una página sin conexión.
+// Solo intercepta la navegación entre páginas. El resto (CSS, JS, imágenes, AJAX) va directo a la red: antes
+// toda petición GET pasaba por aquí y en las herramientas del navegador cada recurso aparecía dos veces.
+const CACHE = 'nf-offline-v2';
+const OFFLINE_URL = '/__offline';
+const OFFLINE_HTML = '<!doctype html><html lang="es"><head><meta charset="utf-8">'
+  + '<meta name="viewport" content="width=device-width, initial-scale=1"><title>Sin conexión</title>'
+  + '<style>body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;'
+  + 'min-height:100vh;margin:0;color:#333;text-align:center}button{padding:.6em 1.2em;font-size:1em}</style>'
+  + '</head><body><div><h1>Sin conexión</h1><p>Revise su conexión a internet e intente de nuevo.</p>'
+  + '<button onclick="location.reload()">Reintentar</button></div></body></html>';
 
-self.addEventListener('install', function(event) {
-  event.waitUntil(preLoad());
+self.addEventListener('install', function (event) {
+  // La página sin conexión se genera aquí mismo: no depende de que una URL del sitio o de un CDN responda.
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(function (cache) {
+        return cache.put(OFFLINE_URL, new Response(OFFLINE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } }));
+      })
+      .then(function () { return self.skipWaiting(); })
+  );
 });
 
-var preLoad = function(){
-  console.log('Installing web app');
-  return caches.open('offline').then(function(cache) {
-    console.log('caching index and important routes');
-    return cache.addAll(urlsToCache);
-  });
-};
-self.addEventListener('fetch', function(event) {
-	if (event.request.method != 'GET') return;
- 	event.respondWith(checkResponse(event.request).catch(function() {
-		return returnFromCache(event.request);
-	}));
-	//event.waitUntil(addToCache(event.request));
+self.addEventListener('activate', function (event) {
+  // Borra cachés de versiones anteriores (la vieja 'offline') y toma el control de las pestañas abiertas.
+  event.waitUntil(
+    caches.keys()
+      .then(function (keys) {
+        return Promise.all(keys.filter(function (key) { return key !== CACHE; }).map(function (key) { return caches.delete(key); }));
+      })
+      .then(function () { return self.clients.claim(); })
+  );
 });
 
-var checkResponse = function(request){
-	return new Promise(function(fulfill, reject) {
-	    fetch(request).then(function(response){
-	    	if(response.status !== 404) {
-	        	fulfill(response);
-	    	}else{
-	        	reject();
-	    	}
-	    }, reject);
-	});
-};
+self.addEventListener('fetch', function (event) {
+  if (event.request.mode !== 'navigate') {
+    return;   // sin respondWith: el navegador hace la petición normal
+  }
+  event.respondWith(
+    fetch(event.request).catch(function () {
+      return caches.match(OFFLINE_URL);
+    })
+  );
+});
 
-var addToCache = function(request){
-	return caches.open('offline').then(function (cache) {
-    	return fetch(request).then(function (response) {
-    		console.log(response.url + ' was cached');
-    		return cache.put(request, response);
-    	});
-	});
-};
-
-var returnFromCache = function(request){
-	return caches.open('offline').then(function (cache) {
-    	return cache.match(request).then(function (matching) {
-    		if(!matching || matching.status == 404) {
-    			return cache.match('offline.html');
-    		}else{
-    			return matching;
-    		}
-    	});
-	});
-};
-
+// ---------------------------------------------------------------- notificaciones push
 
 const applicationServerPublicKey = '{{publicKey}}';
 
-/* eslint-enable max-len */
-
 function urlB64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
-    .replace(/_/g, '/');
-
-  const rawData = window.atob(base64);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = self.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
-
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
 }
 
-self.addEventListener('push', function(event) {
-  console.log('[Service Worker] Push Received.');
-  console.log('[Service Worker] Push had this data: \"\${event.data.text()}\"');
-
-  const title = 'Push Codelab';
-  const options = {
-    body: event.data.text()
-    //icon: 'images/icon.png',
-   // badge: 'images/badge.png'
-  };
-
+// El mensaje puede ser texto o JSON {title, body, url, icon}.
+self.addEventListener('push', function (event) {
+  let data = {};
+  const text = event.data ? event.data.text() : '';
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    data = { body: text };
+  }
+  const title = data.title || self.location.hostname;
+  const options = { body: data.body || '', data: { url: data.url || '/' } };
+  if (data.icon) {
+    options.icon = data.icon;
+  }
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener('notificationclick', function(event) {
-  console.log('[Service Worker] Notification click Received.');
+self.addEventListener('notificationclick', function (event) {
   event.notification.close();
-  event.waitUntil(
-    clients.openWindow('https://developers.google.com/web/')
-  );
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(self.clients.openWindow(url));
 });
 
-self.addEventListener('pushsubscriptionchange', function(event) {
-  console.log('[Service Worker]: \'pushsubscriptionchange\' event fired.');
-  const applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
+self.addEventListener('pushsubscriptionchange', function (event) {
   event.waitUntil(
     self.registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: applicationServerKey
-    })
-    .then(function(newSubscription) {
-      // TODO: Send to application server
-      fetch('/getPayload?endpoint=' + JSON.stringify(newSubscription));
-      console.log('[Service Worker] New subscription: ', newSubscription);
+      applicationServerKey: urlB64ToUint8Array(applicationServerPublicKey)
+    }).then(function (subscription) {
+      return fetch('/getPayload?endpoint=' + encodeURIComponent(JSON.stringify(subscription)), { credentials: 'same-origin' });
     })
   );
 });

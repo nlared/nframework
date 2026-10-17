@@ -102,9 +102,12 @@ $router->addRoute('index', function ($route, $variables) {
 $router->addRoute('/main.js', function (string $route, array $p) {
 	global $twig, $config, $nframework;
 	$js = $twig->load('main.js')->render([
-		'publicKey' => $config['notifications']['publicKey']
+		'publicKey' => $config['notifications']['publicKey'] ?? ''
 	]);
-	$nframework->serveContent($js, 'text/javascript; charset=utf-8');   // 304 si no cambió
+	// Con ?v= (la URL que imprime el framework) el contenido no cambia nunca: un año en caché, sin revalidar.
+	// Sin versión, 304 si no cambió.
+	$versioned = ($_GET['v'] ?? null) === nfMainJsVersion();
+	$nframework->serveContent($js, 'text/javascript; charset=utf-8', $versioned ? 31536000 : 0, $versioned);
 }, 'GET');
 
 $router->addRoute('/account/login', function (string $route, array $p) {
@@ -951,10 +954,7 @@ $router->addRoute('/privacidad', function (string $route, array $p) {
 $router->addRoute('/sw.js', function (string $route, array $p) {
 	global $nframework, $twig, $config;
 	$js = $twig->load('sw.js')->render([
-		'publicKey' => $config['notifications']['publicKey'],
-		'tocache' => array_values(array_merge($nframework->csss, $nframework->jss)),
-		'csss' => implode("','", $nframework->csss),
-		'jss' => implode("','", $nframework->jss)
+		'publicKey' => $config['notifications']['publicKey'] ?? '',
 	]);
 	// El navegador revisa el service worker al navegar; con ETag la respuesta es un 304 vacío.
 	$nframework->serveContent($js, 'application/javascript; charset=utf-8');

@@ -17,6 +17,17 @@ function clean_filename($filename)
     return preg_replace('/[^a-zA-Z0-9._-]/', '', $filename);
 }
 /**
+ * Versión de /main.js para la URL (?v=): cambia si cambia la plantilla o la llave pública de notificaciones,
+ * que son lo único que define su contenido.
+ */
+function nfMainJsVersion(): string
+{
+    global $config;
+    $template = dirname(__DIR__) . '/nframework/templates/main.js';
+    return substr(md5((string) @filemtime($template) . '|' . (string) ($config['notifications']['publicKey'] ?? '')), 0, 10);
+}
+
+/**
  * Valida el nombre de un archivo subido por /nframework/uploadfile.php.
  * Rechaza archivos ocultos (.htaccess), rutas (../), caracteres especiales y extensiones protegidas
  * (ejecutables o de configuración), revisando todas las extensiones (x.php.jpg) sin distinguir mayúsculas.
@@ -125,32 +136,104 @@ function ifset($array, $key): mixed
     return isset($array[$key]) ? $array[$key] : null;
 }
 
+/**
+ * Limpia el árbol de un menú (formato de Admin → Menús / jstree) y deja solo lo que usa buildMetroMenu():
+ * [['text' => ..., 'data' => ['link', 'icon', 'onfunction', 'target'], 'children' => [...]], ...].
+ * Descarta nodos sin texto y lo que exceda $maxDepth niveles. Lanza InvalidArgumentException si $nodes no
+ * es una lista.
+ */
+function nfNormalizeMenuNodes($nodes, int $maxDepth = 4, int $depth = 1): array
+{
+    if (!is_array($nodes) || !array_is_list($nodes)) {
+        throw new InvalidArgumentException('El menú debe ser una lista de elementos.');
+    }
+    $clean = [];
+    foreach ($nodes as $node) {
+        if (!is_array($node)) {
+            continue;
+        }
+        $text = trim((string) ($node['text'] ?? ''));
+        if ($text === '') {
+            continue;
+        }
+        $data = is_array($node['data'] ?? null) ? $node['data'] : [];
+        $item = [
+            'text' => mb_substr($text, 0, 100),
+            'data' => [
+                'link' => trim((string) ($data['link'] ?? '')) ?: '#',
+                // Solo clases CSS (mif-home, fg-red...): el ícono se imprime dentro de class="".
+                'icon' => trim(preg_replace('/[^A-Za-z0-9 _-]/', '', (string) ($data['icon'] ?? ''))),
+                'onfunction' => trim((string) ($data['onfunction'] ?? '')),
+                'target' => ($data['target'] ?? '') === '_blank' ? '_blank' : '',
+            ],
+        ];
+        $children = $node['children'] ?? [];
+        if ($depth < $maxDepth && is_array($children) && $children !== []) {
+            $item['children'] = nfNormalizeMenuNodes(array_values($children), $maxDepth, $depth + 1);
+        }
+        $clean[] = $item;
+    }
+    return $clean;
+}
+
+/**
+ * Cuenta los elementos de un menú (todos los niveles).
+ */
+function nfCountMenuNodes(array $nodes): int
+{
+    $count = 0;
+    foreach ($nodes as $node) {
+        $count += 1 + (is_array($node['children'] ?? null) ? nfCountMenuNodes($node['children']) : 0);
+    }
+    return $count;
+}
+
+/**
+ * Condición de visibilidad de un elemento de menú (campo OnFunction de Admin → Menús): código PHP que se
+ * evalúa con $user, $config, $m y $nframework disponibles. Acepta una expresión ($user->in('admins')) o
+ * código con return. Vacía = visible; un error = oculto.
+ */
+function nfMenuCondition(string $code): bool
+{
+    $code = trim($code);
+    if ($code === '') {
+        return true;
+    }
+    if (!preg_match('/\breturn\b/', $code)) {
+        $code = 'return (' . rtrim($code, "; \t\n\r") . ');';
+    }
+    try {
+        return (bool) eval('global $user, $config, $m, $nframework; ' . $code);
+    } catch (Throwable $e) {
+        error_log('nfMenuCondition: ' . $e->getMessage());
+        return false;
+    }
+}
+
 function buildMetroMenu(array $nodes, string $menuClass = '', string $data_role = ''): string
 {
     $html = $menuClass ? "<ul class=\"$menuClass\" data-role=\"$data_role\">\n" : "<ul>\n";
 
     foreach ($nodes as $node) {
-        $text = htmlspecialchars($node['text']);
-        $link = htmlspecialchars($node['data']['link'] ?? '#');
-        $onfunction = $node['data']['onfunction'] ?? null;
+        // Un nodo mal formado (menú editado a mano o guardado a medias) se omite en lugar de romper la página.
+        if (!is_array($node)) {
+            continue;
+        }
+        $data = is_array($node['data'] ?? null) ? $node['data'] : [];
+        $text = htmlspecialchars((string) ($node['text'] ?? ''));
+        $link = htmlspecialchars((string) ($data['link'] ?? '#'));
+        $icon = trim(preg_replace('/[^A-Za-z0-9 _-]/', '', (string) ($data['icon'] ?? '')));
+        $label = ($icon !== '' ? '<span class="' . $icon . ' icon"></span> ' : '') . $text;
+        $target = ($data['target'] ?? '') === '_blank' ? ' target="_blank" rel="noopener"' : '';
 
-        // Evaluate condition if present
-        $shouldRender = true;
-        if ($onfunction) {
-            try {
-                $shouldRender = eval("$onfunction");
-            } catch (Throwable $e) {
-                $shouldRender = false;
-            }
+        if (!nfMenuCondition((string) ($data['onfunction'] ?? ''))) {
+            continue;
         }
 
-        if (!$shouldRender)
-            continue;
-
-        if (!empty($node['children'])) {
-            $html .= "<li><a href=\"#\" class=\"dropdown-toggle\">$text</a>" . buildMetroMenu($node['children'], "d-menu", "dropdown");
+        if (!empty($node['children']) && is_array($node['children'])) {
+            $html .= "<li><a href=\"#\" class=\"dropdown-toggle\">$label</a>" . buildMetroMenu($node['children'], "d-menu", "dropdown");
         } else {
-            $html .= "<li><a href=\"$link\">$text</a>";
+            $html .= "<li><a href=\"$link\"$target>$label</a>";
         }
 
         $html .= "</li>\n";
@@ -169,13 +252,16 @@ function nfMetroMenu($menuName, $menuClass = 'h-menu'): string
         $menu = $m->{$config['sitedb']}->menus->findOne(['name' => $menuName], ['projection' => ['code' => 1]]);
         return $menu ? (string) $menu->code : null;
     });
-    if ($json !== null) {
-        $nodes = json_decode($json, true);
-        $html = buildMetroMenu($nodes, $menuClass);
-    } else {
-        $html = '';
+    $nodes = $json !== null && $json !== '' ? json_decode($json, true) : null;
+    if (!is_array($nodes)) {
+        // Menú inexistente, vacío o con JSON inválido: la página se muestra sin él.
+        if ($json !== null && $json !== '') {
+            $why = json_last_error() !== JSON_ERROR_NONE ? json_last_error_msg() : 'no es una lista de elementos';
+            error_log('nfMetroMenu: el menú ' . $menuName . ' no tiene un JSON válido (' . $why . '); ábralo en Admin → Menús y guárdelo');
+        }
+        return '';
     }
-    return $html;
+    return buildMetroMenu($nodes, $menuClass);
 }
 
 /**

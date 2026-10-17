@@ -45,7 +45,7 @@ $examples = [
 	['code' => "new inputCheckboxs(['name' => 'casillas2', 'caption' => 'Horizontal con valor', 'horizontal' => true, 'options' => ['a' => 'Alpha', 'b' => 'Beta', 'c' => 'Gamma'], 'value' => ['a' => true, 'c' => true]]);"],
 	['code' => "new inputRadios(['name' => 'radio1', 'caption' => 'Radios', 'options' => ['low' => 'Baja', 'medium' => 'Media', 'high' => 'Alta'], 'value' => 'medium']);"],
 
-	['title' => 'Select', 'desc' => 'Para buscar opciones en una colección mientras se escribe vea <a href="inputsajax.php">Select con AJAX</a>.'],
+	['title' => 'Select', 'desc' => 'Para buscar opciones en una colección mientras se escribe vea <a href="inputsajax.php">Select con AJAX</a>. El campo para filtrar la lista se marca solo con <code>autocomplete="off"</code> (y las marcas que respetan LastPass, 1Password, Bitwarden y Dashlane) para que el autocompletado del navegador no se encime; para otro input propio agregue <code>data-nf-noautofill</code>.'],
 	['code' => "new select(['name' => 'select1', 'caption' => 'Simple', 'options' => ['' => 'Seleccione...', '1' => 'Opción 1', '2' => 'Opción 2']]);"],
 	['code' => "new select(['name' => 'select2', 'caption' => 'Agrupado', 'options' => ['Frontend' => ['html' => 'HTML', 'css' => 'CSS'], 'Backend' => ['php' => 'PHP', 'node' => 'Node.js']], 'value' => 'php']);",
 		'desc' => 'Un arreglo dentro de <code>options</code> se convierte en <code>&lt;optgroup&gt;</code>.'],
