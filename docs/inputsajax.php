@@ -66,10 +66,11 @@ $examples = [
 			<tr><td><code>label</code>, <code>value</code></td><td>Expresiones de agregación (<code>'$campo'</code> o <code>['$concat' => ...]</code>) para el texto y el valor de cada opción.</td></tr>
 			<tr><td><code>pipeline</code></td><td>Etapas previas (<code>$match</code>, <code>$sort</code>, <code>$limit</code>...). Obligatorio; use <code>[]</code> si no hay.</td></tr>
 			<tr><td><code>args</code> + <code>adduri</code></td><td><code>args</code> lista parámetros GET que se agregan como filtro exacto; <code>adduri</code> (p.ej. <code>'&amp;estado=COA'</code>) los envía.</td></tr>
+			<tr><td><code>limit</code></td><td>Máximo de opciones por búsqueda (después del filtro por texto). Sin él se devuelven todas las coincidencias.</td></tr>
 			<tr><td><code>load</code></td><td>Función JavaScript propia de carga, en lugar de la consulta estándar.</td></tr>
 		</tbody>
 	</table>
-	<p class="remark warning">Use un arreglo para <code>ajax</code>. La clase <code>SelectAjaxOptions</code> todavía no es compatible con el control.</p>
+	<p class="remark info"><code>ajax</code> puede ser un arreglo o un objeto <code>SelectAjaxOptions</code>. Para sugerir texto libre (sin obligar a elegir) vea <a href="/docs/autocomplete.php">Autocompletar</a>.</p>
 
 	<h3>Valores de tipo ObjectId</h3>
 	<?= docCode(<<<'PHP'

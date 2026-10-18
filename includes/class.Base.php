@@ -461,6 +461,7 @@ class inputText extends baseInput
     public $autotrim;
     public $autocomplete = 'off';
     public $ajax;
+    public $suggest;
 
     public function __construct($options = [])
     {
@@ -482,75 +483,11 @@ class inputText extends baseInput
 
     public function __toString(): string
     {
-        global $nframework, $javas;
         if (!empty($this->ajax)) {
-            $args = $this->ajax->args ?? '&o=2';
-            $nframework->csss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css";
-            $nframework->jss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js";
-
-            $this->addclass = ($this->addclass ? $this->addclass . ' ' : '') . ' tomselect';
-            //$this->role = 'tomselect';
-
-            if (!empty($this->ajax->load) && $this->ajax->load != '') {
-                $load = $this->ajax->load;
-            } else {
-                if (!empty($this->value)) {
-                    $items = 'tomselects["' . $this->id . '"].setValue(' . json_encode($this->value) . ');';
-                } else {
-                    $items = '';
-                }
-                $load = <<<js
-function(query, callback){
-                    //if(!query.length&&  )return callback();
-                    fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['adduri']}&q='+encodeURIComponent(query))
-                    .then(res=>res.json())
-                    .then(json=>{
-                        callback(json);                        
-                    }).catch(()=>{
-                        callback();
-                    });
-                }
-js;
-            }
-            $this->role = 'tomselect';
-            unset($this->ajax->load);
-            $_SESSION['selectajax'][$this->id] = $this->ajax;
-            addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
-
-
-            $javas->addjs(
-                <<<js
-	tomselects['{$this->id}'] = new TomSelect('#{$this->id}',{
-		valueField:'value',
-		labelField:'label',
-		searchField:'label',   
-		load:{$load}
-	});
-js,
-                'ready'
-            );
-
-
-            if (!empty($this->value)) {
-                $javas->addjs(
-                    <<<js
-fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['adduri']}&qid='+encodeURIComponent({$this->jsValue()}))
-    .then(res => res.json())
-    .then(items => {
-        console.log(items);
-        items.forEach(item => {
-            tomselects['{$this->id}'].addOption(item);
-            tomselects['{$this->id}'].addItem(item.value);
-            tomselects['{$this->id}'].refreshOptions(false);
-            tomselects['{$this->id}'].setValue(item.value);
-        });
-    });
-js,
-                    'ready'
-                );
-            }
+            nfTomSelectAjax($this);
+        } elseif (!empty($this->suggest)) {
+            $this->renderSuggest();
         }
-
 
         return <<<HTML
             <div class="form-group">
@@ -571,9 +508,66 @@ js,
         return parent::is_valid($newval);
     }
 
-    private function jsValue(): string
+    /**
+     * Sugerencias mientras se escribe. A diferencia de 'ajax' (Tom Select, valor de un catálogo), el campo
+     * sigue siendo texto libre: la lista solo ayuda a escribir. 'suggest' acepta:
+     *   ['Manzana', 'Mango', ...]                lista fija, se filtra en el navegador
+     *   '/api/x' o ['url' => '/api/x']            GET ?q=texto que responde JSON: ["a", ...], [{label, value}, ...]
+     *                                            o {items: [...]}; con 'key' se toma otra propiedad
+     *   ['collection' => 'clientes', 'columns' => ['nombre'], 'value' => '$nombre', ...]   búsqueda en MongoDB
+     *                                            (db, label, pipeline, fields, distinct) vía select_ajax.php
+     * Comunes: minlength (1), delay (250 ms), limit (20), depends (['param' => '#selector']: valor de otro
+     * campo; en MongoDB es filtro exacto y se omite si está vacío), clearondepends (true) y onselect
+     * (cuerpo de una función JS que recibe item e input).
+     */
+    private function renderSuggest(): void
     {
-        return json_encode((string) $this->value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        global $javas, $config;
+        $suggest = is_string($this->suggest) ? ['url' => $this->suggest] : (array) $this->suggest;
+        if (array_is_list($suggest)) {
+            $suggest = ['items' => $suggest];
+        }
+
+        $cfg = [];
+        foreach (['minlength', 'delay', 'limit', 'depends', 'param', 'key', 'clearondepends'] as $option) {
+            if (isset($suggest[$option])) {
+                $cfg[$option] = $suggest[$option];
+            }
+        }
+        if (isset($suggest['items'])) {
+            $cfg['items'] = array_values((array) $suggest['items']);
+        } elseif (!empty($suggest['url'])) {
+            $cfg['url'] = (string) $suggest['url'];
+        } elseif (!empty($suggest['collection'])) {
+            $value = $suggest['value'] ?? '$' . ((array) ($suggest['columns'] ?? []))[0];
+            $columns = (array) ($suggest['columns'] ?? (is_string($value) ? [ltrim($value, '$')] : []));
+            $_SESSION['selectajax'][$this->id] = [
+                'suggest' => true,
+                'db' => $suggest['db'] ?? $config['sitedb'] ?? '',
+                'collection' => $suggest['collection'],
+                'columns' => $columns,
+                'value' => $value,
+                'label' => $suggest['label'] ?? $value,
+                'pipeline' => $suggest['pipeline'] ?? [],
+                'fields' => $suggest['fields'] ?? [],
+                'distinct' => !empty($suggest['distinct']),
+                'limit' => (int) ($suggest['limit'] ?? 20),
+                'args' => array_keys((array) ($suggest['depends'] ?? [])),
+            ];
+            addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
+            $cfg['url'] = '/nframework/select_ajax.php?id=' . urlencode($this->id);
+        }
+
+        // Sin autocompletado del navegador ni de gestores de contraseñas: se encimaría con la lista.
+        $this->tags['data-nf-noautofill'] = 'true';
+        nfSuggestScript();
+        $flags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+        $onselect = !empty($suggest['onselect']) ? 'function (item, input) {' . $suggest['onselect'] . '}' : 'null';
+        $javas->addjs(
+            'nfSuggest(document.getElementById(' . json_encode($this->id, $flags) . '), '
+            . json_encode((object) $cfg, $flags) . ', ' . $onselect . ");\n",
+            'ready'
+        );
     }
 
     private function getMaskRole(): string
@@ -1190,8 +1184,204 @@ class SelectAjaxOptions
     public $value;
     public $args;
     public $adduri;
+    public $limit;
     public String $load;
 }
+
+/**
+ * Convierte un Select o inputText con 'ajax' en un buscador Tom Select que consulta
+ * /nframework/select_ajax.php. Acepta 'ajax' como arreglo o como SelectAjaxOptions.
+ * La consulta se guarda en la sesión: el navegador solo envía el texto buscado.
+ */
+function nfTomSelectAjax(baseInput $input): void
+{
+    global $nframework, $javas;
+    $ajax = is_object($input->ajax) ? get_object_vars($input->ajax) : (array) $input->ajax;
+    $id = $input->id;
+    $jsid = json_encode($id, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+    $url = '/nframework/select_ajax.php?id=' . urlencode($id) . ($ajax['adduri'] ?? '');
+    $jsurl = json_encode($url, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_SLASHES);
+
+    $nframework->csss[70] = 'https://cdn.jsdelivr.net/npm/tom-select@2.6.2/dist/css/tom-select.css';
+    $nframework->jss[70] = 'https://cdn.jsdelivr.net/npm/tom-select@2.6.2/dist/js/tom-select.complete.min.js';
+    $input->addclass = trim($input->addclass . ' tomselect');
+    $input->role = 'tomselect';
+
+    $load = !empty($ajax['load']) ? $ajax['load'] : <<<js
+function (query, callback) {
+        fetch({$jsurl} + '&q=' + encodeURIComponent(query))
+            .then(res => res.json())
+            .then(json => callback(Array.isArray(json) ? json : []))
+            .catch(() => callback());
+    }
+js;
+    unset($ajax['load']);
+    $_SESSION['selectajax'][$id] = $ajax;
+    addVarToGarbage('selectajax\\' . $id, time() + (60 * 60));
+
+    $javas->addjs(
+        <<<js
+tomselects[{$jsid}] = new TomSelect('#' + CSS.escape({$jsid}), {
+    valueField: 'value',
+    labelField: 'label',
+    searchField: 'label',
+    load: {$load}
+});
+js,
+        'ready'
+    );
+
+    // Valor inicial (uno o varios): se pide su etiqueta para mostrarla.
+    $values = array_values(array_filter(array_map('strval', is_iterable($input->value) ? iterator_to_array($input->value, false) : [(string) $input->value]), fn($v) => $v !== ''));
+    if ($values) {
+        $jsvalues = json_encode($values, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $javas->addjs(
+            <<<js
+{$jsvalues}.forEach(function (qid) {
+    fetch({$jsurl} + '&qid=' + encodeURIComponent(qid))
+        .then(res => res.json())
+        .then(items => (Array.isArray(items) ? items : []).forEach(item => {
+            tomselects[{$jsid}].addOption(item);
+            tomselects[{$jsid}].addItem(item.value, true);
+        }));
+});
+js,
+            'ready'
+        );
+    }
+}
+
+/**
+ * Registra una sola vez la función de navegador nfSuggest(input, cfg, onselect): lista de sugerencias
+ * bajo un input (texto libre). Usa el estilo .autocomplete-list de Metro, escapa el texto de cada
+ * sugerencia, se maneja con teclado (flechas, Enter, Esc) y cancela peticiones viejas.
+ * También queda disponible como window.nfSuggest para usarla con inputs propios.
+ */
+function nfSuggestScript(): void
+{
+    global $nframework;
+    if (isset($nframework->javasonce['nfSuggest'])) {
+        return;
+    }
+    $nframework->javasonce['nfSuggest'] = <<<'JS'
+window.nfSuggest = function (input, cfg, onselect) {
+	if (!input || input.nfSuggest) { return; }
+	cfg = Object.assign({ items: null, url: null, param: 'q', key: null, minlength: 1, delay: 250, limit: 20, depends: {}, clearondepends: true }, cfg || {});
+	var list = null, items = [], active = -1, timer = null, ctrl = null, cache = {};
+	if (!document.getElementById('nf-suggest-css')) {
+		var css = document.createElement('style');
+		css.id = 'nf-suggest-css';
+		css.textContent = '.nf-suggest-list{max-height:220px}.nf-suggest-list .item.nf-active{background-color:#1d1d1d1a}';
+		document.head.appendChild(css);
+	}
+	function dep(sel) { return document.querySelector(sel); }
+	function ensureList() {
+		if (list && list.isConnected) { return list; }
+		list = document.createElement('div');
+		list.className = 'autocomplete-list nf-suggest-list';
+		list.style.display = 'none';
+		(input.closest('.input') || input.parentNode).appendChild(list);
+		// mousedown (no click) para elegir antes de que el blur cierre la lista.
+		list.addEventListener('mousedown', function (e) {
+			var it = e.target.closest('.item');
+			if (it) { e.preventDefault(); choose(+it.dataset.index); }
+		});
+		return list;
+	}
+	function norm(x) {
+		if (x && typeof x === 'object') {
+			var label = x.label != null ? x.label : x.value, value = x.value != null ? x.value : x.label;
+			return Object.assign({}, x, { label: String(label == null ? '' : label), value: String(value == null ? '' : value) });
+		}
+		return { label: String(x), value: String(x) };
+	}
+	function render(q) {
+		var l = ensureList(), lq = q.toLowerCase();
+		l.textContent = '';
+		active = -1;
+		items.forEach(function (it, i) {
+			var d = document.createElement('div'), span = document.createElement('span'), p = lq ? it.label.toLowerCase().indexOf(lq) : -1;
+			d.className = 'item';
+			d.dataset.index = i;
+			if (p > -1) {
+				var s = document.createElement('strong');
+				s.textContent = it.label.substr(p, q.length);
+				span.append(it.label.slice(0, p), s, it.label.slice(p + q.length));
+			} else {
+				span.textContent = it.label;
+			}
+			d.appendChild(span);
+			l.appendChild(d);
+		});
+		l.style.display = items.length ? 'block' : 'none';
+	}
+	function hide() { if (list) { list.style.display = 'none'; } active = -1; }
+	function search() {
+		var q = input.value.trim();
+		if (q.length < cfg.minlength) { items = []; hide(); return; }
+		if (cfg.items) {
+			var lq = q.toLowerCase();
+			items = cfg.items.map(norm).filter(function (it) { return it.label.toLowerCase().indexOf(lq) > -1; }).slice(0, cfg.limit);
+			render(q);
+			return;
+		}
+		if (!cfg.url) { return; }
+		var params = new URLSearchParams();
+		params.set(cfg.param, q);
+		Object.keys(cfg.depends).forEach(function (k) { var el = dep(cfg.depends[k]); params.set(k, el ? el.value : ''); });
+		var url = cfg.url + (cfg.url.indexOf('?') > -1 ? '&' : '?') + params.toString();
+		if (cache[url]) { items = cache[url]; render(q); return; }
+		if (ctrl) { ctrl.abort(); }
+		ctrl = new AbortController();
+		fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin', signal: ctrl.signal })
+			.then(function (r) { return r.json(); })
+			.then(function (data) {
+				if (data && !Array.isArray(data)) { data = cfg.key ? data[cfg.key] : data.items; }
+				items = (Array.isArray(data) ? data : []).map(norm).slice(0, cfg.limit);
+				cache[url] = items;
+				if (input.value.trim() === q && document.activeElement === input) { render(q); }
+			})
+			.catch(function (e) { if (e.name !== 'AbortError') { hide(); } });
+	}
+	function choose(i) {
+		var it = items[i];
+		if (!it) { return; }
+		input.value = it.value;
+		hide();
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+		if (typeof onselect === 'function') { onselect.call(input, it, input); }
+		input.dispatchEvent(new CustomEvent('nf:suggest-select', { bubbles: true, detail: it }));
+	}
+	function mark(i) {
+		var nodes = list ? list.querySelectorAll('.item') : [];
+		if (!nodes.length) { return; }
+		active = (i + nodes.length) % nodes.length;
+		nodes.forEach(function (n, k) { n.classList.toggle('nf-active', k === active); });
+		nodes[active].scrollIntoView({ block: 'nearest' });
+	}
+	input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, cfg.items ? 0 : cfg.delay); });
+	input.addEventListener('keydown', function (e) {
+		var open = list && list.style.display !== 'none';
+		if (e.key === 'ArrowDown') { e.preventDefault(); if (open) { mark(active + 1); } else { search(); } }
+		else if (e.key === 'ArrowUp' && open) { e.preventDefault(); mark(active - 1); }
+		else if (e.key === 'Enter' && open && active > -1) { e.preventDefault(); choose(active); }
+		else if (e.key === 'Escape' && open) { e.preventDefault(); hide(); }
+	});
+	input.addEventListener('blur', function () { setTimeout(hide, 150); });
+	Object.keys(cfg.depends).forEach(function (k) {
+		var el = dep(cfg.depends[k]);
+		if (el) { el.addEventListener('change', function () { cache = {}; if (cfg.clearondepends) { input.value = ''; } }); }
+	});
+	input.nfSuggest = {
+		search: search,
+		hide: hide,
+		setItems: function (a) { cfg.items = Array.isArray(a) ? a : []; cache = {}; },
+		clearCache: function () { cache = {}; }
+	};
+};
+JS;
+}
+
 class Select extends baseOptions
 {
     const formatMongoID = 'mongoid';
@@ -1293,71 +1483,7 @@ class Select extends baseOptions
 
 
         if (!empty($this->ajax)) {
-            $args = $this->ajax->args ?? '&o=2';
-            $nframework->csss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css";
-            $nframework->jss[70] = "https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js";
-
-            $this->addclass = ($this->addclass ? $this->addclass . ' ' : '') . ' tomselect';
-            //$this->role = 'tomselect';
-
-            if (!empty($this->ajax->load) && $this->ajax->load != '') {
-                $load = $this->ajax->load;
-            } else {
-                if (!empty($this->value)) {
-                    $items = 'tomselects["' . $this->id . '"].setValue(' . json_encode($this->value) . ');';
-                } else {
-                    $items = '';
-                }
-                $load = <<<js
-function(query, callback){
-                    //if(!query.length&&  )return callback();
-                    fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['adduri']}&q='+encodeURIComponent(query))
-                    .then(res=>res.json())
-                    .then(json=>{
-                        callback(json);                        
-                    }).catch(()=>{
-                        callback();
-                    });
-                }
-js;
-            }
-            $this->role = 'tomselect';
-            unset($this->ajax->load);
-            $_SESSION['selectajax'][$this->id] = $this->ajax;
-            addVarToGarbage('selectajax\\' . $this->id, time() + (60 * 60));
-
-
-            $javas->addjs(
-                <<<js
-	tomselects['{$this->id}'] = new TomSelect('#{$this->id}',{
-		valueField:'value',
-		labelField:'label',
-		searchField:'label',   
-		load:{$load}
-	});
-js,
-                'ready'
-            );
-
-
-            if (!empty($this->value)) {
-                $javas->addjs(
-                    <<<js
-fetch('/nframework/select_ajax.php?id={$this->id}{$this->ajax['adduri']}&qid='+encodeURIComponent('{$this->value}'))
-    .then(res => res.json())
-    .then(items => {
-        console.log(items);
-        items.forEach(item => {
-            tomselects['{$this->id}'].addOption(item);
-            tomselects['{$this->id}'].addItem(item.value);
-            tomselects['{$this->id}'].refreshOptions(false);
-            tomselects['{$this->id}'].setValue(item.value);
-        });
-    });
-js,
-                    'ready'
-                );
-            }
+            nfTomSelectAjax($this);
         }
 
         return ($this->caption != '' && $this->role == 'tomselect' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') .

@@ -109,8 +109,13 @@ Constructor con arreglo de opciones; se imprimen con `echo`/`<?= ?>` (`__toStrin
 - Texto/números: `inputText`, `inputNumber`, `inputSpinner`, `inputRating`, `inputColor`, `textArea`,
   `inputMCE` (TinyMCE), `inputHidden`, `label`.
 - Fechas: `inputDate`, `inputTime`, `inputDateTime` (se guardan como `UTCDateTime`).
-- Opciones: `Select` (`'options' => ['valor' => 'Texto']`, o `'ajax' => [db, collection, columns, label, value, pipeline]`
-  para búsqueda en servidor), `SelectIcon`, `inputCheckBox`, `inputCheckBoxs`, `inputRadios`.
+- Opciones: `Select` (`'options' => ['valor' => 'Texto']`, o `'ajax' => [db, collection, columns, label, value, pipeline, limit]`
+  —arreglo o `SelectAjaxOptions`— para búsqueda en servidor con Tom Select), `SelectIcon`, `inputCheckBox`,
+  `inputCheckBoxs`, `inputRadios`.
+- Autocompletar texto libre: `inputText` con `'suggest'` = lista fija, `['url' => '?op=x']` (la página responde
+  `$result = ['items' => [...]]` en su bloque `isAjax()`) o `['collection', 'columns', 'value', 'label', 'pipeline',
+  'distinct', 'fields', 'depends' => ['campo' => '#selector'], 'onselect' => 'js']`. En el navegador
+  `input.nfSuggest.setItems()` / evento `nf:suggest-select`. No use `data-autocomplete` de Metro. Ver `docs/autocomplete.php`.
 - Archivos: `inputFile`, `inputFiles` (`dir`, `path`, `accept`, `countlimit`, `sizelimit`, `preview`,
   `delete`, `download`, `extension` + `onupload`/`ondelete`, `allowext` para aceptar extensiones
   protegidas como `py`/`sh`; las de PHP solo fuera del document root). La carpeta destino la decide el servidor.
