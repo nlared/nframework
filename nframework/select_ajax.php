@@ -24,8 +24,13 @@ if ($qid === '') {
     $pipeline[] = ['$match' => ['$or' => $matchs]];
 }
 $filter = [];
+$suggest = !empty($datainfo['suggest']);   // inputText con 'suggest': lista de textos, no de opciones
 foreach ((array) ($datainfo['args'] ?? []) as $arg) {
     $filter[$arg] = is_scalar($_GET[$arg] ?? null) ? (string) $_GET[$arg] : '';
+    // En 'suggest' un campo del que se depende vacío no filtra (sugiere de todos).
+    if ($suggest && $filter[$arg] === '') {
+        unset($filter[$arg]);
+    }
 }
 
 if (!empty($filter)) {
@@ -34,12 +39,29 @@ if (!empty($filter)) {
 
 
 
-$pipeline = array_merge($datainfo['pipeline'], $pipeline);
-$pipeline[] = ['$addFields' => ['label' => $datainfo['label'], 'value' => $datainfo['value']]];
+$pipeline = array_merge((array) ($datainfo['pipeline'] ?? []), $pipeline);
+// 'fields' agrega datos extra a cada resultado (['rfc' => '$rfc']), útiles en onselect.
+$fields = (array) ($datainfo['fields'] ?? []);
+$pipeline[] = ['$addFields' => ['label' => $datainfo['label'], 'value' => $datainfo['value']] + $fields];
 if ($qid !== '') {
     $pipeline[] = ['$match' => ['value' => $qid]];
 }
-$pipeline[] = ['$project' => ['_id' => 0, 'label' => 1, 'value' => 1]];
+$project = ['_id' => 0, 'label' => 1, 'value' => 1] + array_fill_keys(array_keys($fields), 1);
+if (!empty($datainfo['distinct'])) {
+    // Un resultado por valor: sugerir lo que ya se capturó (ciudades, colonias, puestos...).
+    $group = ['_id' => '$value', 'label' => ['$first' => '$label']];
+    foreach (array_keys($fields) as $f) {
+        $group[$f] = ['$first' => '$' . $f];
+    }
+    $pipeline[] = ['$match' => ['value' => ['$nin' => [null, '']]]];
+    $pipeline[] = ['$group' => $group];
+    $pipeline[] = ['$sort' => ['label' => 1]];
+    $project['value'] = '$_id';
+}
+if (!empty($datainfo['limit'])) {
+    $pipeline[] = ['$limit' => (int) $datainfo['limit']];
+}
+$pipeline[] = ['$project' => $project];
 
 
 try {

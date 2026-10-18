@@ -24,6 +24,7 @@ $docsMenu = [
 		'inputs.php' => ['Inputs', 'mif-widgets', 'Catálogo de controles: texto, números, selects, checkboxes, color, dirección...'],
 		'datetime.php' => ['Fechas y horas', 'mif-calendar', 'inputDate, inputTime e inputDateTime y cómo se guardan en MongoDB.'],
 		'inputsajax.php' => ['Select con AJAX', 'mif-search', 'Select que busca opciones en una colección mientras se escribe.'],
+		'autocomplete.php' => ['Autocompletar', 'mif-keyboard', 'inputText con sugerencias: lista fija, MongoDB, endpoint propio, campos dependientes.'],
 		'validations.php' => ['Validaciones', 'mif-checkmark', 'required, pattern, validate y validación del lado del servidor.'],
 		'files.php' => ['Archivos', 'mif-upload', 'inputFile e inputFiles: subir, previsualizar, descargar y eliminar.'],
 		'signature.php' => ['Firma', 'mif-pencil', 'Signature_pad: capturar una firma y guardarla como imagen.'],
