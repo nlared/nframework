@@ -236,9 +236,17 @@ function processExtractedFile($file)
     }
 
 
-    // En CLI (worker de descargasat) se usa la raíz del sitio relativa a este archivo: DOCUMENT_ROOT viene vacío o,
-    // si el worker se lanzó desde la web con bgprocess, heredado de otro sitio (pasó con /var/www/nframework).
-    $documentRoot = (PHP_SAPI !== 'cli' && !empty($_SERVER['DOCUMENT_ROOT'])) ? $_SERVER['DOCUMENT_ROOT'] : dirname(__DIR__);
+    // Raíz del sitio donde se guardan los XML (comprobantes/xmls/<RFC>/<UUID>.xml). En web es DOCUMENT_ROOT.
+    // En CLI (worker de descargasat) también se usa DOCUMENT_ROOT si viene y ese sitio tiene comprobantes/: los
+    // sitios tienen sat/ como symlink a /var/www/nframework/sat, así que __DIR__ resuelve al framework y con
+    // dirname(__DIR__) los XML terminaban en /var/www/nframework/comprobantes/xmls/. Sin DOCUMENT_ROOT, o si no
+    // apunta a un sitio con comprobantes/, se usa dirname(__DIR__).
+    $docRoot = rtrim((string) ($_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+    if (PHP_SAPI !== 'cli') {
+        $documentRoot = $docRoot !== '' ? $docRoot : dirname(__DIR__);
+    } else {
+        $documentRoot = ($docRoot !== '' && is_dir($docRoot . '/comprobantes')) ? $docRoot : dirname(__DIR__);
+    }
     $destinationPath = $documentRoot . '/comprobantes/xmls/' . $emisorRfc . '/' . $uuid . '.xml';
     echo "Extracted file will be saved to: " . $destinationPath . "\n";
     echo "Destination path: " . $destinationPath . "\n";
