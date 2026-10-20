@@ -59,7 +59,7 @@ $filtros = new Tablef([
 	<table class="table striped compact">
 		<thead><tr><th>Clave</th><th>Descripción</th></tr></thead>
 		<tbody>
-			<tr><td><code>id</code>, <code>field</code></td><td>Campo del documento (notación con punto para subdocumentos). <code>id</code> es el que usa QueryBuilder; normalmente iguales.</td></tr>
+			<tr><td><code>id</code>, <code>field</code></td><td><code>id</code>: identificador único del filtro dentro del constructor. <code>field</code>: campo del documento con que se arma el <code>$match</code> (notación con punto para subdocumentos, p. ej. <code>cliente.nombre</code>) y con el que se aplica <code>phptype</code>; si se omite, se usa el <code>id</code>.</td></tr>
 			<tr><td><code>label</code></td><td>Texto que ve el usuario.</td></tr>
 			<tr><td><code>type</code></td><td>Tipo de QueryBuilder: <code>string</code>, <code>integer</code>, <code>double</code>, <code>date</code>, <code>datetime</code>, <code>boolean</code>. Define los operadores disponibles.</td></tr>
 			<tr><td><code>phptype</code></td><td>Conversión en el servidor antes de consultar: <code>number</code> (a float) o <code>date</code> (a <code>UTCDateTime</code> con <code>strtotime()</code>). Sin él el valor se compara como texto, así que los campos numéricos y de fecha lo necesitan.</td></tr>
