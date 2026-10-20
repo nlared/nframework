@@ -98,15 +98,21 @@ function jsontofilters(json){
             }            
         }
         if(f.id !=null){
-            filters.push({
+            // field es el campo del documento con que getMongo() arma el \$match; sin él QueryBuilder usa el id.
+            var filter = {
                 id: f.id,
+                field: f.field || f.id,
                 label: f.label,
                 type: f.type,
                 input: f.input,
                 values: f.values,
                 operators: f.operators,
                 valueGetter: f.valueGetter
+            };
+            ['placeholder', 'validation', 'default_value', 'optgroup', 'multiple', 'value_separator', 'data', 'plugin', 'plugin_config'].forEach(function (k) {
+                if (f[k] !== undefined && f[k] !== null) { filter[k] = f[k]; }
             });
+            filters.push(filter);
         }
     }
     console.log(filters);
