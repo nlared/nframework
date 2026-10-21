@@ -80,6 +80,207 @@ function diagAptPackage(string $ext): string
     return "php{$phpVer}-" . ($map[$ext] ?? $ext);
 }
 
+/** Como diagRun() pero junta stdout y stderr (nginx -v y apache2 -v escriben la versión en stderr). */
+function diagRunAll(array $cmd): string
+{
+    $proc = @proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+    if (!is_resource($proc)) {
+        return '';
+    }
+    $out = stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    proc_close($proc);
+    return trim($out);
+}
+
+/** Primer ejecutable que exista entre rutas absolutas o nombres en PATH (incluye sbin, donde están nginx y apache2). */
+function diagFindBin(string ...$names): ?string
+{
+    foreach ($names as $name) {
+        $found = diagWhich($name);
+        if ($found !== null) {
+            return $found;
+        }
+        foreach (['/usr/sbin', '/usr/local/sbin', '/sbin'] as $dir) {
+            if (is_executable("$dir/$name")) {
+                return "$dir/$name";
+            }
+        }
+    }
+    return null;
+}
+
+function diagSize(float $bytes): string
+{
+    return $bytes >= 1073741824 ? round($bytes / 1073741824, 1) . ' GB' : round($bytes / 1048576) . ' MB';
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Sistema
+// ---------------------------------------------------------------------------------------------------
+$g = 'Sistema';
+$osRelease = @parse_ini_file('/etc/os-release') ?: [];
+$osName = $osRelease['PRETTY_NAME'] ?? trim(php_uname('s') . ' ' . php_uname('r'));
+diagAdd($g, 'ok', 'Sistema operativo', htmlspecialchars($osName)
+    . (!empty($osRelease['ID_LIKE']) ? ' <span class="text-muted">(basado en ' . htmlspecialchars($osRelease['ID_LIKE']) . ')</span>' : ''));
+diagAdd($g, 'ok', 'Kernel', htmlspecialchars(php_uname('s') . ' ' . php_uname('r') . ' · ' . php_uname('m')) . ' · equipo <b>' . htmlspecialchars((string) gethostname()) . '</b>');
+
+// Servidor web: SERVER_SOFTWARE puede venir sin versión (server_tokens off); el binario da la exacta.
+$software = (string) ($_SERVER['SERVER_SOFTWARE'] ?? '');
+$webDetail = [];
+if ($software !== '') {
+    $webDetail[] = 'Responde como <code>' . htmlspecialchars($software) . '</code>';
+}
+$isApache = stripos($software, 'apache') !== false || PHP_SAPI === 'apache2handler';
+if ($isApache) {
+    $bin = diagFindBin('apache2', 'httpd');
+    if ($bin && preg_match('/Server version:\s*(.+)/', diagRunAll([$bin, '-v']), $mm)) {
+        $webDetail[] = 'binario: ' . htmlspecialchars(trim($mm[1]));
+    }
+} elseif ($bin = diagFindBin('nginx')) {
+    if (preg_match('/nginx version:\s*(.+)/', diagRunAll([$bin, '-v']), $mm)) {
+        $webDetail[] = 'binario: ' . htmlspecialchars(trim($mm[1]));
+    }
+}
+$webDetail[] = 'PHP por <code>' . htmlspecialchars(PHP_SAPI) . '</code>' . (PHP_SAPI === 'fpm-fcgi' ? " (servicio <code>$fpmService</code>)" : '');
+diagAdd($g, $software === '' && count($webDetail) === 1 ? 'warn' : 'ok', 'Servidor web', implode(' · ', $webDetail));
+
+$uptime = (float) explode(' ', (string) @file_get_contents('/proc/uptime'))[0];
+$load = function_exists('sys_getloadavg') ? sys_getloadavg() : false;
+$cpus = (int) (diagRunAll(['nproc']) ?: 1);
+if ($uptime > 0 || $load) {
+    $detail = $uptime > 0 ? 'Encendido hace ' . floor($uptime / 86400) . ' d ' . floor(fmod($uptime, 86400) / 3600) . ' h' : '';
+    if ($load) {
+        $detail .= ($detail ? ' · ' : '') . 'carga ' . implode(' / ', array_map(fn ($l) => number_format($l, 2), $load)) . " (1/5/15 min, $cpus CPU)";
+    }
+    $busy = $load && $load[1] > $cpus * 1.5;
+    diagAdd($g, $busy ? 'warn' : 'ok', 'Actividad', $detail, $busy ? ['La carga de los últimos 5 minutos supera la capacidad de los CPU: revise procesos con <code>top</code> (workers, importaciones, PHP-FPM).'] : []);
+}
+
+if (preg_match('/MemTotal:\s+(\d+)/', (string) @file_get_contents('/proc/meminfo'), $mt)
+    && preg_match('/MemAvailable:\s+(\d+)/', (string) @file_get_contents('/proc/meminfo'), $ma)) {
+    $total = $mt[1] * 1024;
+    $avail = $ma[1] * 1024;
+    $low = $avail < $total * 0.1;
+    diagAdd($g, $low ? 'warn' : 'ok', 'Memoria', diagSize($avail) . ' disponibles de ' . diagSize($total), $low ? ['Queda menos del 10 % de memoria: reduzca <code>pm.max_children</code> de PHP-FPM o agregue memoria.'] : []);
+}
+
+$diskFree = @disk_free_space($root);
+$diskTotal = @disk_total_space($root);
+if ($diskFree !== false && $diskTotal) {
+    $low = $diskFree < $diskTotal * 0.1 || $diskFree < 2 * 1073741824;
+    diagAdd($g, $low ? 'warn' : 'ok', 'Disco', diagSize($diskFree) . ' libres de ' . diagSize($diskTotal) . ' en la partición del sitio', $low ? [
+        'Libere espacio: logs (<code>/var/log</code>, <code>*.log</code> del sitio), respaldos viejos, <code>comprobantes/xmls</code> o la caché en ' . htmlspecialchars((string) (nfCacheDir() ?? sys_get_temp_dir())) . '.',
+    ] : []);
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Rutas de include
+// ---------------------------------------------------------------------------------------------------
+$g = 'Rutas de include';
+$realIncludes = realpath($includesDir) ?: $includesDir;
+$loadedInclude = '';
+foreach (get_included_files() as $file) {
+    if (basename($file) === 'include.php' && is_file(dirname($file) . '/class.Base.php')) {
+        $loadedInclude = $file;
+        break;
+    }
+}
+diagAdd($g, 'ok', 'Framework en uso', 'Núcleo <code>' . htmlspecialchars($loadedInclude ?: $realIncludes . '/include.php') . '</code>'
+    . ' · raíz del sitio (DOCUMENT_ROOT) <code>' . htmlspecialchars((string) ($_SERVER['DOCUMENT_ROOT'] ?? '')) . '</code>');
+
+// Clases del framework: un class.X.php con el mismo nombre en otra ruta nunca se carga (el autoload busca primero aquí).
+$frameworkClasses = array_map('basename', glob($realIncludes . '/class.*.php') ?: []);
+$entries = array_values(array_filter(explode(PATH_SEPARATOR, get_include_path()), fn ($e) => $e !== ''));
+$coreFoundAt = null;
+foreach ($entries as $i => $entry) {
+    $n = $i + 1;
+    if ($entry === '.') {
+        diagAdd($g, 'ok', "$n. .", 'Carpeta del script que se ejecuta (y la actual): permite <code>require \'common2.php\'</code> sin ruta.');
+        continue;
+    }
+    $real = realpath($entry);
+    if ($real === false || !is_dir($real)) {
+        diagAdd($g, 'warn', "$n. " . $entry, 'La carpeta no existe: PHP la revisa en cada <code>require</code> sin encontrar nada.', [
+            'Quítela del <code>include_path</code> (vea «Definido en» abajo).',
+        ]);
+        continue;
+    }
+    $parts = [];
+    if ($real !== $entry) {
+        $parts[] = 'enlace a <code>' . htmlspecialchars($real) . '</code>';
+    }
+    $classes = array_map('basename', glob($real . '/class.*.php') ?: []);
+    $status = 'ok';
+    $fix = [];
+    if (is_file($real . '/include.php') && is_file($real . '/class.Base.php')) {
+        if ($coreFoundAt === null) {
+            $coreFoundAt = $real;
+            $parts[] = $real === $realIncludes
+                ? '<b>núcleo de este framework</b>: <code>require \'include.php\'</code> carga este'
+                : '<b>núcleo de nframework en otra ruta</b>: <code>require \'include.php\'</code> de los sitios carga este, no el de este panel';
+            if ($real !== $realIncludes) {
+                $status = 'warn';
+                $fix[] = 'Los sitios que usan este <code>include_path</code> corren con el framework de <code>' . htmlspecialchars($real) . '</code>. Si debe ser el de <code>' . htmlspecialchars($realIncludes) . '</code>, cambie el <code>include_path</code>.';
+            }
+        } else {
+            $status = 'warn';
+            $parts[] = 'otro núcleo de nframework que <b>no se usa</b> (gana <code>' . htmlspecialchars($coreFoundAt) . '</code>, que va antes)';
+        }
+    } elseif ($classes) {
+        $parts[] = count($classes) . ' clase(s) <code>class.*.php</code> disponibles para el autoload';
+        $shadowed = $real !== $realIncludes ? array_values(array_intersect($classes, $frameworkClasses)) : [];
+        if ($shadowed) {
+            $status = 'warn';
+            $parts[] = 'con el mismo nombre que clases del framework: ' . htmlspecialchars(implode(', ', $shadowed));
+            $fix[] = 'Esas versiones nunca se cargan: el autoload busca primero en <code>' . htmlspecialchars($realIncludes) . '</code>. Renómbrelas o elimínelas.';
+        }
+    } else {
+        $parts[] = is_file($real . '/vendor/autoload.php') ? 'bibliotecas (tiene vendor/)' : 'sin clases del framework (p. ej. PEAR del sistema)';
+    }
+    diagAdd($g, $status, "$n. " . $entry, implode(' · ', $parts), $fix);
+}
+if ($coreFoundAt === null) {
+    diagAdd($g, 'warn', 'Núcleo en include_path', 'Ninguna ruta del <code>include_path</code> contiene <code>include.php</code> del framework: este panel funciona porque se carga con ruta relativa, pero los sitios que hacen <code>require \'include.php\'</code> fallarán.', [
+        'Agregue <code>' . htmlspecialchars($realIncludes) . '</code> al <code>include_path</code> del php.ini de FPM.',
+    ]);
+}
+
+// De dónde sale el valor: php.ini global, o un pool de FPM / .user.ini / PHP_VALUE de nginx que lo sobrescribe.
+$sources = [];
+foreach (array_filter(array_merge([php_ini_loaded_file()], array_map('trim', explode(',', (string) php_ini_scanned_files())))) as $iniFile) {
+    if (is_readable($iniFile) && preg_match('/^\s*include_path\s*=/m', (string) file_get_contents($iniFile))) {
+        $sources[] = $iniFile;
+    }
+}
+foreach (glob("/etc/php/$phpVer/fpm/pool.d/*.conf") ?: [] as $pool) {
+    if (is_readable($pool) && preg_match('/^\s*php_(admin_)?value\[include_path\]/m', (string) file_get_contents($pool))) {
+        $sources[] = $pool;
+    }
+}
+$globalIncludePath = ini_get_all('core', true)['include_path']['global_value'] ?? '';
+$overridden = $globalIncludePath !== get_include_path();
+diagAdd($g, 'ok', 'Definido en', ($sources ? implode(', ', array_map(fn ($s) => '<code>' . htmlspecialchars($s) . '</code>', $sources)) : 'valor predeterminado de PHP')
+    . ($overridden ? ' · <b>sobrescrito</b> para este sitio (pool de FPM, <code>.user.ini</code> o <code>PHP_VALUE</code> de nginx); valor global: <code>' . htmlspecialchars($globalIncludePath) . '</code>' : ''));
+
+// Los workers y scripts de los sitios corren con el PHP de línea de comandos, que tiene su propio php.ini.
+$cliBin = PHP_BINDIR . "/php$phpVer";
+if (is_executable($cliBin)) {
+    [$code, $cliPath] = diagRun([$cliBin, '-r', 'echo get_include_path();']);
+    if ($code === 0) {
+        $cliReal = array_map(fn ($e) => realpath($e) ?: $e, explode(PATH_SEPARATOR, $cliPath));
+        if (in_array($realIncludes, $cliReal, true) || in_array($coreFoundAt, $cliReal, true)) {
+            diagAdd($g, 'ok', 'include_path en CLI', '<code>' . htmlspecialchars($cliPath) . '</code>');
+        } else {
+            diagAdd($g, 'warn', 'include_path en CLI', '<code>' . htmlspecialchars($cliPath) . '</code>: no incluye el framework. Los scripts de los sitios que se ejecutan por consola (workers, cron) y hacen <code>require \'include.php\'</code> fallarán; <code>includes/job_worker.php</code> sí funciona porque está junto a <code>include.php</code>.', [
+                "Agréguelo en <code>/etc/php/$phpVer/cli/php.ini</code>: <code>include_path = \".:" . htmlspecialchars($coreFoundAt ?? $realIncludes) . ":/usr/share/php\"</code>",
+                'O ejecute esos scripts con <code>php -d include_path=.:' . htmlspecialchars($coreFoundAt ?? $realIncludes) . ' script.php</code>.',
+            ]);
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------------------------------
 // PHP
 // ---------------------------------------------------------------------------------------------------
