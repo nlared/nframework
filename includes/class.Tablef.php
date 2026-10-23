@@ -23,8 +23,12 @@ class TableF
         global $javas, $nframework;
         $_SESSION['datatable'][$this->table->id]['excelCell'] = $this->excelCell;
         $_SESSION['datatable'][$this->table->id]['excelFile'] = $this->excelFile;
-        $nframework->csss['200'] = 'https://cdn.jsdelivr.net/npm/jQuery-QueryBuilder@2.7.0/dist/css/query-builder.default.min.css';
-        $nframework->csss['201'] = 'https://cdn.nlared.com/nframework/4.5.1/filters.css';
+        // Títulos de las columnas para /nframework/tablefg.php (gráficas), tomados del encabezado de la tabla.
+        preg_match_all('/<th[^>]*>(.*?)<\/th>/is', (string) $this->table->header, $ths);
+        $_SESSION['datatable'][$this->table->id]['titles'] = array_map(fn($th) => trim(html_entity_decode(strip_tags($th))), $ths[1]);
+        // Antes del CSS del sitio ('101'…); '200' es el de la plantilla (templates/panda/css.css).
+        $nframework->csss['095'] = 'https://cdn.jsdelivr.net/npm/jQuery-QueryBuilder@2.7.0/dist/css/query-builder.default.min.css';
+        $nframework->csss['096'] = 'https://cdn.nlared.com/nframework/4.5.1/filters.css';
         $nframework->jss['198'] = 'https://cdn.jsdelivr.net/npm/jquery-extendext@1.0.0/jquery-extendext.min.js';
         $nframework->jss['199'] = 'https://cdn.jsdelivr.net/npm/dot@1.1.3/doT.min.js';
         $nframework->jss['200'] = 'https://cdn.jsdelivr.net/npm/jQuery-QueryBuilder@2.7.0/dist/js/query-builder.min.js';
@@ -201,6 +205,7 @@ function fieldschange(){
 			<a href="#" class="button w-100" onclick="fieldschange();"><span class="mif-filter-list"></span>&nbsp;Filtrar</a>
 			<a href="/nframework/datatablee.php?id={$this->table->id}&type=csv" target="_blank" class="button w-100"><span class="mif-csv-file"></span>&nbsp;Csv</a>
             <a href="/nframework/datatablee.php?id={$this->table->id}" target="_blank" class="button w-100"><span class="mif-xls-file"></span>&nbsp;Excel</a>
+            <a href="/nframework/tablefg.php?source=tablef&id={$this->table->id}" target="_blank" class="button w-100"><span class="mif-bar-chart"></span>&nbsp;Gráfica</a>
 			<div id="btn-reset" class="button w-100"><span class="mif-bin"></span>&nbsp;Limpiar</div>
 		</div>
 	</div>

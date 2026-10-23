@@ -73,6 +73,7 @@ $filtros = new Tablef([
 	<ul>
 		<li><strong>Filtrar</strong> envía las reglas (<code>getMongo</code>) a <code>/nframework/datatablef.php</code>, que les quita operadores peligrosos con <code>nfSanitizeMongoQuery()</code> (<code>$where</code>, <code>$expr</code>, <code>$lookup</code>…), convierte tipos según <code>phptype</code> y guarda el pipeline en la sesión; la tabla se vuelve a dibujar.</li>
 		<li><strong>Csv</strong> y <strong>Excel</strong> llaman a <code>/nframework/datatablee.php</code> con el pipeline filtrado y las <code>columns</code> de la tabla.</li>
+		<li><strong>Gráfica</strong> abre <code>/nframework/tablefg.php</code> en otra pestaña con el pipeline filtrado (hasta 5000 filas): el usuario elige tipo (barras, líneas, área, pastel, dona), la columna de categoría, las columnas numéricas y la agregación (suma, promedio, mínimo, máximo, conteo); las fechas se pueden agrupar por día, mes o año. Los títulos de las series salen del <code>header</code> de la tabla.</li>
 		<li>El constructor usa el id fijo <code>#builder-basic</code>: solo puede haber un <code>TableF</code> por página.</li>
 		<li>Instáncielo como <code>new Tablef(...)</code>: el autoload busca <code>class.Tablef.php</code> respetando mayúsculas, así que <code>new TableF</code> solo funciona si la clase ya se cargó.</li>
 	</ul>

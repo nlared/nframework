@@ -564,9 +564,13 @@ class TablefIA
                     busy(true);
                     post({op: 'ask', prompt: prompt}).done(function(r){ r.error ? fail(r.error) : show(r); }).fail(function(xhr){ fail(xhrError(xhr)); }).always(function(){ busy(false); });
                 });
-                \$root.find('.tablefia-export a').on('click', function(e){
+                \$root.find('.tablefia-export a[data-type]').on('click', function(e){
                     e.preventDefault();
                     if (current) { window.open(url + '?op=export&id=' + encodeURIComponent(id) + '&token=' + token + '&query=' + current + '&type=' + $(this).data('type')); }
+                });
+                \$root.find('.tablefia-chart').on('click', function(e){
+                    e.preventDefault();
+                    if (current) { window.open('/nframework/tablefg.php?source=tablefia&id=' + encodeURIComponent(id) + '&token=' + token + '&query=' + current); }
                 });
                 list();
             })();
@@ -596,6 +600,7 @@ class TablefIA
                         <div class="cell-md-2 tablefia-export" style="display:none">
                             <a href="#" data-type="csv" class="button w-100"><span class="mif-csv-file"></span>&nbsp;Csv</a>
                             <a href="#" data-type="xlsx" class="button w-100 mt-1"><span class="mif-xls-file"></span>&nbsp;Excel</a>
+                            <a href="#" class="button w-100 mt-1 tablefia-chart"><span class="mif-bar-chart"></span>&nbsp;Gráfica</a>
                         </div>
                     </div>
                     <div class="row"><div class="cell tablefia-result"></div></div>
