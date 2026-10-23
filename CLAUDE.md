@@ -242,6 +242,9 @@ Dentro de rutas está además `$twig` (plantillas de `nframework/templates`). **
   `$delay`, `handle()`); `MiJob::dispatch($payload)`. Una excepción en `handle()` reintenta. Colección `jobs`.
 - **Procesos largos**: `bgprocess(['id', 'cmd', 'logfile'])` → `start()`, `isRunning()`, `status()`, `stop()`, `renderDashboard()`.
 - **Menús y páginas del CMS**: `nfMetroMenu('_nav')`, `nfPage('_header')`, `renderEmbeddedFunctions($html)`.
+- **Tema**: `include.php` carga `/nframework/css/nframework.css` (`csss['090']`, antes del CSS del sitio) que redefine
+  las variables de Metro 5 con tokens `--nf-*` (`--nf-accent`, `--nf-surface`, `--nf-line`, `--nf-radius*`, `--nf-shadow*`;
+  oscuro en `.dark-side`). Use esos tokens en CSS nuevo; el sitio los personaliza en su CSS. `'modern_css' => false` lo desactiva.
 - **i18n**: `$nframework->lang` (`es-MX`/`en-US`), `$nframework->language[...]` (textos en `includes/i18n/<lang>.php`).
 - **Tablas administrables**: Admin → nftables define colecciones editables en `/nftables/<colección>/`.
 - **Utilidades**: `mongoToArray()`, `mongoDateToReadable()`, `readableToMongoDate()`, `getNestedValue()`,

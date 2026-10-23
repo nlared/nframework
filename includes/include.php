@@ -232,6 +232,7 @@ class class_nframework
 
     public function __construct()
     {
+        global $config;
         $this->shutdown = true;
         $this->include_path = __DIR__;
         $this->api_path = $_SERVER['DOCUMENT_ROOT'] . '/nframework';
@@ -272,6 +273,11 @@ class class_nframework
 
             $this->csss['050'] = 'https://cdn.metroui.org.ua/5.1.20/metro.css';
             $this->csss['051'] = 'https://cdn.metroui.org.ua/5.1.20/icons.css';
+            // Tema moderno sobre las variables de Metro: después de metro.css y antes del CSS del sitio ('101'…),
+            // para que el sitio pueda personalizarlo.
+            if (($config['modern_css'] ?? true) !== false) {
+                $this->csss['090'] = '/nframework/css/nframework.css?v=' . @filemtime(dirname(__DIR__) . '/nframework/css/nframework.css');
+            }
             $this->csss['200'] = '/nframework/templates/panda/css.css';
 
 

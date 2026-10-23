@@ -1,0 +1,743 @@
+/*
+ * nframework — tema moderno sobre Metro UI 5.
+ *
+ * Se carga desde includes/include.php ($nframework->csss['090']) después de metro.css y antes del CSS del
+ * sitio ('101'…), que puede redefinir cualquier --nf-* o variable de Metro. No reemplaza Metro: redefine
+ * sus variables de componente (--button-*, --input-*, --table-*, ...) y agrega pocos detalles (esquinas, sombras, anillo de foco, transiciones). El tema oscuro se aplica con
+ * .dark-side, igual que Metro. Desactivar en un sitio: 'modern_css' => false en includes/config.php; en
+ * una página: unset($nframework->csss['090']).
+ *
+ * Variables propias (--nf-*) para usar en páginas y componentes:
+ *   --nf-accent, --nf-accent-hover, --nf-accent-soft, --nf-accent-ink   color principal
+ *   --nf-surface, --nf-surface-2, --nf-ink, --nf-muted, --nf-line      superficies, texto y bordes
+ *   --nf-radius, --nf-radius-sm, --nf-radius-lg, --nf-shadow, --nf-shadow-lg, --nf-ring
+ */
+
+/* ---------------------------------------------------------------------------------------------- tokens */
+
+:root {
+    --nf-accent: #2a78d6;
+    --nf-accent-hover: #1f63b5;
+    --nf-accent-ink: #ffffff;
+    --nf-accent-soft: color-mix(in srgb, var(--nf-accent) 12%, var(--nf-surface));
+
+    --nf-surface: #ffffff;
+    --nf-surface-2: #f6f7f9;
+    --nf-ink: #16181d;
+    --nf-muted: #6b7180;
+    --nf-line: #e4e6eb;
+    --nf-line-strong: #cdd1d9;
+
+    --nf-success: #0a8a3a;
+    --nf-warning: #b7791f;
+    --nf-danger: #d33a3a;
+    --nf-info: #2a78d6;
+
+    --nf-radius-sm: 8px;
+    --nf-radius: 10px;
+    --nf-radius-lg: 14px;
+    --nf-shadow: 0 1px 2px rgb(16 24 40 / .05), 0 1px 3px rgb(16 24 40 / .06);
+    --nf-shadow-lg: 0 2px 4px rgb(16 24 40 / .04), 0 16px 40px -12px rgb(16 24 40 / .18);
+    --nf-ring: 0 0 0 3px color-mix(in srgb, var(--nf-accent) 28%, transparent);
+    --nf-ease: cubic-bezier(.3, .8, .6, 1);
+    --nf-font: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+
+    /* Metro: base */
+    --default-background: var(--nf-surface);
+    --default-color: var(--nf-ink);
+    --body-color-secondary: var(--nf-muted);
+    --border-color: var(--nf-line);
+    --border-radius: var(--nf-radius-sm);
+    --link-color: var(--nf-accent);
+    --link-color-hover: var(--nf-accent-hover);
+    --selected-row-background: var(--nf-accent-soft);
+    --selected-item-background: var(--nf-accent-soft);
+    --font-name: var(--nf-font);
+    --color-primary: var(--nf-accent);
+    --color-info: var(--nf-info);
+
+    /* Metro: botones */
+    --button-border-radius: var(--nf-radius-sm);
+    --button-background: var(--nf-surface);
+    --button-background-hover: var(--nf-surface-2);
+    --button-color: var(--nf-ink);
+
+    /* Metro: campos */
+    --input-border-radius: var(--nf-radius-sm);
+    --input-background: var(--nf-surface);
+    --input-border-color: var(--nf-line-strong);
+    --input-border-color-hover: color-mix(in srgb, var(--nf-accent) 45%, var(--nf-line-strong));
+    --input-color: var(--nf-ink);
+    --input-box-shadow: color-mix(in srgb, var(--nf-accent) 28%, transparent);
+    --input-prepend-background: var(--nf-surface-2);
+    --input-prepend-color: var(--nf-muted);
+    --input-append-background: var(--nf-surface-2);
+    --input-append-color: var(--nf-muted);
+    --input-required-color: var(--nf-accent);
+    --input-invalid-color: var(--nf-danger);
+    --input-valid-color: var(--nf-success);
+    --select-border-radius: var(--nf-radius-sm);
+    --select-options-background: var(--nf-surface);
+    --select-option-background-hover: var(--nf-surface-2);
+    --select-option-background-selected: var(--nf-accent-soft);
+    --select-option-color-selected: var(--nf-ink);
+    --select-tag-background: var(--nf-accent-soft);
+    --checkbox-border-radius: 6px;
+    --checkbox-color: var(--nf-accent);
+    --checkbox-focus-color: color-mix(in srgb, var(--nf-accent) 25%, transparent);
+    --radio-color: var(--nf-accent);
+    --radio-focus-color: color-mix(in srgb, var(--nf-accent) 25%, transparent);
+    --switch-background-checked: var(--nf-accent);
+    --switch-focus-color: color-mix(in srgb, var(--nf-accent) 25%, transparent);
+
+    /* Metro: contenedores */
+    --card-border-radius: var(--nf-radius-lg);
+    --card-background: var(--nf-surface);
+    --card-header-background: var(--nf-surface);
+    --card-footer-background: var(--nf-surface);
+    --panel-border-radius: var(--nf-radius-lg);
+    --panel-background: var(--nf-surface);
+    --panel-header-background: var(--nf-surface);
+    --panel-border-color: var(--nf-line);
+    --remark-border-radius: var(--nf-radius);
+    --remark-background: var(--nf-surface);
+    --dialog-border-radius: var(--nf-radius-lg);
+    --dialog-background: var(--nf-surface);
+    --dialog-border-color: var(--nf-line);
+    --window-border-radius: var(--nf-radius-lg);
+    --window-border-color: var(--nf-line);
+
+    /* Metro: tablas */
+    --table-border-radius: var(--nf-radius);
+    --table-border-color: var(--nf-line);
+    --table-header-background: var(--nf-surface-2);
+    --table-header-color: var(--nf-muted);
+    --table-striped-background: color-mix(in srgb, var(--nf-surface-2) 70%, var(--nf-surface));
+    --table-hover-background: var(--nf-accent-soft);
+    --table-selected-background: var(--nf-accent-soft);
+    --table-head-font-size: 12px;
+    --table-body-font-size: 14px;
+
+    /* Metro: navegación */
+    --tabs-border-radius: var(--nf-radius-sm);
+    --tabs-item-background-hover: var(--nf-surface-2);
+    --tabs-item-background-active: var(--nf-surface);
+    --tabs-item-marker: var(--nf-accent);
+    --navview-item-border-radius: var(--nf-radius-sm);
+    --navview-background: var(--nf-surface-2);
+    --navview-pane-background: var(--nf-surface);
+    --navview-item-background-hover: var(--nf-surface-2);
+    --navview-item-background-active: var(--nf-accent-soft);
+    --navview-item-color-active: var(--nf-accent);
+    --navview-icon-color-active: var(--nf-accent);
+    --navview-item-marker-color: var(--nf-accent);
+    --appbar-border-radius: var(--nf-radius-sm);
+    --pagination-page-item-border-radius: var(--nf-radius-sm);
+    --pagination-page-item-background-hover: var(--nf-surface-2);
+    --pagination-page-item-background-active: var(--nf-accent);
+    --pagination-page-item-color-active: var(--nf-accent-ink);
+    --chip-background: var(--nf-surface-2);
+    --chip-background-hover: var(--nf-line);
+}
+
+.dark-side {
+    --nf-accent: #4b93ea;
+    --nf-accent-hover: #6aa6ef;
+    --nf-accent-ink: #0b1220;
+
+    --nf-surface: #1c1e22;
+    --nf-surface-2: #24272c;
+    --nf-ink: #e6e8ec;
+    --nf-muted: #9aa1ad;
+    --nf-line: #33373e;
+    --nf-line-strong: #454a52;
+
+    --nf-success: #3fbf6b;
+    --nf-warning: #e0a63a;
+    --nf-danger: #f06464;
+    --nf-info: #4b93ea;
+
+    --nf-shadow: 0 1px 2px rgb(0 0 0 / .35);
+    --nf-shadow-lg: 0 2px 4px rgb(0 0 0 / .3), 0 16px 40px -12px rgb(0 0 0 / .6);
+    /* Se repiten porque dependen de otros tokens y .dark-side puede estar en <body>, no en <html>. */
+    --nf-accent-soft: color-mix(in srgb, var(--nf-accent) 18%, var(--nf-surface));
+    --nf-ring: 0 0 0 3px color-mix(in srgb, var(--nf-accent) 35%, transparent);
+
+    /* Metro fija estos en .dark-side: se vuelven a apuntar a los tokens. */
+    --default-background: var(--nf-surface);
+    --default-color: var(--nf-ink);
+    --body-color-secondary: var(--nf-muted);
+    --border-color: var(--nf-line);
+    --link-color: var(--nf-accent);
+    --link-color-hover: var(--nf-accent-hover);
+    --selected-row-background: var(--nf-accent-soft);
+    --selected-item-background: var(--nf-accent-soft);
+    --button-background: var(--nf-surface-2);
+    --button-background-hover: var(--nf-line);
+    --button-color: var(--nf-ink);
+    --input-background: var(--nf-surface-2);
+    --input-border-color: var(--nf-line-strong);
+    --input-border-color-hover: color-mix(in srgb, var(--nf-accent) 45%, var(--nf-line-strong));
+    --input-color: var(--nf-ink);
+    --input-box-shadow: color-mix(in srgb, var(--nf-accent) 35%, transparent);
+    --input-prepend-background: var(--nf-line);
+    --input-prepend-color: var(--nf-muted);
+    --input-append-background: var(--nf-line);
+    --input-append-color: var(--nf-muted);
+    --select-options-background: var(--nf-surface-2);
+    --select-option-background-hover: var(--nf-line);
+    --select-option-background-selected: var(--nf-accent-soft);
+    --select-option-color-selected: var(--nf-ink);
+    --select-tag-background: var(--nf-accent-soft);
+    --select-tag-color: var(--nf-ink);
+    --checkbox-color: var(--nf-accent);
+    --checkbox-focus-color: color-mix(in srgb, var(--nf-accent) 30%, transparent);
+    --radio-color: var(--nf-accent);
+    --radio-focus-color: color-mix(in srgb, var(--nf-accent) 30%, transparent);
+    --switch-background: var(--nf-line-strong);
+    --switch-background-checked: var(--nf-accent);
+    --switch-focus-color: color-mix(in srgb, var(--nf-accent) 30%, transparent);
+    --card-background: var(--nf-surface);
+    --card-header-background: var(--nf-surface);
+    --card-footer-background: var(--nf-surface);
+    --card-color: var(--nf-ink);
+    --panel-background: var(--nf-surface);
+    --panel-header-background: var(--nf-surface);
+    --panel-border-color: var(--nf-line);
+    --remark-background: var(--nf-surface);
+    --remark-color: var(--nf-ink);
+    --dialog-background: var(--nf-surface);
+    --dialog-border-color: var(--nf-line);
+    --window-background: var(--nf-surface);
+    --window-border-color: var(--nf-line);
+    --table-border-color: var(--nf-line);
+    --table-color: var(--nf-ink);
+    --table-header-background: var(--nf-surface-2);
+    --table-header-color: var(--nf-muted);
+    --table-striped-background: color-mix(in srgb, var(--nf-surface-2) 60%, var(--nf-surface));
+    --table-hover-background: var(--nf-accent-soft);
+    --table-hover-color: var(--nf-ink);
+    --table-selected-background: var(--nf-accent-soft);
+    --tabs-item-background-hover: var(--nf-surface-2);
+    --tabs-item-background-active: var(--nf-surface);
+    --navview-background: var(--nf-surface);
+    --navview-pane-background: var(--nf-surface-2);
+    --navview-item-background-hover: var(--nf-line);
+    --navview-item-background-active: var(--nf-accent-soft);
+    --navview-item-color-active: var(--nf-accent-hover);
+    --navview-icon-color-active: var(--nf-accent-hover);
+    --appbar-background: var(--nf-surface);
+    --pagination-page-item-background-hover: var(--nf-line);
+    --pagination-page-item-background-active: var(--nf-accent);
+    --pagination-page-item-color-active: var(--nf-accent-ink);
+    --chip-background: var(--nf-surface-2);
+    --chip-background-hover: var(--nf-line);
+}
+
+/* ------------------------------------------------------------------------------------------------ base */
+
+body {
+    font-family: var(--nf-font);
+    background-color: var(--nf-surface);
+    color: var(--nf-ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+}
+
+a {
+    text-underline-offset: 3px;
+    transition: color .15s var(--nf-ease);
+}
+
+::selection {
+    background: color-mix(in srgb, var(--nf-accent) 25%, transparent);
+}
+
+:focus-visible {
+    outline: 2px solid var(--nf-accent);
+    outline-offset: 2px;
+}
+
+code, kbd, pre, samp {
+    border-radius: 6px;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--nf-line);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--nf-line-strong) transparent;
+}
+
+/* --------------------------------------------------------------------------------------------- botones */
+
+.button,
+.command-button,
+.action-button,
+.split-button .button {
+    font-weight: 500;
+    border-color: var(--nf-line-strong);
+    box-shadow: var(--nf-shadow);
+    transition: background-color .15s var(--nf-ease), border-color .15s var(--nf-ease),
+        color .15s var(--nf-ease), box-shadow .15s var(--nf-ease), transform .1s var(--nf-ease);
+}
+
+.button:hover {
+    border-color: color-mix(in srgb, var(--nf-ink) 22%, var(--nf-line-strong));
+}
+
+.button:active:not(:disabled):not(.disabled) {
+    transform: translateY(1px);
+}
+
+/* Metro quita borde y sombra de .button:focus con !important: el foco va con outline. */
+.button:focus-visible {
+    outline: 2px solid var(--nf-accent);
+    outline-offset: 2px;
+}
+
+.button.flat,
+.button.link,
+.button.outline,
+.button.square.flat {
+    box-shadow: none;
+}
+
+.button.flat {
+    border-color: transparent;
+}
+
+/* Primario con el color de acento (Metro usa rojo #f75553 con !important). */
+.button.primary,
+.command-button.primary,
+.action-button.primary,
+.shortcut.primary {
+    background-color: var(--nf-accent) !important;
+    border-color: var(--nf-accent) !important;
+    color: var(--nf-accent-ink) !important;
+}
+
+.button.primary:hover,
+.button.primary:active,
+.command-button.primary:hover,
+.action-button.primary:hover,
+.shortcut.primary:hover {
+    background-color: var(--nf-accent-hover) !important;
+    border-color: var(--nf-accent-hover) !important;
+    color: var(--nf-accent-ink) !important;
+}
+
+.button.primary.outline,
+.command-button.primary.outline {
+    background-color: transparent !important;
+    color: var(--nf-accent) !important;
+}
+
+.button.primary.outline:hover {
+    background-color: var(--nf-accent-soft) !important;
+    color: var(--nf-accent) !important;
+}
+
+.button.success:not(.outline) {
+    box-shadow: var(--nf-shadow);
+}
+
+.button.pill,
+.button.rounded {
+    border-radius: 999px;
+}
+
+/* ---------------------------------------------------------------------------------------------- campos */
+
+.input,
+.textarea,
+.select,
+.tag-input,
+.spinner,
+.color-picker,
+.file,
+.picker {
+    transition: border-color .15s var(--nf-ease), box-shadow .15s var(--nf-ease);
+}
+
+.input:hover,
+.textarea:hover,
+.select:hover,
+.tag-input:hover,
+.spinner:hover {
+    border-color: var(--input-border-color-hover);
+}
+
+.input.focused,
+.textarea.focused,
+.select.focused,
+.tag-input.focused,
+.spinner.focused,
+.input:focus-within,
+.textarea:focus-within,
+.tag-input:focus-within {
+    border-color: var(--nf-accent);
+    box-shadow: var(--nf-ring);
+}
+
+.input input,
+.textarea textarea {
+    color: var(--input-color);
+}
+
+.input input::placeholder,
+.textarea textarea::placeholder {
+    color: var(--nf-muted);
+    opacity: .8;
+}
+
+.input .prepend,
+.input .append {
+    font-size: .875rem;
+}
+
+/* Campos nativos sin componente de Metro (input sin data-role, select simple) */
+input:not([type]),
+input[type="text"]:not([data-role]),
+input[type="email"]:not([data-role]),
+input[type="number"]:not([data-role]),
+input[type="password"]:not([data-role]),
+input[type="search"]:not([data-role]),
+input[type="tel"]:not([data-role]),
+input[type="url"]:not([data-role]),
+select:not([data-role]),
+textarea:not([data-role]) {
+    border-radius: var(--nf-radius-sm);
+    accent-color: var(--nf-accent);
+}
+
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+progress {
+    accent-color: var(--nf-accent);
+}
+
+label,
+.label {
+    font-weight: 500;
+}
+
+.invalid_feedback,
+.invalid-feedback {
+    font-size: .8125rem;
+}
+
+/* --------------------------------------------------------------------------------------- contenedores */
+
+.card,
+.panel {
+    border-color: var(--nf-line);
+    box-shadow: var(--nf-shadow);
+}
+
+.card .card-header,
+.panel .panel-title {
+    font-weight: 600;
+    border-bottom: 1px solid var(--nf-line);
+}
+
+.card .card-footer {
+    border-top: 1px solid var(--nf-line);
+}
+
+.remark {
+    border-width: 1px 1px 1px 4px;
+    box-shadow: var(--nf-shadow);
+}
+
+.remark.info { border-left-color: var(--nf-info) !important; background: color-mix(in srgb, var(--nf-info) 7%, var(--nf-surface)); }
+.remark.success { border-left-color: var(--nf-success) !important; background: color-mix(in srgb, var(--nf-success) 7%, var(--nf-surface)); }
+.remark.warning { border-left-color: var(--nf-warning) !important; background: color-mix(in srgb, var(--nf-warning) 9%, var(--nf-surface)); }
+.remark.alert { border-left-color: var(--nf-danger) !important; background: color-mix(in srgb, var(--nf-danger) 7%, var(--nf-surface)); }
+
+.dialog,
+.window,
+.info-box {
+    box-shadow: var(--nf-shadow-lg);
+    border: 1px solid var(--nf-line);
+}
+
+.dialog .dialog-title {
+    font-weight: 600;
+}
+
+.dialog .dialog-actions {
+    gap: 8px;
+}
+
+.overlay {
+    backdrop-filter: blur(2px);
+}
+
+.tag,
+.badge {
+    border-radius: 999px;
+}
+
+.chip {
+    border-radius: 999px;
+}
+
+/* ------------------------------------------------------------------------------------------------ tablas */
+
+.table {
+    font-variant-numeric: tabular-nums;
+}
+
+.table thead th {
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--nf-line);
+}
+
+.table td,
+.table th {
+    border-color: var(--nf-line);
+}
+
+.table tbody tr {
+    transition: background-color .12s var(--nf-ease);
+}
+
+/* DataTables (Table / Table->Ajax) */
+.dataTables_wrapper {
+    font-size: .875rem;
+}
+
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+    height: 34px;
+    padding: 0 10px;
+    color: var(--nf-ink);
+    background: var(--nf-surface);
+    border: 1px solid var(--nf-line-strong);
+    border-radius: var(--nf-radius-sm);
+    transition: border-color .15s var(--nf-ease), box-shadow .15s var(--nf-ease);
+}
+
+.dataTables_wrapper .dataTables_filter input:focus,
+.dataTables_wrapper .dataTables_length select:focus {
+    outline: none;
+    border-color: var(--nf-accent);
+    box-shadow: var(--nf-ring);
+}
+
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    color: var(--nf-muted) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    min-width: 34px;
+    margin: 0 2px;
+    border: 1px solid transparent !important;
+    border-radius: var(--nf-radius-sm);
+    color: var(--nf-ink) !important;
+    background: transparent !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    border-color: var(--nf-line) !important;
+    background: var(--nf-surface-2) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: var(--nf-accent-ink) !important;
+    background: var(--nf-accent) !important;
+    border-color: var(--nf-accent) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+    color: var(--nf-muted) !important;
+    background: transparent !important;
+    border-color: transparent !important;
+}
+
+table.dataTable thead th,
+table.dataTable thead td {
+    border-bottom: 1px solid var(--nf-line) !important;
+}
+
+table.dataTable.no-footer {
+    border-bottom: 1px solid var(--nf-line) !important;
+}
+
+table.dataTable tbody tr.selected > * {
+    box-shadow: inset 0 0 0 9999px var(--nf-accent-soft) !important;
+    color: var(--nf-ink) !important;
+}
+
+/* ------------------------------------------------------------------------------------------- navegación */
+
+.tabs .tabs-list li a,
+.tabs-list li a {
+    transition: background-color .15s var(--nf-ease), color .15s var(--nf-ease);
+}
+
+.navview .navview-menu li a,
+.navview-menu li a {
+    transition: background-color .15s var(--nf-ease), color .15s var(--nf-ease);
+}
+
+.app-bar,
+[data-role="appbar"] {
+    box-shadow: 0 1px 0 var(--nf-line);
+}
+
+.pagination .page-item .page-link {
+    transition: background-color .15s var(--nf-ease);
+}
+
+.breadcrumbs {
+    font-size: .875rem;
+}
+
+/* ----------------------------------------------------------------------------------------- SweetAlert2 */
+
+.swal2-popup {
+    border-radius: var(--nf-radius-lg) !important;
+    font-family: var(--nf-font);
+    color: var(--nf-ink) !important;
+    background: var(--nf-surface) !important;
+    box-shadow: var(--nf-shadow-lg);
+}
+
+.swal2-title {
+    font-weight: 600 !important;
+    color: var(--nf-ink) !important;
+}
+
+.swal2-html-container {
+    color: var(--nf-muted) !important;
+}
+
+.swal2-styled {
+    border-radius: var(--nf-radius-sm) !important;
+    font-weight: 500 !important;
+    box-shadow: none !important;
+}
+
+.swal2-styled.swal2-confirm {
+    background: var(--nf-accent) !important;
+    color: var(--nf-accent-ink) !important;
+}
+
+.swal2-styled.swal2-cancel {
+    background: var(--nf-surface-2) !important;
+    color: var(--nf-ink) !important;
+    border: 1px solid var(--nf-line-strong) !important;
+}
+
+.swal2-styled:focus-visible {
+    box-shadow: var(--nf-ring) !important;
+}
+
+.swal2-input,
+.swal2-textarea,
+.swal2-select {
+    border-radius: var(--nf-radius-sm) !important;
+    border-color: var(--nf-line-strong) !important;
+}
+
+/* -------------------------------------------------------------------------------------------- Tom Select */
+
+.ts-control {
+    border-radius: var(--nf-radius-sm) !important;
+    border-color: var(--nf-line-strong) !important;
+    background: var(--input-background) !important;
+    color: var(--nf-ink) !important;
+}
+
+.ts-wrapper.focus .ts-control {
+    border-color: var(--nf-accent) !important;
+    box-shadow: var(--nf-ring) !important;
+}
+
+.ts-dropdown {
+    border-radius: var(--nf-radius-sm);
+    border-color: var(--nf-line) !important;
+    background: var(--nf-surface) !important;
+    color: var(--nf-ink) !important;
+    box-shadow: var(--nf-shadow-lg);
+    overflow: hidden;
+}
+
+.ts-dropdown .active {
+    background: var(--nf-accent-soft) !important;
+    color: var(--nf-ink) !important;
+}
+
+/* -------------------------------------------------------------------------------------- QueryBuilder (TableF) */
+/* Con html delante: query-builder.css carga después ('095') con la misma especificidad. */
+
+html .query-builder .rules-group-container {
+    padding: 12px;
+    border: 1px solid var(--nf-line);
+    border-radius: var(--nf-radius);
+    background: var(--nf-surface-2);
+}
+
+html .query-builder .rule-container {
+    border: 1px solid var(--nf-line);
+    border-radius: var(--nf-radius-sm);
+    background: var(--nf-surface);
+    box-shadow: var(--nf-shadow);
+}
+
+html .query-builder .rules-list > ::before,
+html .query-builder .rules-list > ::after {
+    border-color: var(--nf-line-strong);
+}
+
+/* -------------------------------------------------------------------------------------------- utilidades */
+
+.nf-card {
+    background: var(--nf-surface);
+    border: 1px solid var(--nf-line);
+    border-radius: var(--nf-radius-lg);
+    box-shadow: var(--nf-shadow);
+    padding: 1.25rem;
+}
+
+.nf-muted {
+    color: var(--nf-muted);
+}
+
+.nf-eyebrow {
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--nf-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

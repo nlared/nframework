@@ -81,6 +81,9 @@ switch ($_SERVER['HTTP_HOST'] ?? 'localhost') {
             // 'cache_dir' => '/var/cache/nframework',  // por defecto {tmp}/nframework_cache_{uid}
             // 'twig_cache' => false,           // desactiva la caché de plantillas Twig compiladas
 
+            // --- Apariencia -----------------------------------------------------------------------------
+            // 'modern_css' => false,          // no carga /nframework/css/nframework.css (tema moderno sobre Metro)
+
             // --- e.firma del SAT ----------------------------------------------------------------------
             // Directorio (formato `openssl rehash`) o archivo PEM con las AC del SAT. Admin → SAT lo crea y
             // lo configura solo en /var/lib/nframework/sat; defínalo aquí únicamente para usar otra ruta.

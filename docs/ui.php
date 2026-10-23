@@ -31,6 +31,25 @@ echo $themeswitcher;            // instancia global creada por include.php
 // o: echo new ThemeSwitcher();
 PHP) ?>
 
+	<h3>Tema moderno</h3>
+	<p><code>include.php</code> carga <code>/nframework/css/nframework.css</code> (clave <code>'090'</code>, después de Metro y antes del CSS del sitio). No reemplaza Metro: redefine sus variables de componente (<code>--button-*</code>, <code>--input-*</code>, <code>--table-*</code>…) con esquinas más redondas, sombras suaves, anillo de foco y color de acento azul, y estiliza DataTables, SweetAlert2, Tom Select y QueryBuilder. El modo oscuro sigue la clase <code>.dark-side</code>.</p>
+	<p>
+		<button class="button">Normal</button>
+		<button class="button primary">Primario</button>
+		<button class="button primary outline">Contorno</button>
+		<button class="button flat">Plano</button>
+	</p>
+	<div class="nf-card mb-4"><span class="nf-eyebrow">.nf-card</span><p class="nf-muted mb-0">Tarjeta con los tokens del tema: <code>--nf-surface</code>, <code>--nf-line</code>, <code>--nf-radius-lg</code>, <code>--nf-shadow</code>.</p></div>
+	<?= docCode(<<<'PHP'
+// Personalizar desde el CSS del sitio (carga después): basta con cambiar los tokens.
+// :root { --nf-accent: #0a7c55; --nf-accent-hover: #086646; --nf-radius-lg: 18px; }
+// .dark-side { --nf-accent: #34b585; }
+
+// Desactivar en todo el sitio (includes/config.php):  'modern_css' => false,
+// Desactivar en una página:
+unset($nframework->csss['090']);
+PHP) ?>
+
 	<h3>CSS y JavaScript por página</h3>
 	<p><code>$nframework->csss</code> y <code>$nframework->jss</code> son arreglos ordenados por clave: las claves bajas cargan primero (jQuery es <code>'001'</code>, Metro UI <code>'050'</code>, nframework <code>'100'</code>). Use una clave nueva para agregar y una existente para reemplazar.</p>
 	<p>dayjs cargado solo en esta página: <b id="hoyJs">…</b></p>

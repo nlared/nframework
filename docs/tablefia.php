@@ -89,6 +89,7 @@ PHP) ?>
 		<li>Si no, Claude recibe las colecciones con sus campos, las relaciones y las reglas, y responde con la colección base, el pipeline (Extended JSON), las columnas y una explicación (salida estructurada con <code>json_schema</code>).</li>
 		<li>El servidor valida el pipeline y lo arma: <code>match</code> + <code>$unset</code> de <code>hidden</code> + etapas de la IA + <code>$limit</code>. Si no pasa la validación o MongoDB lo rechaza, se le pide a la IA una corrección una vez.</li>
 		<li>Se ejecuta (máximo 30 s), se muestra en una DataTable y se guarda en <code>nftablesfia</code>.</li>
+		<li><strong>Csv</strong>, <strong>Excel</strong> y <strong>Gráfica</strong> trabajan sobre la consulta mostrada. <strong>Gráfica</strong> abre <code>/nframework/tablefg.php</code> en otra pestaña, que vuelve a validar el pipeline guardado y permite graficar el resultado (hasta 5000 filas) eligiendo tipo, categoría, valores y agregación.</li>
 	</ol>
 
 	<h3>Seguridad</h3>
