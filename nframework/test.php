@@ -250,7 +250,13 @@ $depends = [
 	'pdo_sqlite' => "php$phpver-sqlite",
 	'zip' => "php$phpver-zip",
 	'mbstring' => "php$phpver-mbstring",
-	'libxml' => "php$phpver-xml",
+	// libxml viene en el núcleo de PHP; php*-xml es el que trae dom, SimpleXML, xmlreader/xmlwriter y xsl
+	// (PhpSpreadsheet, PhpWord, CFDI/XSD).
+	'dom' => "php$phpver-xml",
+	'SimpleXML' => "php$phpver-xml",
+	'xmlreader' => "php$phpver-xml",
+	'xmlwriter' => "php$phpver-xml",
+	'xsl' => "php$phpver-xml",
 	'imagick' => 'php-imagick'
 ];
 
@@ -268,7 +274,7 @@ if (!$classMongoExists) {
 
 
 if (count($apts) > 0) {
-	$errores[] = 'sudo apt-get install ' . implode(' ', $apts);
+	$errores[] = 'sudo apt-get install ' . implode(' ', array_unique($apts));
 }
 
 
@@ -361,6 +367,41 @@ if ($opcache_needs_update) {
 			}
 			$errores[] = "Edita manualmente $inipath y agrega:<br><code>" . implode('<br>', $directives) . "</code>";
 		}
+	}
+}
+
+// include_path con includes/ del framework para CLI, FPM y Apache de cada versión de PHP instalada.
+// Se escribe conf.d/99-nframework.ini (se lee después de php.ini, así que gana) en lugar de editar php.ini.
+$nfIncludes = realpath(dirname(__DIR__) . '/includes');
+foreach (glob('/etc/php/*/{cli,fpm,apache2}', GLOB_BRACE | GLOB_ONLYDIR) ?: [] as $sapidir) {
+	$sapi = basename($sapidir);
+	$v = basename(dirname($sapidir));
+	// Valor efectivo: el último include_path entre php.ini y conf.d/*.ini (en orden alfabético, como PHP).
+	$actual = '.:/usr/share/php';
+	foreach (array_merge([$sapidir . '/php.ini'], glob($sapidir . '/conf.d/*.ini') ?: []) as $inifile) {
+		$ini = @parse_ini_file($inifile, false, INI_SCANNER_RAW);
+		if (isset($ini['include_path'])) {
+			$actual = trim($ini['include_path'], '"\'');
+		}
+	}
+	$paths = array_values(array_filter(array_map(fn($p) => rtrim($p, '/') ?: $p, explode(':', $actual)), 'strlen'));
+	if (in_array($nfIncludes, $paths, true)) {
+		ok("include_path de PHP $v $sapi incluye $nfIncludes");
+		continue;
+	}
+	$linea = 'include_path = "' . implode(':', array_unique(array_merge(['.', $nfIncludes], $paths))) . '"';
+	$dropin = "$sapidir/conf.d/99-nframework.ini";
+	if (@file_put_contents($dropin, "; Generado por nframework/test.php\n$linea\n") !== false) {
+		ok("include_path agregado en $dropin");
+		if ($sapi === 'fpm') {
+			$errores[] = "Reinicia PHP para aplicar cambios: sudo systemctl restart php$v-fpm";
+		} elseif ($sapi === 'apache2') {
+			$errores[] = "Reinicia Apache para aplicar cambios: sudo systemctl restart apache2";
+		}
+	} else {
+		warn("include_path de PHP $v $sapi no incluye $nfIncludes");
+		$errores[] = "Agrega includes/ al include_path de PHP $v $sapi:<br><code>"
+			. htmlspecialchars("echo '$linea' | sudo tee $dropin") . '</code>';
 	}
 }
 
