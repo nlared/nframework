@@ -19,7 +19,32 @@ $consulta = ['nombre' => 'Ana', '$where' => 'sleep(5000)', 'edad' => ['$gt' => 1
 		<li><b>Bloqueo de IP</b>: más de 10 peticiones marcadas por las reglas de Admin → Seguridad en la ventana configurada bloquean la IP.</li>
 		<li><b>Cabeceras</b>: <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: SAMEORIGIN</code> y HSTS opcional (<code>hsts_max_age</code>).</li>
 		<li><b>Archivos subidos</b>: <code>uploadfile.php</code> rechaza extensiones ejecutables y nombres ocultos; la carpeta destino nunca la decide el navegador.</li>
+		<li><b>Rutas protegidas</b>: <code>nfIsBlockedPath()</code> responde 404 (y lo registra en Admin → Seguridad con motivo <code>Path is protected</code>) a archivos ocultos (<code>.git</code>, <code>.env</code>; se permite <code>/.well-known/</code>), <code>/includes/</code>, cualquier <code>vendor/</code>, <code>*.log</code>, <code>*.sh</code>, <code>composer.*</code> y <code>phpunit.xml</code>; en el repositorio del framework también <code>tests/</code>, <code>src/</code> y <code>stubs/</code>. Solo aplica a lo que llega a PHP: vea <a href="#servidor-web">Servidor web</a>.</li>
 	</ul>
+
+	<h3 id="servidor-web">Servidor web (nginx)</h3>
+	<p>nginx entrega los archivos que existen (<code>/.git/HEAD</code>, <code>php_errors.log</code>, <code>includes/composer.json</code>) sin pasar por PHP, así que el bloqueo de <code>nfIsBlockedPath()</code> no los alcanza: agregue estas reglas al <code>server</code> del sitio, <b>antes</b> de <code>location ~ \.php$</code> (nginx usa la primera <code>location</code> con expresión regular que coincida). <code>php nframework/test.php --host=...</code> pide esas rutas al sitio y marca como error cualquiera que responda 200.</p>
+	<?= docCode(<<<'NGINX'
+# nframework: nunca servir código, configuración, logs ni archivos ocultos.
+location ^~ /.well-known/ {                      # Let's Encrypt, Microsoft, etc.: sí se sirven
+    try_files $uri /router.php$is_args$args;
+}
+location ~ /\.                                 { return 404; }   # .git, .env, .htaccess...
+location ~ ^/includes(/|$)                     { return 404; }   # núcleo y config.php
+location ~ /vendor/                            { return 404; }
+location ~* (\.log|\.sh|/composer\.[^/]*|/phpunit\.xml[^/]*)$ { return 404; }
+# Solo en el document root del repositorio del framework (en un sitio pueden ser páginas propias):
+location ~ ^/(tests|src|stubs)(/|$)            { return 404; }
+
+location / {
+    try_files $uri $uri/ /router.php$is_args$args;
+}
+location ~ \.php$ {
+    include snippets/fastcgi-php.conf;
+    fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+}
+NGINX, 'nginx') ?>
+	<p>Después: <code>sudo nginx -t &amp;&amp; sudo systemctl reload nginx</code>.</p>
 
 	<h3>Formularios: token CSRF</h3>
 	<p><code>secureform()</code> incluye un token ligado a la sesión, al navegador y a la acción. Valídelo antes de modificar datos:</p>

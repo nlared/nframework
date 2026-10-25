@@ -227,6 +227,9 @@ Dentro de rutas está además `$twig` (plantillas de `nframework/templates`). **
   o `serveFile()` para entregar archivos.
 - URLs absolutas del sitio (correos, sitemap): `nfSiteHost()` / `$config['url']`, nunca `$_SERVER['HTTP_HOST']`.
 - No forzar `$developermode = true` en producción.
+- Código, configuración, logs y ocultos no se sirven: `nfIsBlockedPath()` da 404 a lo que llega a PHP, pero nginx
+  entrega los archivos existentes directamente, así que el `server` necesita el bloque de `docs/security.php`
+  ("Servidor web"); `nframework/test.php` lo comprueba pidiendo esas rutas al propio sitio.
 
 ## Otros servicios del framework
 

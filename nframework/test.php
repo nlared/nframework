@@ -547,6 +547,88 @@ if ($config['sitedb'] == '') {
 	}
 }
 
+// Archivos que no deben descargarse por web (.git, includes/, *.log, composer.*, ocultos): se piden al propio
+// sitio ($config['url']) y cualquier respuesta 200 es un error. Ver nfIsBlockedPath() y docs/security.php.
+function nfTestHttpStatus(string $url): int
+{
+	$ch = curl_init($url);
+	curl_setopt_array($ch, [
+		CURLOPT_NOBODY => true,
+		CURLOPT_RETURNTRANSFER => true,
+		// http → https y similares: cuenta la respuesta final. Solo se lee el estado, no se verifica el certificado.
+		CURLOPT_FOLLOWLOCATION => true,
+		CURLOPT_MAXREDIRS => 3,
+		CURLOPT_SSL_VERIFYPEER => false,
+		CURLOPT_SSL_VERIFYHOST => 0,
+		CURLOPT_TIMEOUT => 5,
+		CURLOPT_USERAGENT => 'nframework-test',
+	]);
+	curl_exec($ch);
+	$status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+	curl_close($ch);
+	return $status;
+}
+// Sin 'url' en config.php, el host de la petición (en CLI, el de --host), como nfSiteHost().
+$siteUrl = rtrim((string) ($config['url'] ?? ''), '/');
+if ($siteUrl === '' && preg_match('/^[A-Za-z0-9.\-]+(:\d+)?$/', $_SERVER['HTTP_HOST'] ?? '')) {
+	$siteUrl = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
+}
+if ($siteUrl === '' || !function_exists('curl_init')) {
+	warn("No se revisaron las rutas protegidas: falta \$config['url'] o la extensión curl");
+} else {
+	$docroot = rtrim((string) ($_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+	$protegidas = ['/includes/config.php', '/includes/composer.json', '/includes/vendor/autoload.php', '/composer.json'];
+	if (is_dir($docroot . '/.git')) {
+		$protegidas[] = '/.git/HEAD';
+	}
+	// Archivos de prueba en el document root: un .txt de control (debe responder 200; si no, la URL no sirve
+	// este directorio y la prueba no dice nada), uno oculto y un .log. Se borran al terminar.
+	$probe = 'nfprobe-' . bin2hex(random_bytes(4));
+	$probes = ["/$probe.txt" => 'control', "/.$probe" => 'oculto', "/$probe.log" => 'log'];
+	$creados = [];
+	foreach ($probes as $file => $tipo) {
+		if (@file_put_contents($docroot . $file, "nframework test\n") !== false) {
+			$creados[] = $docroot . $file;
+		}
+	}
+	try {
+		if (count($creados) === count($probes)) {
+			$control = nfTestHttpStatus($siteUrl . "/$probe.txt");
+			if ($control === 200) {
+				$protegidas["/.$probe"] = 'archivo oculto de prueba';
+				$protegidas["/$probe.log"] = 'archivo .log de prueba';
+			} else {
+				warn("$siteUrl/$probe.txt respondió HTTP $control (se esperaba 200): $siteUrl no sirve $docroot, no se probaron archivos ocultos ni .log");
+			}
+		} else {
+			warn("No se pudieron crear archivos de prueba en $docroot: no se probaron archivos ocultos ni .log");
+		}
+		$expuestas = [];
+		foreach ($protegidas as $path => $nombre) {
+			if (is_int($path)) {
+				$path = $nombre;
+			}
+			$status = nfTestHttpStatus($siteUrl . $path);
+			if ($status === 0) {
+				warn("No se pudo conectar a $siteUrl$path");
+			} elseif ($status >= 200 && $status < 300) {
+				fail("$nombre se puede descargar (HTTP $status)");
+				$expuestas[] = $nombre;
+			} else {
+				ok("$nombre bloqueado (HTTP $status)");
+			}
+		}
+		if ($expuestas) {
+			$errores[] = 'Rutas protegidas accesibles por web: ' . htmlspecialchars(implode(', ', $expuestas))
+				. '. Agregue a nginx el bloque de docs/security.php ("Servidor web").';
+		}
+	} finally {
+		foreach ($creados as $file) {
+			@unlink($file);
+		}
+	}
+}
+
 // La sesión la inicia include.php (al final).
 
 $a = ini_get('post_max_size');

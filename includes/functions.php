@@ -28,6 +28,27 @@ function nfMainJsVersion(): string
 }
 
 /**
+ * true si la URL apunta a algo que nunca debe servirse por web: archivos o carpetas ocultos (.git, .env;
+ * se permite /.well-known/), /includes/ (núcleo y config.php), cualquier vendor/, *.log, *.sh, composer.* y
+ * phpunit.xml*. Con $frameworkRoot (el document root es el repositorio del framework) también tests/, src/
+ * y stubs/ de la raíz; en un sitio esas rutas pueden ser páginas propias.
+ * nginx entrega los archivos que existen sin pasar por PHP: el bloqueo real va en su configuración
+ * (ver docs/security.php); esto cubre lo que sí llega a PHP (router.php, .php dentro de includes/).
+ */
+function nfIsBlockedPath(string $uri, bool $frameworkRoot = false): bool
+{
+    $path = str_replace('\\', '/', rawurldecode((string) parse_url($uri, PHP_URL_PATH)));
+    $path = '/' . ltrim($path, '/');
+    if (preg_match('#/\.(?!well-known(/|$))#i', $path)
+        || preg_match('#^/includes(/|$)#i', $path)
+        || preg_match('#/vendor(/|$)#i', $path)
+        || ($frameworkRoot && preg_match('#^/(tests|src|stubs)(/|$)#i', $path))) {
+        return true;
+    }
+    return (bool) preg_match('/\.(log|sh)$|^composer\.|^phpunit\.xml/i', basename($path));
+}
+
+/**
  * Valida el nombre de un archivo subido por /nframework/uploadfile.php.
  * Rechaza archivos ocultos (.htaccess), rutas (../), caracteres especiales y extensiones protegidas
  * (ejecutables o de configuración), revisando todas las extensiones (x.php.jpg) sin distinguir mayúsculas.
