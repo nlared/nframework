@@ -359,4 +359,30 @@ class FunctionsTest extends TestCase
             delTree($base);
         }
     }
+
+    public function testNfIsBlockedPathBlocksCodeConfigLogsAndHiddenFiles(): void
+    {
+        foreach ([
+            '/.git/HEAD', '/.env', '/admin/.htaccess', '/%2egit/config', '/includes/config.php', '/includes',
+            '/includes/vendor/autoload.php', '/nframework/microsoft/vendor/autoload.php', '/admin/site/php_errors.log',
+            '/run-tests.sh', '/composer.json', '/includes/composer.lock', '/phpunit.xml', '/phpunit.xml.dist',
+        ] as $uri) {
+            $this->assertTrue(nfIsBlockedPath($uri), $uri);
+        }
+    }
+
+    public function testNfIsBlockedPathAllowsPagesAssetsAndWellKnown(): void
+    {
+        foreach ([
+            '/', '/docs/security.php', '/nframework/uploadfile.php', '/admin/errorlog/', '/css/site.css',
+            '/.well-known/acme-challenge/abc', '/.well-known', '/docs/index.php?f=a.log', '/sitio/includes/x.php',
+            '/tests/', '/src/pagina.php',
+        ] as $uri) {
+            $this->assertFalse(nfIsBlockedPath($uri), $uri);
+        }
+        // tests/, src/ y stubs/ solo se bloquean en el document root del framework.
+        $this->assertTrue(nfIsBlockedPath('/tests/Unit/FunctionsTest.php', true));
+        $this->assertTrue(nfIsBlockedPath('/src/', true));
+        $this->assertFalse(nfIsBlockedPath('/docs/tests.php', true));
+    }
 }

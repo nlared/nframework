@@ -698,6 +698,14 @@ if (isset($config['security_path_blacklist'])) {
         }
     }
 }
+// Código, configuración, logs y archivos ocultos (nfIsBlockedPath()): 404, registrado como evento de seguridad.
+$nfBlockedPath = PHP_SAPI !== 'cli' && nfIsBlockedPath(
+    $_SERVER['REQUEST_URI'] ?? '/',
+    realpath($_SERVER['DOCUMENT_ROOT'] ?? '') === dirname(__DIR__)
+);
+if ($nfBlockedPath && $block_reason === '') {
+    $block_reason = 'Path is protected';
+}
 
 if (!empty($config['timezone'])) {
     date_default_timezone_set($config['timezone']);
@@ -735,15 +743,15 @@ $eventAt = new MongoDB\BSON\UTCDateTime(time() * 1000);
 try {
     $m->{$config['sitedb']}->nfuristats->insertOne(
         ['_id' => $nfStatId, 'created_at' => $eventAt, 'createdAt' => $eventAt] + $nfRequestDoc
-            + ['block_reason' => $block_reason] + ($block_reason != '' ? ['status_code' => 403] : []),
+            + ['block_reason' => $block_reason] + ($block_reason != '' ? ['status_code' => $nfBlockedPath ? 404 : 403] : []),
         nfStatOptions()
     );
 } catch (Throwable $e) {
     error_log('nframework nfuristats: ' . $e->getMessage());
 }
 if ($block_reason != "") {
-    http_response_code(403);
-    exit("Access denied.");
+    http_response_code($nfBlockedPath ? 404 : 403);
+    exit($nfBlockedPath ? '' : "Access denied.");
 }
 
 /*
