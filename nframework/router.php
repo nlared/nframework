@@ -70,22 +70,39 @@ function nfClampImageSize($size, int $max = 2048): int
 $router = new \Mezon\Router\Router();
 
 $router->addRoute('index', function ($route, $variables) {
-	global $twig, $nframework, $config;
+	global $twig, $nframework, $config, $user;
 
 	$header = nfPage('_header');
 	$footer = nfPage('_footer');
 	$parallax = nfPage('_parallax');
 
 	$nframework->usecommon = true;
-	$template = $twig->load('page.html');
 
 	$page = null;
-	if ($config['homepagetype'] == 'page') {
+	if (($config['homepagetype'] ?? '') == 'page') {
 		$page = nfPage('_home');
 		$nframework->metas['description'] = $page['description'] ?? null;
 		$nframework->metas['title'] = $page['title'] ?? null;
 		$nframework->metas['keywords'] = $page['keywords'] ?? null;
 	}
+
+	// Sitio sin portada (sin index.php, sin página '/' ni _home/_parallax en Admin → Páginas): bienvenida con
+	// ligas a la documentación (la local si el document root tiene docs/) y al login.
+	if (!is_file($_SERVER['DOCUMENT_ROOT'] . '/index.php') && nfPage('/') === null
+		&& empty($page['html']) && empty($parallax['html'])) {
+		$docsLocal = is_file($_SERVER['DOCUMENT_ROOT'] . '/docs/index.php');
+		echo $twig->load('welcome.html')->render([
+			'title' => $nframework->title,
+			'docs_url' => $docsLocal ? '/docs/' : 'https://github.com/nlared/nframework/tree/master/docs',
+			'docs_external' => !$docsLocal,
+			'logged' => $user->isLoggedIn(),
+			'admin' => $user->in('admins'),
+			'username' => (string) $user->username,
+		]);
+		return;
+	}
+
+	$template = $twig->load('page.html');
 
 	echo $template->render([
 		'theme' => $config['theme'],
