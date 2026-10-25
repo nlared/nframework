@@ -98,15 +98,22 @@ FORM;
 echo $dialogIps;
 echo $arrayIps;
 
-$rules = [['host' => ['$exists' => false]]];
-foreach ($m->{$config['sitedb']}->nfsecurityrules->find() as $rule) {
-	if (!empty($rule->rule) && !empty($rule->enabled) && $rule->enabled === true) {
-		$rules[] = fixSingleQuery(json_decode($rule->rule, true));
+// Eventos de seguridad: peticiones bloqueadas (lista negra, CSRF, reglas) y las que coinciden con una
+// regla activa. Las reglas se leen igual que en include.php.
+$events = [
+	['status_code' => 403],
+	['block_reason' => ['$nin' => ['', null]]],
+	['csrf_rejected' => true],
+];
+foreach ($m->{$config['sitedb']}->nfsecurityrules->find(['enabled' => true, 'rule' => ['$ne' => null]]) as $rule) {
+	$query = json_decode((string) $rule->rule, true);
+	if (is_array($query) && $query !== []) {
+		$events[] = fixSingleQuery($query);
 	}
 }
 $range = 900;
-if (isset($_GET['range']) && in_array($_GET['range'], ['900', '3600', '86400'])) {
-	$range = (int)$_GET['range'];
+if (is_string($_GET['range'] ?? null) && in_array($_GET['range'], ['900', '3600', '86400', '604800', '2592000'], true)) {
+	$range = (int) $_GET['range'];
 }
 
 $datatablessuspicious = new Table();
@@ -115,26 +122,29 @@ $datatablessuspicious->Ajax(
 		'id' => 'table_suspicious',
 		'db' => $config['sitedb'],
 		'collection' => 'nfuristats',
-		'header' => '<th>Fecha</th><th>IP</th><th>Host</th><th>Path</th><th>User Agent</th><th>id</th>',
+		'header' => '<th>Fecha</th><th>IP</th><th>Host</th><th>Path</th><th>User Agent</th><th>Motivo</th><th>Estado</th><th>id</th>',
+		'order' => [[0, 'desc']],
 		'columns' => [
 			'created_at',
 			'ip',
 			'host',
 			'path',
 			'agent',
+			'block_reason',
+			'status_code',
 			'_id'
 		],
 		'pipeline' => [
 			[
 				'$match' => [
-					'$or' => $rules,
+					'$or' => $events,
 					'created_at' => ['$gt' => new MongoDB\BSON\UTCDateTime((time() - $range) * 1000)]
 				]
-			]
-		],
-		[
-			'$sort' => [
-				'created_at' => -1
+			],
+			[
+				'$sort' => [
+					'created_at' => -1
+				]
 			]
 		]
 	]
@@ -264,7 +274,7 @@ if ($nframework->isAjax()) {
 					<div class="cell">
 						<div class="button" onclick="<?= $arrayIps->function_new() ?>"><span class="mif-plus">Agregar</span>
 						</div>
-					</div>nfuristats
+					</div>
 				</div>
 				<div class="row">
 					<div class="cell">
