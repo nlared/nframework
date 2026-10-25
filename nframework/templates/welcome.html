@@ -1,0 +1,49 @@
+<div class="nf-welcome container">
+	<div class="nf-card">
+		<span class="nf-eyebrow">nframework</span>
+		<h1>{{ title }}</h1>
+		<p class="nf-muted">Este sitio todavía no tiene página de inicio.</p>
+		<div class="nf-welcome-links">
+			<a href="{{ docs_url }}" class="button primary"{% if docs_external %} target="_blank" rel="noopener"{% endif %}><span class="mif-books"></span>&nbsp;Documentación</a>
+			{% if logged %}
+				{% if admin %}<a href="/admin/" class="button"><span class="mif-cog"></span>&nbsp;Administración</a>{% endif %}
+				<a href="/account/logout" class="button flat"><span class="mif-exit"></span>&nbsp;Cerrar sesión ({{ username }})</a>
+			{% else %}
+				<a href="/account/login" class="button"><span class="mif-user"></span>&nbsp;Iniciar sesión</a>
+			{% endif %}
+		</div>
+		{% if admin %}
+			<p class="nf-muted nf-welcome-hint">Para reemplazar esta página: cree <code>index.php</code> en el document root, una página con path <code>/</code> en Admin → Páginas, o la página <code>_home</code> y elija «página» como tipo de inicio en Admin → Sitio.</p>
+		{% endif %}
+	</div>
+</div>
+<style>
+.nf-welcome {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+}
+.nf-welcome .nf-card {
+	max-width: 560px;
+	width: 100%;
+	text-align: center;
+	padding: 40px 32px;
+}
+.nf-welcome h1 {
+	margin: 8px 0;
+	overflow-wrap: anywhere;
+}
+.nf-welcome-links {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 8px;
+	margin-top: 24px;
+}
+.nf-welcome-hint {
+	margin: 24px 0 0;
+	font-size: .875rem;
+}
+</style>
