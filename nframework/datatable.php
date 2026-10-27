@@ -36,16 +36,8 @@ foreach ((array) ($_GET['order'] ?? []) as $nsort) {
 if (empty($sorts)) {
 	$sorts = ['_id' => 1];
 }
-foreach ($datainfo['columns'] as $column) {
-	if ($column == '_id') {
-		$project['_id'] = ['$toString' => '$_id'];
-	} else {
-		$project[$column] = 1;
-	}
-}
-
+// Los conteos no llevan $project: no cambia el número y permite contar sin leer cada documento
 $pipeline = (isset($datainfo['pipeline']) ? $datainfo['pipeline'] : []);
-$pipeline[] = ['$project' => $project];
 $pipeline[] = ['$count' => 'recordsTotal'];
 modifyArray($pipeline, '$regex', '$options', 'i');
 $options = [];
@@ -67,12 +59,19 @@ function modifyArray(&$array, $targetKey, $newKey, $newValue)
 }
 
 
-
+// Obtener el total de registros antes de aplicar filtros
 $filtrados = 0;
 foreach ($m->{$datainfo['db']}->{$datainfo['collection']}->aggregate($pipeline, $options) as $doc) {
 	$datat = (array)$doc;
 }
-
+$project = [];
+foreach ($datainfo['columns'] as $column) {
+	if ($column == '_id') {
+		$project['_id'] = ['$toString' => '$_id'];
+	} else {
+		$project[$column] = 1;
+	}
+}
 
 
 $pipeline = (isset($datainfo['pipeline']) ? $datainfo['pipeline'] : []);
@@ -99,11 +98,16 @@ foreach ($datainfo['columns'] as $index => $column) {
 if (count($columnaf) > 0) {
 	$pipeline[] = ['$match' => $columnaf];
 }
-$pipelinef = $pipeline;
-$pipelinef[] = ['$project' => $project];
-$pipelinef[] = ['$count' => 'recordsTotal'];
-foreach ($m->{$datainfo['db']}->{$datainfo['collection']}->aggregate($pipelinef, $options) as $doc) {
-	$dataf = (array)$doc;
+// Sin búsqueda los filtrados son el total: se evita la segunda consulta de conteo
+$pipelinef = [];
+if ($globalfind === null && count($columnaf) === 0) {
+	$dataf = $datat ?? [];
+} else {
+	$pipelinef = $pipeline;
+	$pipelinef[] = ['$count' => 'recordsTotal'];
+	foreach ($m->{$datainfo['db']}->{$datainfo['collection']}->aggregate($pipelinef, $options) as $doc) {
+		$dataf = (array)$doc;
+	}
 }
 
 $datastart = max(0, (int) ($_GET['start'] ?? 0));
