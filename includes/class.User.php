@@ -148,7 +148,7 @@ class User implements ArrayAccess
                     <img src="/images/pngtowebp/users/32/32/{$this->info['_id']}.webp" alt="user picture" class="avatar">
                     <span class="ml-2 app-bar-name">{$safeUsername}</span>
                 </a>
-                <div class="d-menu context drop-down place-right" data-role="dropdown" id="logindrop">
+                <div class="d-menu context drop-down place-right" data-role="dropdown" data-stay-on-click="true" id="logindrop">
                     <div class="p-3 bg-white fg-black text-center" style="width:300px">
                         <img src="/images/pngtowebp/users/120/120/{$this->info['_id']}.webp" alt="user picture" class="avatar">
                         <div class="h4 mb-0">{$safeUsername}</div>
@@ -177,7 +177,7 @@ HTML;
     <span class="mif-enter icon"></span>
     <span class="visible-md">&nbsp;Iniciar</span>
 </a>
-<div class="d-menu context drop-down place-right" data-role="dropdown" id="logindrop" >
+<div class="d-menu context drop-down place-right" data-role="dropdown" data-stay-on-click="true" id="logindrop">
     <div class="p-3 " style="width:300px">
         <form method="POST" data-role="validator" action="/account/login">
             <input type="hidden" name="CSRFToken" value="{$csrfToken}">
@@ -197,10 +197,10 @@ HTML;
                 <span class="check"></span>
                 <span class="caption">Recordar me</span>
             </label>
-            <button class="button mini js-push-btn" data-sync="{$pushSync}"></button><br>
+            <button type="button" class="button mini js-push-btn" data-sync="{$pushSync}"></button><br>
             {$themeswitcher}
             <div class="d-inline-flex">
-                <button class="button" onclick="Metro.getPlugin('#logindrop','dropdown').close();">Cerrar</button>
+                <button type="button" class="button" onclick="Metro.getPlugin('#logindrop','dropdown').close();">Cerrar</button>
                 {$registerButton}
                 <button name="op" value="Iniciar" class="button" type="submit">Iniciar</button>
             </div>
