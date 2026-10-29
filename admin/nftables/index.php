@@ -5,9 +5,10 @@ $datatable = new Table();
 $datatable->header = '<th>Tabla</th><th>Descripcion</th><th>Opciones</th>';
 foreach ($m->{$config['sitedb']}->nftables->find() as $doc) {
     $datatable->data[] = [
-        $doc['nfcollection'],
-        $doc['nfdescription'],
-        '<a href="table.php?_id=' . $doc['_id'] . '" class="button"><span class="mif-pencil"></span></a>
+        htmlspecialchars((string) $doc['nfcollection']),
+        htmlspecialchars((string) $doc['nfdescription']),
+        '<a href="/nftables/' . urlencode((string) $doc['nfcollection']) . '/" class="button" title="Abrir tabla"><span class="mif-table"></span></a>
+        <a href="table.php?_id=' . $doc['_id'] . '" class="button"><span class="mif-pencil"></span></a>
         <a href="dialog_preview.php?_id=' . $doc['_id'] . '" class="button"><span class="mif-pencil"></span></a>
         <a href="?eliminar=' . $doc['_id'] . '" class="button"><span class="mif-cross"></span></a>'
     ];
