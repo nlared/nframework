@@ -402,4 +402,15 @@ class FunctionsTest extends TestCase
             delTree($base);
         }
     }
+
+    public function testNfPngToIcoBuildsDirectory(): void
+    {
+        $ico = nfPngToIco([16 => 'aaaa', 256 => 'bbbbbb']);
+        $this->assertSame(['reserved' => 0, 'type' => 1, 'count' => 2], unpack('vreserved/vtype/vcount', $ico));
+        $first = unpack('Cw/Ch/Ccolors/Creserved/vplanes/vbpp/Vlength/Voffset', $ico, 6);
+        $this->assertSame([16, 16, 4, 38], [$first['w'], $first['h'], $first['length'], $first['offset']]);
+        $second = unpack('Cw/Ch/Ccolors/Creserved/vplanes/vbpp/Vlength/Voffset', $ico, 22);
+        $this->assertSame([0, 0, 6, 42], [$second['w'], $second['h'], $second['length'], $second['offset']]);
+        $this->assertSame('aaaabbbbbb', substr($ico, 38));
+    }
 }
