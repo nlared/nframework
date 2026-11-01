@@ -83,6 +83,9 @@ switch ($_SERVER['HTTP_HOST'] ?? 'localhost') {
 
             // --- Apariencia -----------------------------------------------------------------------------
             // 'modern_css' => false,          // no carga /nframework/css/nframework.css (tema moderno sobre Metro)
+            // Ruta absoluta del archivo PNG del logotipo; Admin → Sitio lo sube ahí. Si el archivo no existe
+            // se usa el de nframework (img/nlarednf.png). Por omisión: $_SERVER['DOCUMENT_ROOT'] . '/img/nf/logo.png'.
+            // 'logo' => '/var/www/compartido/logo.png',
 
             // --- e.firma del SAT ----------------------------------------------------------------------
             // Directorio (formato `openssl rehash`) o archivo PEM con las AC del SAT. Admin → SAT lo crea y

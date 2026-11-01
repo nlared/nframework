@@ -622,14 +622,15 @@ $router->addRoute('/.well-known/acme-challenge/[s:filename]', function ($route, 
 
 $router->addRoute('/images/config/[i:size]/logo.png', function (string $route, array $p) {
 	global $m, $config, $nframework;
-	$logo = $_SERVER['DOCUMENT_ROOT'] . '/img/nf/logo.png';
+	$logo = nfLogoPath();
 	if (!is_file($logo)) {
 		http_response_code(404);
 		return;
 	}
 	$dir = 'img/nf/config/';
 	$p['size'] = nfClampImageSize($p['size']);
-	$dst = $dir . '/logo_' . $p['size'] . '.png';
+	// Nombre distinto para el logo por omisión: al borrar el del sitio no se sirve la copia vieja.
+	$dst = $dir . '/' . pathinfo($logo, PATHINFO_FILENAME) . '_' . $p['size'] . '.png';
 	if (!file_exists($dst) || filemtime($dst) < filemtime($logo)) {
 		if (!file_exists($dir)) {
 			mkdir($dir, 0777, true);
@@ -756,9 +757,10 @@ $router->addRoute('/images/config/[i:w]/[i:h]/logo.png', function (string $route
 	$dir = 'img/nf/config/';
 	$p['w'] = nfClampImageSize($p['w']);
 	$p['h'] = nfClampImageSize($p['h']);
-	$dst = $dir . '/logo_' . $p['w'] . 'x' . $p['h'] . '.png';
 	// $config['image'] puede ser una URL: filemtime() fallaría y el logo se regeneraría en cada petición.
-	$src = (!empty($config['image']) && is_file($config['image'])) ? $config['image'] : $_SERVER['DOCUMENT_ROOT'] . '/img/nf/logo.png';
+	$src = (!empty($config['image']) && is_file($config['image'])) ? $config['image'] : nfLogoPath();
+	// Nombre distinto por origen: al cambiar de imagen no se sirve la copia generada con la anterior.
+	$dst = $dir . '/' . pathinfo($src, PATHINFO_FILENAME) . '_' . $p['w'] . 'x' . $p['h'] . '.png';
 	if (!is_file($src)) {
 		http_response_code(404);
 		return;
