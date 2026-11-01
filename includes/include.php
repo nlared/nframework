@@ -1159,6 +1159,8 @@ function nfshutdown()
             header('Content-Type:text/html; charset=utf-8');
             $content = '<!DOCTYPE html>
 <html lang="' . $nframework->lang . '"' . $nframework->html_addtag . '>
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="icon" type="image/png" sizes="192x192" href="/images/config/192/logo.png" />
 <link rel="apple-touch-icon" sizes="57x57" href="/images/config/57/logo.png" />
 <link rel="apple-touch-icon" sizes="144x144" href="/images/config/144/logo.png" />
 <title>' . $nframework->title . ' ' . ($metas['title'] ?? '') . '</title>

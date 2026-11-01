@@ -814,6 +814,25 @@ function nfLogoPath(): string
 }
 
 /**
+ * Arma un .ico con imágenes PNG embebidas (formato aceptado por todos los navegadores actuales).
+ * $pngs es [tamaño => contenido PNG]; tamaños de 1 a 256 píxeles.
+ */
+function nfPngToIco(array $pngs): string
+{
+    $header = pack('vvv', 0, 1, count($pngs));
+    $dir = '';
+    $data = '';
+    $offset = 6 + 16 * count($pngs);
+    foreach ($pngs as $size => $png) {
+        $size = max(1, min(256, (int) $size));
+        // Ancho y alto ocupan un byte: 0 significa 256.
+        $dir .= pack('CCCCvvVV', $size % 256, $size % 256, 0, 0, 1, 32, strlen($png), $offset + strlen($data));
+        $data .= $png;
+    }
+    return $header . $dir . $data;
+}
+
+/**
  * Protección CSRF para peticiones que modifican estado (POST/PUT/PATCH/DELETE): si el navegador
  * envía Origin (o en su defecto Referer), debe apuntar a este sitio, a un host de
  * $config['allowed_redirect_hosts'] o de $config['csrf_trusted_origins']. Las llamadas

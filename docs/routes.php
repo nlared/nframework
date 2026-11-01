@@ -78,6 +78,7 @@ PHP) ?>
 			<tr><td><code>/account/profile</code>, <code>/sessions</code>, <code>/apitokens</code>, <code>/totp-setup</code></td><td>Perfil, sesiones abiertas, tokens y QR para 2FA.</td></tr>
 			<tr><td><code>/login-google/oauth</code>, <code>/login-facebook/oauth</code>, <code>/login-microsoft/oauth</code></td><td>Inicio de sesión con proveedores externos.</td></tr>
 			<tr><td><code>/images/config/{tamaño}/logo.png</code>, <code>/images/config/{ancho}/{alto}/logo.png</code></td><td>Logo del sitio redimensionado.</td></tr>
+			<tr><td><code>/favicon.ico</code></td><td>Ícono de 16, 32 y 48 px generado del logo (<code>logo</code> en <code>config.php</code>). Un <code>favicon.ico</code> propio en el document root tiene prioridad.</td></tr>
 			<tr><td><code>/images/resize/…</code>, <code>/images/pngtowebp/…</code>, <code>/images/frompdf/…</code></td><td>Imágenes generadas (ver <a href="images.php">Imágenes</a>).</td></tr>
 			<tr><td><code>/robots.txt</code>, <code>/sitemap.xml</code>, <code>/nf.webmanifest</code>, <code>/sw.js</code></td><td>SEO y aplicación instalable (PWA).</td></tr>
 			<tr><td><code>/privacy</code>, <code>/terms</code>, <code>/righttoforget</code></td><td>Textos legales (página propia o plantilla por idioma).</td></tr>

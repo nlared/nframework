@@ -566,7 +566,29 @@ $router->addRoute('/.well-known/microsoft-identity-association.json', function (
 }';
 }, ['GET']);
 
-//TODO:favicon.ico
+// favicon.ico a partir del logo del sitio. Un favicon.ico en el document root lo entrega nginx antes de llegar aquí.
+$router->addRoute('/favicon.ico', function (string $route, array $p) {
+	global $nframework;
+	$logo = nfLogoPath();
+	if (!is_file($logo)) {
+		http_response_code(404);
+		return;
+	}
+	$dir = 'img/nf/config/';
+	$dst = $dir . pathinfo($logo, PATHINFO_FILENAME) . '_favicon.ico';
+	if (!file_exists($dst) || filemtime($dst) < filemtime($logo)) {
+		if (!file_exists($dir)) {
+			mkdir($dir, 0777, true);
+		}
+		$manager = new ImageManager(new GdDriver());
+		$pngs = [];
+		foreach ([16, 32, 48] as $size) {
+			$pngs[$size] = (string) $manager->decodePath($logo)->cover($size, $size)->encode(new \Intervention\Image\Encoders\PngEncoder());
+		}
+		file_put_contents($dst, nfPngToIco($pngs));
+	}
+	$nframework->serveFile($dst, 'image/x-icon', 86400, true);
+}, 'GET');
 
 $router->addRoute('/robots.txt', function ($route, $variables) {
 	global $_SERVER;
