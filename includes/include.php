@@ -815,7 +815,7 @@ if (php_sapi_name() != 'cli' && !nfIsTrustedRequestOrigin()) {
 }
 
 $nframework->title = (!empty($config['title']) ? $config['title'] : 'nframework 5');
-$nframework->image = (!empty($config['image']) ? $config['image'] : '/images/config///logo.png');
+$nframework->image = (!empty($config['image']) ? $config['image'] : '/images/config/1200/630/logo.png');
 
 function toMongoId($item): ObjectId
 {
@@ -1097,6 +1097,11 @@ function nfshutdown()
             if (isset($metas['title']))
                 $nframework->ui->setTitle($metas['title']);
 
+            // Open Graph y Twitter exigen URL absoluta para la imagen.
+            $socialImage = (string) $nframework->image;
+            if (str_starts_with($socialImage, '/') && !str_starts_with($socialImage, '//')) {
+                $socialImage = (!empty($config['url']) ? rtrim($config['url'], '/') : 'https://' . nfSiteHost()) . $socialImage;
+            }
             $defaultMetas = [
                 'viewport' => 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no',
                 'charset' => 'utf-8',
@@ -1115,12 +1120,12 @@ function nfshutdown()
                 'og:type' => 'article',
                 'og:title' => $nframework->title . ' ' . ($metas['title'] ?? ''),
                 'og:description' => $metas['description'] ?? '',
-                'og:image' => $nframework->image,
-                'twitter:card' => '/images/config/1200/628/logo.png',
+                'og:image' => $socialImage,
+                'twitter:card' => 'summary_large_image',
                 'twitter:url' => $config['url'] ?? '',
                 'twitter:title' => $nframework->title . ' ' . ($metas['title'] ?? ''),
                 'twitter:description' => $metas['description'] ?? '',
-                'twitter:image' => '/images/config///logo.png',
+                'twitter:image' => $socialImage,
                 'mobile-web-app-capable' => 'yes',
                 'apple-mobile-web-app-capable' => 'yes',
                 'application-name' => $nframework->title,
@@ -1131,7 +1136,7 @@ function nfshutdown()
 
             foreach ($defaultMetas as $key => $val) {
                 if ($val)
-                    $nframework->ui->addMeta($key, $val);
+                    $nframework->ui->addMeta($key, $val, str_starts_with($key, 'og:') ? ['property' => $key] : []);
             }
 
             // Specific Meta Handling for http-equiv
