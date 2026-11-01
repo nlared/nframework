@@ -385,4 +385,21 @@ class FunctionsTest extends TestCase
         $this->assertTrue(nfIsBlockedPath('/src/', true));
         $this->assertFalse(nfIsBlockedPath('/docs/tests.php', true));
     }
+
+    public function testNfLogoPathUsesConfigLogoOrFrameworkDefault(): void
+    {
+        $prev = $GLOBALS['config']['logo'] ?? null;
+        $base = sys_get_temp_dir() . '/nflogo_' . uniqid();
+        mkdir($base, 0777, true);
+        try {
+            $GLOBALS['config']['logo'] = $base . '/logo.png';
+            $this->assertSame(dirname(__DIR__, 2) . '/img/nlarednf.png', nfLogoPath());
+            $this->assertFileExists(nfLogoPath());
+            touch($base . '/logo.png');
+            $this->assertSame($base . '/logo.png', nfLogoPath());
+        } finally {
+            $GLOBALS['config']['logo'] = $prev;
+            delTree($base);
+        }
+    }
 }

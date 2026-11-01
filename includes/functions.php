@@ -803,6 +803,17 @@ function nfSiteHost(): string
 }
 
 /**
+ * Ruta del logotipo del sistema: $config['logo'] (por omisión $DOCUMENT_ROOT/img/nf/logo.png) o,
+ * si ese archivo no existe, el logotipo de nframework (img/nlarednf.png del framework, no del sitio).
+ */
+function nfLogoPath(): string
+{
+    global $config;
+    $logo = (string) ($config['logo'] ?? '');
+    return $logo !== '' && is_file($logo) ? $logo : dirname(__DIR__) . '/img/nlarednf.png';
+}
+
+/**
  * Protección CSRF para peticiones que modifican estado (POST/PUT/PATCH/DELETE): si el navegador
  * envía Origin (o en su defecto Referer), debe apuntar a este sitio, a un host de
  * $config['allowed_redirect_hosts'] o de $config['csrf_trusted_origins']. Las llamadas

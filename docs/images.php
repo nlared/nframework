@@ -64,7 +64,9 @@ PHP) ?>
 	<p>Vea un ejemplo funcionando al subir un PDF en <a href="files.php">Archivos</a>.</p>
 
 	<h3>Logo del sitio</h3>
-	<p>El logo configurado en Admin → Sitio se sirve en cualquier tamaño, p.ej. para el manifiesto de la aplicación:</p>
+	<p>El logo configurado en Admin → Sitio se guarda en <code>$config['logo']</code> (por omisión <code>img/nf/logo.png</code> del sitio; se cambia en
+	<code>includes/config.php</code>) y se sirve en cualquier tamaño, p.ej. para el manifiesto de la aplicación.
+	Si ese archivo no existe se usa el de nframework (<code>img/nlarednf.png</code>). En PHP la ruta del archivo vigente es <code>nfLogoPath()</code>.</p>
 	<?= docCode(<<<'HTML'
 <img src="/images/config/192/logo.png">        <!-- cuadrado 192x192 -->
 <img src="/images/config/1200/628/logo.png">   <!-- ancho x alto -->

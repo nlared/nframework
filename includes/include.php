@@ -100,6 +100,10 @@ class class_config implements ArrayAccess
         $this->fileConfig = $this->contenedor;
 
         $this->contenedor['images']['config']['logo'] = (empty($this->contenedor['image']) ? 'https://www.nlared.com/img/nlaredlogo5.png' : $this->contenedor['image']);
+        // Archivo del logotipo del sitio (Admin → Sitio lo sube aquí); si no existe se usa el de nframework.
+        if (empty($this->contenedor['logo'])) {
+            $this->contenedor['logo'] = ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/img/nf/logo.png';
+        }
         if (empty($this->contenedor['users']['algos'])) {
             $this->contenedor['users']['algos'] = ['sha512'];
         }
@@ -130,6 +134,8 @@ class class_config implements ArrayAccess
                 nfConfigList($dbconf[$listKey] ?? [])
             )));
         }
+        // Es una ruta del servidor donde Admin escribe: solo se define en config.php, nunca desde la BD.
+        $conf['logo'] = $this->contenedor['logo'];
         $conf['theme'] = $themeconf;
         if (empty($conf['session_key'])) {
             // Clave para cifrar los tokens de redirección entre sitios; se genera una sola vez.

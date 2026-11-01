@@ -219,8 +219,8 @@ $description = new textarea(siteTextOptions('description', ['dataset' => &$datas
 $logo = new inputfile([
 	'id' => 'logo',
 	'name' => 'logo',
-	'dir' => $_SERVER['DOCUMENT_ROOT'] . '/img/nf/',
-	'path' => $_SERVER['DOCUMENT_ROOT'] . '/img/nf/logo.png',
+	'dir' => dirname($config['logo']) . '/',
+	'path' => $config['logo'],
 	'accept' => '.png',
 	'drop' => false,
 	'onDone' => <<<js
@@ -385,7 +385,7 @@ JS, 'ready');
 					<label>Logotipo (PNG cuadrado, de preferencia 512×512 px):</label>
 					<?= $logo ?>
 					<?= siteHelp('Se generan automáticamente los íconos de la app y del navegador a partir de este archivo.') ?>
-					<div id="img-container"></div>
+					<div id="img-container"><img width="256" src="/images/config/256/logo.png" alt=""></div>
 				</div>
 				<div class="cell-md-6"><?= $image ?><?= siteHelp('Imagen que se muestra al compartir enlaces (Open Graph). Si se deja vacía se usa el logotipo. Recomendado 1200×630 px.') ?></div>
 			</div>

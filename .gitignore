@@ -4,6 +4,7 @@
 /includes/composer.phar
 /test/*
 /docs/tmp/*
+/img/nf/
 !/docs/tmp/long_process.php
 *.log
 
