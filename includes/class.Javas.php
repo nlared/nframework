@@ -42,10 +42,14 @@ var ajaxdialogs=[];
 // El campo de filtro que Metro agrega a los Select (y cualquier input con data-nf-noautofill) no debe mostrar
 // el autocompletado ni el autollenado del navegador o de los gestores de contraseñas: se encimaba con la lista.
 var nfNoAutofillSelector = '.select .drop-container input, input[data-nf-noautofill]';
+var nfNoAutofillValue = (window.chrome || /Chrom(e|ium)\/|Edg\//.test(navigator.userAgent)) ? 'nf-noautofill' : 'off';
 function nfNoAutofill(input) {
 	if (input.dataset.nfNoautofillDone) { return; }
 	input.dataset.nfNoautofillDone = '1';
-	input.setAttribute('autocomplete', 'off');
+	// Chrome/Edge ignoran 'off' en campos que parecen de domicilio, nombre o teléfono (los detectan por
+	// name, id y etiqueta) y encima muestran su lista; solo desisten con un valor que no reconocen.
+	// Firefox sí respeta 'off' y con un valor desconocido mostraría su historial.
+	input.setAttribute('autocomplete', nfNoAutofillValue);
 	input.setAttribute('autocorrect', 'off');
 	input.setAttribute('autocapitalize', 'off');
 	input.setAttribute('spellcheck', 'false');
