@@ -103,6 +103,9 @@ switch ($_SERVER['HTTP_HOST'] ?? 'localhost') {
             // Llave de la API de Anthropic para TablefIA (consultas en lenguaje natural). Si no se define se
             // usa la variable de entorno ANTHROPIC_API_KEY. Va solo en este archivo, nunca en MongoDB.
             // 'anthropic_api_key' => '',
+            // Días sin ejecutarse tras los que se borra una consulta guardada de TablefIA (nftablesfia) que nadie
+            // marcó como favorita. Crea un índice TTL al correr nframework/test.php; sin definir no se borran.
+            // 'tablefia_ttl_days' => 180,
 
             // --- Otras opcionales ---------------------------------------------------------------------
             // 'github_token' => '',      // Admin → Update (repositorio privado)
