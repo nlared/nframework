@@ -42,6 +42,7 @@ const SITE_LIMITS = [
 	'google-captcha-key' => 200,
 	'google-captcha-secret' => 200,
 	'google-maps-api' => 200,
+	'inegi-denue-token' => 100,
 ];
 // Todos los patrones aceptan vacío: Metro (requiredMode) evalúa las reglas aunque el campo esté vacío
 // y estos campos son opcionales (no todos los sitios usan correo, Google o Let's Encrypt).
@@ -137,7 +138,7 @@ function siteConfigError(array $data, array $timezones, array $themes, array $pd
 	if ($text('passwordmask') !== '' && @preg_match($text('passwordmask'), '') === false) {
 		$errors[] = 'La máscara de contraseña no es una expresión regular válida (incluya los delimitadores, p. ej. /^.{8,}$/).';
 	}
-	foreach (['google-site-verification', 'google-captcha-key', 'google-captcha-secret', 'google-maps-api'] as $field) {
+	foreach (['google-site-verification', 'google-captcha-key', 'google-captcha-secret', 'google-maps-api', 'inegi-denue-token'] as $field) {
 		if ($text($field) !== '' && !preg_match('/' . SITE_KEY_PATTERN . '/', $text($field))) {
 			$errors[] = "«{$field}» solo admite letras, números, guion y guion bajo.";
 		}
@@ -276,6 +277,9 @@ $google_site_verification = new inputText(siteTextOptions('google-site-verificat
 $google_maps_api = new inputText(siteTextOptions('google-maps-api', $keyOptions + ['caption' => 'Llave de API de Google Maps:', 'placeholder' => 'AIza...']));
 $google_captcha_key = new inputText(siteTextOptions('google-captcha-key', $keyOptions + ['caption' => 'reCAPTCHA: llave del sitio (pública):']));
 $google_captcha_secret = new inputText(siteTextOptions('google-captcha-secret', $keyOptions + ['caption' => 'reCAPTCHA: llave secreta:']));
+
+/* ---------- INEGI ---------- */
+$inegi_denue_token = new inputText(siteTextOptions('inegi-denue-token', $keyOptions + ['caption' => 'Token del API del DENUE:', 'placeholder' => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx']));
 
 /* ---------- Conversión a PDF ---------- */
 $wordtopdfconvertion = new select(['dataset' => &$dataset, 'field' => 'word_pdf_converter', 'caption' => 'Convertir Word a PDF con:', 'options' => $pdfConverters]);
@@ -458,6 +462,12 @@ JS, 'ready');
 			<div class="row">
 				<div class="cell-md-6"><?= $google_captcha_key ?><?= siteHelp('Se publica en las páginas con formulario.') ?></div>
 				<div class="cell-md-6"><?= $google_captcha_secret ?><?= siteHelp('Solo se usa en el servidor; no la comparta.') ?></div>
+			</div>
+
+			<?= siteSection('location', 'INEGI', 'Opcional. Con el token del DENUE los campos de <code>inputaddress</code> sugieren estado, municipio, localidad, colonia, calle y código postal mientras se escriben.') ?>
+			<div class="row">
+				<div class="cell-md-6"><?= $inegi_denue_token ?><?= siteHelp('Se obtiene gratis en <a href="https://www.inegi.org.mx/servicios/api_denue.html" target="_blank" rel="noopener">inegi.org.mx/servicios/api_denue.html</a>. Solo se usa en el servidor; el navegador nunca lo recibe.') ?></div>
+				<div class="cell-md-6"><?= siteHelp('Las sugerencias se buscan entre los establecimientos registrados en el DENUE, tomando como contexto los campos ya llenados y el punto del mapa. Las respuestas se guardan en caché un día.') ?></div>
 			</div>
 
 			<?= siteSection('file-pdf', 'Conversión de documentos a PDF', 'Motor usado por las exportaciones a PDF de Word y Excel.') ?>

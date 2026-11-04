@@ -125,7 +125,9 @@ Constructor con arreglo de opciones; se imprimen con `echo`/`<?= ?>` (`__toStrin
 - Firma: `Signature_pad` (`path`; `dataset` + `field` registra la firma; `extension` + `onsave` = evento en el
   servidor; `submit => 'op'` envía el formulario contenedor al guardar). En el navegador lanza
   `signature:beforesave|saved|error|clear`. Ver `docs/signature.php`.
-- Otros: `mapmarker`, `inputaddress`, `Dialog`, `BreadCrumbs`, `Sidebar`, `TreeView`, `Icon`,
+- Domicilio: `inputaddress` (campos + mapa Leaflet; con `inegi-denue-token` en Admin → Sitio → INEGI sugiere
+  estado/municipio/colonia/calle/CP desde el DENUE vía `/nframework/denue.php` y `Denue::suggest()`; `'denue' => false` lo apaga).
+- Otros: `mapmarker`, `Dialog`, `BreadCrumbs`, `Sidebar`, `TreeView`, `Icon`,
   `ThemeSwitcher`, `QRReader`, `xspreadsheet`.
 
 **Databinding** — `dataset` representa un documento:

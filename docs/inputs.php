@@ -61,6 +61,8 @@ $examples = [
 	['code' => "new inputaddress(['name' => 'domicilio1', 'caption' => 'Domicilio con mapa', 'defaults' => ['country' => 'México', 'state' => 'Coahuila'], 'frozen' => ['country']]);",
 		'desc' => '<code>frozen</code> deja fijos los campos indicados.'],
 	['code' => "new inputaddress(['name' => 'domicilio2', 'showmap' => false, 'fields' => ['street', 'external_number', 'neighborhood', 'zipcode', 'city']]);"],
+	['code' => "new inputaddress(['name' => 'domicilio4', 'caption' => 'Autocompletado con el DENUE de INEGI', 'denue' => true, 'defaults' => ['country' => 'México', 'state' => 'Coahuila de Zaragoza']]);",
+		'desc' => 'Con el token en <b>Admin → Sitio → INEGI</b> (<code>inegi-denue-token</code>) estado, municipio, ciudad, colonia, calle y CP sugieren valores mientras se escriben (calle y colonia desde la 3.ª letra, CP desde la 2.ª). La búsqueda usa los demás campos llenados y el punto del mapa como contexto; al elegir una sugerencia se completan los campos relacionados y, si el punto no se ha colocado a mano, el mapa se centra en la zona. <code>\'denue\' => false</code> lo desactiva; sin token no hace nada. Las consultas pasan por <code>/nframework/denue.php</code>: el token nunca llega al navegador.'],
 	['code' => "new inputaddress(['name' => 'domicilio3', 'showfields' => false, 'defaults' => ['lat' => 25.4232, 'lng' => -101.0053], 'frozen' => ['location'], 'map_height' => 250]);"],
 	['code' => "new mapmarker(['name' => 'mapa1', 'caption' => 'Marcar un punto']);"],
 

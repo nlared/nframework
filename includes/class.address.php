@@ -16,6 +16,10 @@
  *  - labels        array  Etiquetas personalizadas por campo.
  *  - map_height    int    Alto del mapa en px (default 400).
  *  - geocoder      string 'nominatim' (default, sin llave) o 'google' (usa $config['google-maps-api']).
+ *  - denue         bool   Sugerencias mientras se escribe estado, municipio, ciudad, colonia, calle y CP a
+ *                         partir del DENUE de INEGI, usando como contexto los demás campos ya llenados y el
+ *                         punto del mapa. Al elegir una se completan los campos relacionados. Por omisión se
+ *                         activa si hay token en Admin → Sitio → INEGI ($config['inegi-denue-token']).
  *
  * El valor se guarda como arreglo: country, state, municipality, city, zipcode, neighborhood,
  * street, external_number, internal_number, lat, lng.
@@ -52,6 +56,7 @@ class inputaddress extends baseInput
     public $labels = [];
     public $map_height = 400;
     public $geocoder = 'nominatim';
+    public $denue = null;
     public $startpoint = ['lat' => 25.43328030, 'lng' => -100.96047970];
 
     public function __construct($options = [])
@@ -68,6 +73,19 @@ class inputaddress extends baseInput
         }
         $this->frozen = (array) $this->frozen;
         $this->requiredfields = (array) $this->requiredfields;
+        $this->denue = ($this->denue ?? Denue::enabled()) && !$this->readonly && !$this->disabled;
+    }
+
+    /**
+     * El usuario ya ubicó la dirección: hay coordenadas guardadas o predeterminadas.
+     */
+    private function hasLocation(bool $storedOnly = false): bool
+    {
+        $stored = $this->storedValue();
+        if (is_numeric($stored['lat'] ?? null) && is_numeric($stored['lng'] ?? null)) {
+            return true;
+        }
+        return !$storedOnly && is_numeric($this->defaults['lat'] ?? null) && is_numeric($this->defaults['lng'] ?? null);
     }
 
     private function isFrozen(string $field): bool
@@ -155,9 +173,44 @@ class inputaddress extends baseInput
         return $this->name . '[' . $field . ']';
     }
 
+    /**
+     * Configuración de 'suggest' de inputText para un campo con autocompletado del DENUE.
+     */
+    private function denueSuggest(string $field): ?array
+    {
+        if (!$this->denue || !in_array($field, Denue::FIELDS, true) || $this->isFrozen($field)) {
+            return null;
+        }
+        $onselect = 'nfAddress.pick(' . json_encode($this->id, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ', item);';
+        if ($field === 'state') {
+            $items = [];
+            foreach (Denue::STATES as $state) {
+                $items[] = ['label' => $state, 'value' => $state, 'address' => ['state' => $state, 'country' => 'México']];
+            }
+            return ['items' => $items, 'limit' => 32, 'onselect' => $onselect];
+        }
+        // Los demás campos viajan como contexto: la búsqueda se acota a lo ya capturado.
+        $depends = [];
+        foreach (['country', 'state', 'municipality', 'city', 'neighborhood', 'street', 'zipcode', 'lat', 'lng', 'located'] as $other) {
+            if ($other !== $field) {
+                $depends[$other] = '#' . $this->fieldId($other);
+            }
+        }
+        return [
+            'url' => '/nframework/denue.php?field=' . $field,
+            'depends' => $depends,
+            'clearondepends' => false,
+            'minlength' => $field === 'zipcode' ? 2 : 3,
+            'delay' => 400,
+            'limit' => 15,
+            'onselect' => $onselect,
+        ];
+    }
+
     private function renderField(string $field, $value): string
     {
         $input = new inputText([
+            'suggest' => $this->denueSuggest($field),
             'name' => $this->fieldName($field),
             'id' => $this->fieldId($field),
             'value' => (string) $value,
@@ -174,20 +227,25 @@ class inputaddress extends baseInput
         return '<input type="hidden" id="' . $this->fieldId($field) . '" name="' . htmlspecialchars($this->fieldName($field), ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '">';
     }
 
-    private function addMapJs(array $values): void
+    private function addJs(array $values): void
     {
         global $nframework, $javas, $config;
 
-        $nframework->csss['005leaflet'] = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        $nframework->jss['100leaflet'] = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-
-        $useGoogle = $this->geocoder === 'google' && !empty($config['google-maps-api']);
-        if ($useGoogle) {
-            $nframework->jss['101gmaps'] = 'https://maps.googleapis.com/maps/api/js?key=' . urlencode($config['google-maps-api']);
+        $useGoogle = false;
+        if ($this->showmap) {
+            $nframework->csss['005leaflet'] = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            $nframework->jss['100leaflet'] = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            $useGoogle = $this->geocoder === 'google' && !empty($config['google-maps-api']);
+            if ($useGoogle) {
+                $nframework->jss['101gmaps'] = 'https://maps.googleapis.com/maps/api/js?key=' . urlencode($config['google-maps-api']);
+            }
         }
 
         $opts = json_encode([
             'id' => $this->id,
+            'map' => (bool) $this->showmap,
+            // Con coordenadas guardadas el marcador ya está bien puesto: elegir una sugerencia no lo mueve.
+            'manual' => $this->hasLocation(true),
             'lat' => (float) $values['lat'],
             'lng' => (float) $values['lng'],
             'draggable' => !$this->isFrozen('lat') && !$this->readonly && !$this->disabled,
@@ -202,16 +260,20 @@ class inputaddress extends baseInput
             $javas->addjs(<<<'JS'
 var nfAddress = {
     maps: {},
+    cfg: {},
     // Campos de la respuesta del geocodificador inverso -> campos del componente
     nominatimMap: {country: ['country'], zipcode: ['postcode'], state: ['state'], municipality: ['county', 'municipality', 'city'], city: ['city', 'town', 'village'], neighborhood: ['suburb', 'neighbourhood', 'quarter'], street: ['road'], external_number: ['house_number']},
     googleMap: {country: ['country'], zipcode: ['postal_code'], state: ['administrative_area_level_1'], municipality: ['administrative_area_level_2', 'locality'], city: ['locality'], neighborhood: ['sublocality', 'neighborhood'], street: ['route'], external_number: ['street_number']},
     el: function (o, f) { return document.getElementById(o.id + '_' + f); },
     setPosition: function (o, lat, lng, pan) {
-        var m = nfAddress.maps[o.id];
-        m.marker.setLatLng([lat, lng]);
-        if (pan) { m.map.setView([lat, lng], 17); }
+        var m = nfAddress.maps[o.id], located = nfAddress.el(o, 'located');
+        if (m) {
+            m.marker.setLatLng([lat, lng]);
+            if (pan) { m.map.setView([lat, lng], 17); }
+        }
         nfAddress.el(o, 'lat').value = lat;
         nfAddress.el(o, 'lng').value = lng;
+        if (located) { located.value = '1'; }
         if (o.onchange) { try { (new Function(o.onchange))(); } catch (e) { console.error(e); } }
     },
     fill: function (o, values) {
@@ -219,6 +281,20 @@ var nfAddress = {
             var input = nfAddress.el(o, f);
             if (input && values[f] !== undefined && o.frozen.indexOf(f) === -1) { input.value = values[f]; }
         });
+    },
+    // Sugerencia del DENUE elegida: completa los campos relacionados y, si el usuario no ha ubicado
+    // el punto a mano, centra el mapa en la zona (un establecimiento de esa calle o colonia).
+    pick: function (id, item) {
+        var o = nfAddress.cfg[id], a = item && item.address;
+        if (!o || !a) { return; }
+        nfAddress.fill(o, a);
+        if (o.map && o.draggable && !o.manual && a.lat != null && a.lng != null) {
+            nfAddress.setPosition(o, a.lat, a.lng, true);
+        }
+    },
+    setup: function (o) {
+        nfAddress.cfg[o.id] = o;
+        if (o.map) { nfAddress.init(o); }
     },
     reverse: function (o, lat, lng) {
         if (o.geocoder === 'google') {
@@ -269,10 +345,12 @@ var nfAddress = {
         if (o.draggable) {
             marker.on('dragend', function () {
                 var p = marker.getLatLng();
+                o.manual = true;
                 nfAddress.setPosition(o, p.lat, p.lng, false);
                 nfAddress.reverse(o, p.lat, p.lng);
             });
             map.on('click', function (e) {
+                o.manual = true;
                 nfAddress.setPosition(o, e.latlng.lat, e.latlng.lng, false);
                 nfAddress.reverse(o, e.latlng.lat, e.latlng.lng);
             });
@@ -285,7 +363,7 @@ var nfAddress = {
 };
 JS, 'general');
         }
-        $javas->addjs('nfAddress.init(' . $opts . ');', 'ready');
+        $javas->addjs('nfAddress.setup(' . $opts . ');', 'ready');
     }
 
     public function __toString()
@@ -312,10 +390,19 @@ JS, 'general');
         foreach (self::COORDS as $coord) {
             $hidden .= $this->renderHidden($coord, $values[$coord]);
         }
+        // Sin name (no se guarda): indica a la búsqueda del DENUE si las coordenadas ya son reales.
+        $hidden .= '<input type="hidden" id="' . $id . '_located" value="' . ($this->hasLocation() ? '1' : '0') . '">';
+
+        if ($this->denue && $this->showfields) {
+            // Autoriza a esta sesión a consultar /nframework/denue.php.
+            $_SESSION['nfdenue'] = true;
+        }
+        if ($this->showmap || ($this->denue && $this->showfields)) {
+            $this->addJs($values);
+        }
 
         $mapHtml = '';
         if ($this->showmap) {
-            $this->addMapJs($values);
             $searchButton = ($this->showfields && !$this->isFrozen('lat') && !$this->readonly && !$this->disabled)
                 ? '<button type="button" class="button small mt-1" id="' . $id . '_search"><span class="mif-search"></span> Buscar dirección en el mapa</button>'
                 : '';
