@@ -524,7 +524,33 @@ if ($config['sitedb'] == '') {
 		// TablefIA: listado de consultas guardadas por uso y búsqueda de la misma pregunta.
 		['colletion' => 'nftablesfia', 'key' => ['uso' => 1, 'ultimaejecucion' => -1]],
 		['colletion' => 'nftablesfia', 'key' => ['uso' => 1, 'prompt' => 1, 'confighash' => 1]],
+		['colletion' => 'nftablesfia', 'key' => ['uso' => 1, 'promptnorm' => 1, 'confighash' => 1]],
 	];
+	// TablefIA: borrar consultas sin ejecutarse en N días que nadie marcó como favorita ('fijada' => false).
+	if (!empty($config['tablefia_ttl_days'])) {
+		$indexes[] = ['colletion' => 'nftablesfia', 'key' => ['ultimaejecucion' => 1], 'options' => [
+			'name' => 'tablefia_ttl',
+			'expireAfterSeconds' => (int) $config['tablefia_ttl_days'] * 86400,
+			'partialFilterExpression' => ['fijada' => false],
+		]];
+	}
+	// TablefIA: consultas guardadas antes de la normalización de preguntas y de las favoritas.
+	try {
+		// En web esto corre antes de include.php (sin el autoload del framework).
+		require_once 'class.TablefIA.php';
+		$tablefia = $m->{$config['sitedb']}->nftablesfia;
+		$migradas = 0;
+		foreach ($tablefia->find(['promptnorm' => ['$exists' => false]], ['projection' => ['prompt' => 1]]) as $q) {
+			$tablefia->updateOne(['_id' => $q['_id']], ['$set' => ['promptnorm' => TablefIA::normalizePrompt((string) $q['prompt'])]]);
+			$migradas++;
+		}
+		$migradas += $tablefia->updateMany(['fijada' => ['$exists' => false]], ['$set' => ['fijada' => false, 'favoritos' => []]])->getModifiedCount();
+		if ($migradas > 0) {
+			out("nftablesfia: {$migradas} actualización(es) de consultas guardadas\n");
+		}
+	} catch (MongoDB\Driver\Exception\Exception $e) {
+		$errores[] = 'nftablesfia: ' . $e->getMessage();
+	}
 	// Opcional: borrar automáticamente las estadísticas de peticiones con más de N días.
 	if (!empty($config['nfuristats_ttl_days'])) {
 		$indexes[] = ['colletion' => 'nfuristats', 'key' => ['createdAt' => 1], 'options' => ['expireAfterSeconds' => (int) $config['nfuristats_ttl_days'] * 86400]];

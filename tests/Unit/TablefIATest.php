@@ -3,7 +3,9 @@
 namespace Tests\Unit;
 
 use InvalidArgumentException;
+use MongoDB\BSON\Decimal128;
 use MongoDB\BSON\ObjectId;
+use MongoDB\BSON\Regex;
 use MongoDB\BSON\UTCDateTime;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -118,7 +120,88 @@ class TablefIATest extends TestCase
             '$lookup anidado en $project' => ['pedidos', [['$project' => ['$lookup' => []]]]],
             '$limit negativo' => ['pedidos', [['$limit' => -1]]],
             'mayúsculas para evadir' => ['pedidos', [['$match' => ['$WHERE' => '1']]]],
+            '$regex con cuantificadores anidados' => ['pedidos', [['$match' => ['nota' => ['$regex' => '(a+)+$']]]]],
+            '$regex demasiado largo' => ['pedidos', [['$match' => ['nota' => ['$regex' => str_repeat('a', \TablefIA::MAX_REGEX + 1)]]]]],
+            '$regex con referencia hacia atrás' => ['pedidos', [['$match' => ['nota' => ['$regex' => '(a)\\1']]]]],
+            'Regex BSON costoso' => ['pedidos', [['$match' => ['nota' => new Regex('(\\d+)*x')]]]],
+            '$regexMatch costoso en $expr' => ['pedidos', [['$match' => ['$expr' => ['$regexMatch' => ['input' => '$nota', 'regex' => '(.*)*']]]]]],
+            '$range enorme' => ['pedidos', [['$addFields' => ['x' => ['$range' => [0, 100000000]]]]]],
+            '$range con campos' => ['pedidos', [['$addFields' => ['x' => ['$range' => [0, '$n']]]]]],
+            'demasiados $unwind' => ['pedidos', array_fill(0, \TablefIA::MAX_UNWINDS + 1, ['$unwind' => '$items'])],
         ];
+    }
+
+    public function testTooManyLookupsAreRejected(): void
+    {
+        $lookup = ['$lookup' => ['from' => 'clientes', 'localField' => 'cliente', 'foreignField' => '_id', 'as' => 'c']];
+        $this->assertCount(\TablefIA::MAX_LOOKUPS + 2, \TablefIA::buildPipeline(self::cfg(), 'pedidos', array_fill(0, \TablefIA::MAX_LOOKUPS, $lookup), 10));
+        $this->expectException(InvalidArgumentException::class);
+        \TablefIA::buildPipeline(self::cfg(), 'pedidos', array_fill(0, \TablefIA::MAX_LOOKUPS + 1, $lookup), 10);
+    }
+
+    public function testDeepPipelinesAreRejected(): void
+    {
+        $nested = 1;
+        for ($i = 0; $i <= \TablefIA::MAX_DEPTH + 1; $i++) {
+            $nested = ['$and' => [$nested]];
+        }
+        $this->expectException(InvalidArgumentException::class);
+        \TablefIA::buildPipeline(self::cfg(), 'pedidos', [['$match' => ['$expr' => $nested]]], 10);
+    }
+
+    public function testReasonableRegexAndRangeAreAccepted(): void
+    {
+        $pipeline = \TablefIA::buildPipeline(self::cfg(), 'pedidos', [
+            ['$match' => ['nombre' => ['$regex' => '^jua?n\\s+(perez|pérez)', '$options' => 'i'], 'rfc' => new Regex('^[A-Z]{4}\\d{6}')]],
+            ['$addFields' => ['meses' => ['$range' => [1, 13]]]],
+        ], 10);
+        $this->assertCount(4, $pipeline);
+    }
+
+    public function testNormalizePrompt(): void
+    {
+        $this->assertSame('ventas por año del ultimo mes', \TablefIA::normalizePrompt('  ¿Ventas  por AÑO del último mes? '));
+        $this->assertSame(\TablefIA::normalizePrompt('Clientes, con pedidos.'), \TablefIA::normalizePrompt('clientes con pedidos'));
+        // Los operadores cambian el significado: no se eliminan.
+        $this->assertNotSame(\TablefIA::normalizePrompt('importe > 1000'), \TablefIA::normalizePrompt('importe < 1000'));
+    }
+
+    public function testCellValueKeepsTypes(): void
+    {
+        $this->assertNull(\TablefIA::cellValue(null));
+        $this->assertSame(42, \TablefIA::cellValue(42));
+        $this->assertSame(1234.5, \TablefIA::cellValue(1234.5));
+        $this->assertSame(10.25, \TablefIA::cellValue(new Decimal128('10.25')));
+        $this->assertSame('No', \TablefIA::cellValue(false));
+        $this->assertSame('65a000000000000000000001', \TablefIA::cellValue(new ObjectId('65a000000000000000000001')));
+        $date = \TablefIA::cellValue(new UTCDateTime(strtotime('2026-06-01 12:00:00') * 1000));
+        $this->assertInstanceOf(\DateTimeInterface::class, $date);
+        $this->assertSame([[42, '2026-06-01 12:00:00', null]], \TablefIA::jsonRows([[42, $date, null]]));
+    }
+
+    public function testMergeKeysAddsRareTopLevelFields(): void
+    {
+        $found = ['nombre' => 'string', 'direccion.calle' => 'string'];
+        \TablefIA::mergeKeys($found, [
+            ['_id' => 'nombre', 'tipos' => ['int']],
+            ['_id' => 'direccion', 'tipos' => ['object']],
+            ['_id' => 'baja', 'tipos' => ['date', 'null']],
+            ['_id' => 'folio', 'tipos' => ['long', 'int']],
+        ]);
+        $this->assertSame(['nombre' => 'string', 'direccion.calle' => 'string', 'baja' => 'date|null', 'folio' => 'int'], $found);
+    }
+
+    public function testUserContentIncludesBaseAndPreviousAttempts(): void
+    {
+        $text = \TablefIA::userContent('solo 2025', [
+            ['coleccion' => 'pedidos', 'pipeline' => '[{"$bad":1}]', 'error' => 'la etapa $bad no está permitida'],
+            ['coleccion' => 'pedidos', 'pipeline' => '[]', 'error' => 'MongoDB (código 40324): Unrecognized'],
+        ], ['prompt' => 'ventas por mes', 'coleccion' => 'pedidos', 'pipeline' => '[{"$group":{}}]', 'columnas' => ['Mes', 'Total']]);
+
+        $this->assertStringContainsString('Consulta anterior del usuario: ventas por mes', $text);
+        $this->assertStringContainsString('ajuste (devuelve la consulta completa ya ajustada): solo 2025', $text);
+        $this->assertStringContainsString('Intento 1', $text);
+        $this->assertStringContainsString('código 40324', $text);
     }
 
     #[DataProvider('rejectedPipelines')]

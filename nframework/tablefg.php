@@ -79,14 +79,8 @@ function tablefgLoad(string $source, string $id): array
 	}
 
 	if ($source === 'tablefia') {
-		$cfg = $_SESSION['tablefia'][$id] ?? null;
-		$token = is_string($_GET['token'] ?? null) ? $_GET['token'] : '';
-		if (empty($cfg) || $token === '' || !hash_equals($cfg['token'], $token)) {
-			throw new RuntimeException('La sesión del componente caducó; recargue la página de origen.');
-		}
-		if ($cfg['requireauth'] && !$user->isLoggedIn()) {
-			throw new RuntimeException('Inicie sesión.');
-		}
+		// Token, caducidad, usuario y sesión iniciada; lanza RuntimeException si no es válido.
+		$cfg = TablefIA::sessionCfg($id, is_string($_GET['token'] ?? null) ? $_GET['token'] : '');
 		$queryId = $_GET['query'] ?? null;
 		if (!is_string($queryId) || !isValidObjectId($queryId)) {
 			throw new RuntimeException('La consulta no existe.');
@@ -106,7 +100,8 @@ function tablefgLoad(string $source, string $id): array
 		$rows = [];
 		$cursor = $db->{$doc['coleccion']}->aggregate($pipeline, [
 			'typeMap' => ['root' => 'array', 'document' => 'array', 'array' => 'array'],
-			'maxTimeMS' => 30000,
+			'maxTimeMS' => $cfg['maxtime'] ?? 30000,
+			'allowDiskUse' => false,
 		]);
 		foreach ($cursor as $row) {
 			$values = [];
