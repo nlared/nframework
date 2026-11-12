@@ -944,6 +944,7 @@ session_start();
 if (empty($_SESSION['nf']['browser']['language'])) {
     $nframework->loadBrowserInfo();
 }
+nfDetectImageSupport();
 
 // Ensure tracking exists
 if (!isset($_SESSION['_gc_tracker'])) {

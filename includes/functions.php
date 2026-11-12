@@ -814,6 +814,39 @@ function nfLogoPath(): string
 }
 
 /**
+ * true si el GD del servidor puede generar AVIF.
+ */
+function nfSupportsAvif(): bool
+{
+    static $supported = null;
+    return $supported ??= function_exists('imageavif') && !empty(gd_info()['AVIF Support']);
+}
+
+/**
+ * Registra en $_SESSION['nf']['browser']['avif'] si el navegador acepta AVIF. Chrome, Edge y Firefox lo
+ * anuncian en el Accept de las páginas; Safari solo en el de las imágenes, así que también se aprende
+ * cuando pide una. Solo se activa: una petición sin image/avif (fetch, descargas) no la apaga.
+ * include.php la llama en cada petición.
+ */
+function nfDetectImageSupport(?string $accept = null): void
+{
+    $accept ??= (string) ($_SERVER['HTTP_ACCEPT'] ?? '');
+    if (preg_match('#image/avif(?!\s*;\s*q\s*=\s*0(?:\.0*)?\s*(?:,|$))#i', $accept)) {
+        $_SESSION['nf']['browser']['avif'] = true;
+    }
+}
+
+/**
+ * Formato para las imágenes que genera el servidor (/images/pngto{formato}/...): 'avif' si el navegador
+ * lo acepta (ver nfDetectImageSupport()) y GD lo puede generar; si no 'webp', que aceptan todos los
+ * navegadores actuales.
+ */
+function nfImageFormat(): string
+{
+    return !empty($_SESSION['nf']['browser']['avif']) && nfSupportsAvif() ? 'avif' : 'webp';
+}
+
+/**
  * Arma un .ico con imágenes PNG embebidas (formato aceptado por todos los navegadores actuales).
  * $pngs es [tamaño => contenido PNG]; tamaños de 1 a 256 píxeles.
  */

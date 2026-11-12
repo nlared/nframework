@@ -43,10 +43,14 @@ $_SESSION['imagesresize']['galeria'] = [
 PHP) ?>
 	<p>La imagen se ajusta y recorta al tamaño pedido conservando la proporción. Ancho y alto se limitan a 2048 px. El navegador la guarda y la revalida con <code>ETag</code> (respuesta 304 vacía si no cambió); con <code>'maxage' => 3600</code> en la configuración la reutiliza una hora sin preguntar.</p>
 
-	<h3>PNG a AVIF</h3>
-	<p><img src="/images/pngtoavif/galeria/240/150/muestra.avif" alt="avif" class="border bd-default"></p>
-	<?= docCode('<img src="/images/pngtoavif/galeria/240/150/muestra.avif">   <!-- busca muestra.png en src -->', 'html') ?>
-	<p>El servidor necesita GD compilado con soporte AVIF. La ruta anterior <code>/images/pngtowebp/</code> sigue disponible para sitios que aún la utilicen.</p>
+	<h3>PNG a AVIF o WebP según el navegador</h3>
+	<?php $fmt = nfImageFormat(); ?>
+	<p><img src="/images/pngto<?= $fmt ?>/galeria/240/150/muestra.<?= $fmt ?>" alt="<?= $fmt ?>" class="border bd-default"> Este navegador recibe <b><?= strtoupper($fmt) ?></b>.</p>
+	<?= docCode(<<<'PHP'
+<?php $fmt = nfImageFormat(); ?>   <!-- 'avif' o 'webp' -->
+<img src="/images/pngto<?= $fmt ?>/galeria/240/150/muestra.<?= $fmt ?>">   <!-- busca muestra.png en src -->
+PHP, 'html') ?>
+	<p><code>/images/pngtoavif/</code> y <code>/images/pngtowebp/</code> convierten el mismo PNG. <code>nfImageFormat()</code> elige: <code>include.php</code> guarda en <code>$_SESSION['nf']['browser']['avif']</code> si el navegador envía <code>image/avif</code> en el encabezado <code>Accept</code> (Chrome, Edge y Firefox lo hacen al pedir la página; Safari solo al pedir imágenes, así que pasa a AVIF tras su primera imagen). Si GD no tiene soporte AVIF se usa WebP; pedir directamente un formato que GD no genera responde 501.</p>
 
 	<h3>Páginas de un PDF</h3>
 	<?= docCode(<<<'PHP'
@@ -75,5 +79,10 @@ PHP) ?>
 HTML, 'html') ?>
 
 	<h3>Foto de perfil</h3>
-	<?= docCode('<img src="<?= $user->gravatar() ?>">   <!-- /images/pngtoavif/users/32/32/{_id}.avif -->', 'html') ?>
+	<p><img src="<?= htmlspecialchars($user->gravatar(64)) ?>" alt="foto" class="border bd-default"></p>
+	<?= docCode(<<<'HTML'
+<img src="<?= $user->gravatar() ?>">      <!-- /images/pngto{avif|webp}/users/32/32/{_id}.{avif|webp} -->
+<img src="<?= $user->gravatar(120) ?>">   <!-- 120×120; gravatar(ancho, alto) -->
+HTML, 'html') ?>
+	<p>La carpeta <code>users</code> ya viene registrada: la foto es <code>{_id}.png</code> en <code>$config['users_pictures']</code> (por omisión <code>$DOCUMENT_ROOT/img/nf/users</code>); si el usuario no tiene foto se muestra una silueta genérica. Los tamaños generados se guardan en la caché local (<code>nfCacheDir('avatars')</code>) y se regeneran cuando cambia la foto. Un sitio puede usar otra carpeta registrando su propio <code>$_SESSION['imagesresize']['users']</code>.</p>
 </div>

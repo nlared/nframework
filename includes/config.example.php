@@ -86,6 +86,9 @@ switch ($_SERVER['HTTP_HOST'] ?? 'localhost') {
             // Ruta absoluta del archivo PNG del logotipo; Admin → Sitio lo sube ahí. Si el archivo no existe
             // se usa el de nframework (img/nlarednf.png). Por omisión: $_SERVER['DOCUMENT_ROOT'] . '/img/nf/logo.png'.
             // 'logo' => '/var/www/compartido/logo.png',
+            // Carpeta con las fotos de perfil ({_id del usuario}.png) que sirve /images/pngto{avif|webp}/users/.
+            // Sin foto se muestra una silueta. Por omisión: $_SERVER['DOCUMENT_ROOT'] . '/img/nf/users'.
+            // 'users_pictures' => '/var/www/compartido/usuarios',
 
             // --- e.firma del SAT ----------------------------------------------------------------------
             // Directorio (formato `openssl rehash`) o archivo PEM con las AC del SAT. Admin → SAT lo crea y
