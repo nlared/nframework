@@ -27,6 +27,7 @@ $docsMenu = [
 		'autocomplete.php' => ['Autocompletar', 'mif-keyboard', 'inputText con sugerencias: lista fija, MongoDB, endpoint propio, campos dependientes.'],
 		'validations.php' => ['Validaciones', 'mif-checkmark', 'required, pattern, validate y validación del lado del servidor.'],
 		'files.php' => ['Archivos', 'mif-upload', 'inputFile e inputFiles: subir, previsualizar, descargar y eliminar.'],
+		'mapshape.php' => ['Geocercas y rutas', 'mif-location', 'mapshape: dibujar un polígono o una polilínea, opcionalmente dentro de otra geocerca.'],
 		'signature.php' => ['Firma', 'mif-pencil', 'Signature_pad: capturar una firma y guardarla como imagen.'],
 		'efirma.php' => ['e.firma y CSD', 'mif-key', 'Efirma: registrar y seleccionar e.firma o CSD, en el navegador o cifrada en el servidor.'],
 	],

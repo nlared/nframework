@@ -127,6 +127,9 @@ Constructor con arreglo de opciones; se imprimen con `echo`/`<?= ?>` (`__toStrin
   `signature:beforesave|saved|error|clear`. Ver `docs/signature.php`.
 - Domicilio: `inputaddress` (campos + mapa Leaflet; con `inegi-denue-token` en Admin → Sitio → INEGI sugiere
   estado/municipio/colonia/calle/CP desde el DENUE vía `/nframework/denue.php` y `Denue::suggest()`; `'denue' => false` lo apaga).
+- Geocercas/rutas: `mapshape` (`shape` `polygon`|`polyline`; guarda GeoJSON `Polygon`/`LineString`; `limit` = otra
+  geocerca —Polygon/MultiPolygon/Feature— que la figura no puede rebasar, validado también en `is_valid()`;
+  `mapshape::contains($geocerca, $lat, $lng)`; en el navegador `mapshapes[id]`). Ver `docs/mapshape.php`.
 - Otros: `mapmarker`, `Dialog`, `BreadCrumbs`, `Sidebar`, `TreeView`, `Icon`,
   `ThemeSwitcher`, `QRReader`, `xspreadsheet`.
 
