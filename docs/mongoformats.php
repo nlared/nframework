@@ -104,6 +104,8 @@ $conversiones = [
 	"(new Select(['format' => Select::formatMongoID, 'multiple' => true]))->__toMongo(['65a000000000000000000001', '65a000000000000000000002'])",
 	"(new mapmarker(['type' => mapmarker::GeoJSON]))->__toMongo(['lat' => '25.4332803', 'lng' => '-100.9604797'])",
 	"(new mapmarker([]))->__toMongo(['lat' => '25.4332803', 'lng' => '-100.9604797'])",
+	"(new mapshape([]))->__toMongo('{\"type\":\"Polygon\",\"coordinates\":[[[-100.97,25.42],[-100.95,25.42],[-100.95,25.44]]]}')",
+	"(new mapshape(['shape' => mapshape::POLYLINE]))->__toMongo('{\"type\":\"LineString\",\"coordinates\":[[-100.97,25.42],[-100.95,25.44]]}')",
 ];
 $tabla = '';
 foreach ($conversiones as $codigo) {
@@ -128,6 +130,7 @@ foreach ($conversiones as $codigo) {
 		<li>Las fechas se interpretan en <code>timezone</code> (UTC si no se indica) y se guardan como instante UTC; al leer se muestran en la misma zona. <code>inputTime</code> guarda la hora (UTC) sobre la fecha del día en que se guardó: al leer solo se usa <code>H:i</code>.</li>
 		<li><code>Select</code> con <code>format => Select::formatMongoID</code> convierte a <code>ObjectId</code> solo los valores de 24 hexadecimales; los demás quedan como texto.</li>
 		<li><code>mapmarker</code> con <code>type => mapmarker::GeoJSON</code> guarda un <code>Point</code> con <code>[lng, lat]</code> como <code>double</code>, listo para un índice <code>2dsphere</code>.</li>
+		<li><code>mapshape</code> guarda un <code>Polygon</code> (cierra el anillo repitiendo el primer punto) o un <code>LineString</code>, también con <code>[lng, lat]</code> en <code>double</code>. Ver <a href="mapshape.php">Geocercas y rutas</a>.</li>
 		<li>Fíjese en el nombre de la propiedad de <code>inputCheckBox</code>: <code>storeagetype</code> (con <em>e</em>), a diferencia de <code>storagetype</code> en las fechas.</li>
 	</ul>
 
