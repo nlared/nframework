@@ -244,6 +244,10 @@ Dentro de rutas está además `$twig` (plantillas de `nframework/templates`). **
   Config, reglas, páginas y menús ya se cachean; un POST de un admin a `/admin/` vacía todo.
 - **Caché HTTP**: `$nframework->serveFile($ruta, $mime, $maxAge)`, `serveContent($str, $mime)`, o
   `etag` + `lastmodified` + `testcache()`.
+- **Imágenes generadas**: `/images/resize/`, `/images/pngto{avif|webp}/`, `/images/frompdf/` (carpetas registradas en
+  `$_SESSION['imagesresize']` / `['frompdf']`). `nfImageFormat()` devuelve `avif` o `webp` según lo que aceptó el navegador
+  (`$_SESSION['nf']['browser']['avif']`, detectado por `Accept`); `$user->gravatar($ancho, $alto)` ya lo usa, con fotos
+  `{_id}.png` en `$config['users_pictures']` y silueta por omisión. Ver `docs/images.php`.
 - **Exportaciones**: `$nframework->excelOut($spreadsheet, 'nombre')`, `excelOutPdf()`, `wordOut()`,
   `wordOutPdf()`, `wordTemplateOutPdf($templateProcessor, 'nombre')`.
 - **Colas**: clase `class.<Nombre>.php` en el `include_path` que extiende `Job` (`$queue`, `$maxAttempts`,

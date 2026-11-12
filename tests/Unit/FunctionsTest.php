@@ -413,4 +413,43 @@ class FunctionsTest extends TestCase
         $this->assertSame([0, 0, 6, 42], [$second['w'], $second['h'], $second['length'], $second['offset']]);
         $this->assertSame('aaaabbbbbb', substr($ico, 38));
     }
+
+    /**
+     * nfDetectImageSupport() solo activa la marca cuando el Accept incluye image/avif (sin q=0).
+     */
+    public function testNfDetectImageSupport(): void
+    {
+        $cases = [
+            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8' => true,
+            'image/webp,image/avif,image/jxl,image/heic,*/*;q=0.5' => true,
+            'image/avif;q=0.5,image/webp' => true,
+            'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' => false,
+            'image/avif;q=0,image/webp' => false,
+            'image/avif; q=0.0' => false,
+            '' => false,
+        ];
+        foreach ($cases as $accept => $expected) {
+            unset($_SESSION['nf']['browser']['avif']);
+            nfDetectImageSupport($accept);
+            $this->assertSame($expected, !empty($_SESSION['nf']['browser']['avif']), $accept);
+        }
+
+        // Una petición posterior sin image/avif no apaga la marca.
+        nfDetectImageSupport('image/avif');
+        nfDetectImageSupport('*/*');
+        $this->assertTrue($_SESSION['nf']['browser']['avif']);
+        unset($_SESSION['nf']['browser']['avif']);
+    }
+
+    /**
+     * nfImageFormat(): avif solo con la marca de la sesión y soporte en GD; si no, webp.
+     */
+    public function testNfImageFormat(): void
+    {
+        unset($_SESSION['nf']['browser']['avif']);
+        $this->assertSame('webp', nfImageFormat());
+        $_SESSION['nf']['browser']['avif'] = true;
+        $this->assertSame(nfSupportsAvif() ? 'avif' : 'webp', nfImageFormat());
+        unset($_SESSION['nf']['browser']['avif']);
+    }
 }

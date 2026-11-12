@@ -63,11 +63,6 @@ function nfClampImageSize($size, int $max = 2048): int
 	return max(1, min($max, (int) $size));
 }
 
-function nfSupportsAvif(): bool
-{
-	return function_exists('imageavif') && !empty(gd_info()['AVIF Support']);
-}
-
 
 //https://github.com/alexdodonov/mezon-router#routing--
 
@@ -866,60 +861,101 @@ $router->addRoute('/images/resize/[s:id]/[i:w]/[i:h]/[s:file]', function (string
 
 		// 'maxage' en la configuración de la sesión: segundos sin revalidar (por defecto revalida siempre).
 		$nframework->serveFile($dst, 'image/png', (int) ($conf['maxage'] ?? 0));
+	} else {
+		http_response_code(404);
 	}
 }, 'GET');
+/**
+ * Silueta genérica (PNG de 256 px) para usuarios sin foto; se genera una vez en $dir.
+ */
+function nfDefaultAvatar(string $dir): string
+{
+	$file = $dir . '/_default.png';
+	if (!is_file($file) && function_exists('imagecreatetruecolor')) {
+		$img = imagecreatetruecolor(256, 256);
+		$bg = imagecolorallocate($img, 0xe3, 0xe7, 0xec);
+		$fg = imagecolorallocate($img, 0x9a, 0xa5, 0xb1);
+		imagefill($img, 0, 0, $bg);
+		imagefilledellipse($img, 128, 100, 96, 96, $fg);    // cabeza
+		imagefilledellipse($img, 128, 250, 190, 160, $fg);  // hombros
+		$tmp = $file . '.' . getmypid() . '.tmp';
+		if (imagepng($img, $tmp)) {
+			rename($tmp, $file);
+		}
+		imagedestroy($img);
+	}
+	return $file;
+}
+
+/**
+ * Configuración de /images/pngto{formato}/{id}/...: la registrada en $_SESSION['imagesresize'][$id] o,
+ * para 'users' (fotos de perfil, ver User::gravatar()), la integrada: {_id}.png en
+ * $config['users_pictures'] (por omisión $DOCUMENT_ROOT/img/nf/users) y una silueta si no hay foto.
+ * Un sitio que registre su propio 'users' en la sesión la reemplaza.
+ */
+function nfConvertedImageConf(string $id): ?array
+{
+	global $config;
+	if (isset($_SESSION['imagesresize'][$id]) && is_array($_SESSION['imagesresize'][$id])) {
+		return $_SESSION['imagesresize'][$id];
+	}
+	if ($id !== 'users' || ($cache = nfCacheDir('avatars')) === null) {
+		return null;
+	}
+	$src = (string) ($config['users_pictures'] ?? '');
+	if ($src === '') {
+		$src = ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/img/nf/users';
+	}
+	return [
+		'src' => rtrim($src, '/'),
+		'dst' => $cache,
+		'default' => nfDefaultAvatar($cache),
+		'maxage' => 300,
+		'namepattern' => '/^[a-f\d]{24}$/i',
+	];
+}
+
 function nfServeConvertedImage(array $p, string $format): void
 {
 	global $nframework;
-	if (isset($_SESSION['imagesresize'][$p['id']])) {
-		$conf = $_SESSION['imagesresize'][$p['id']];
-		$filename = basename($p['file']);
-		if ($filename === '' || $filename[0] === '.') {
-			http_response_code(404);
-			return;
-		}
-		$p['w'] = nfClampImageSize($p['w']);
-		$p['h'] = nfClampImageSize($p['h']);
-		$actualizar = false;
-		$pos = strrpos($filename, '.');
-		$name = substr($filename, 0, $pos);
-		$dst = $conf['dst'] . '/' . $name . '_' . $p['w'] . 'x' . $p['h'] . '.' . $format;
-		$src = $conf['src'] . '/' . $name . '.png';
-		if (!is_file($src)) {
-			$src = $conf['default'] ?? '';
-		}
-		if (!is_file($src)) {
-			http_response_code(404);
-			return;
-		}
-		$supported = $format === 'avif'
-			? nfSupportsAvif()
-			: function_exists('imagewebp') && !empty(gd_info()['WebP Support']);
-		if (!$supported) {
-			http_response_code(501);
-			return;
-		}
-		if (!is_file($dst)) {
-			if (!file_exists($conf['dst'])) {
-				mkdir($conf['dst'], 0777, true);
-			}
-			$actualizar = true;
-		} else {
-			$lasttimedst = filemtime($dst);
-			$lasttimesrc = filemtime($src);
-			if ($lasttimedst < $lasttimesrc) {
-				$actualizar = true;
-			}
-		}
-		if ($actualizar) {
-			$manager = new ImageManager(new GdDriver());
-			$img = $manager->decodePath($src);
-			$img->cover($p['w'], $p['h']);
-			$img->save($dst);
-		}
-
-		$nframework->serveFile($dst, 'image/' . $format, (int) ($conf['maxage'] ?? 0));
+	$conf = nfConvertedImageConf((string) $p['id']);
+	$filename = basename((string) $p['file']);
+	$pos = strrpos($filename, '.');
+	$name = $pos === false ? $filename : substr($filename, 0, $pos);
+	if ($conf === null || $name === '' || $filename[0] === '.'
+		|| (!empty($conf['namepattern']) && !preg_match($conf['namepattern'], $name))) {
+		http_response_code(404);
+		return;
 	}
+	$supported = $format === 'avif'
+		? nfSupportsAvif()
+		: function_exists('imagewebp') && !empty(gd_info()['WebP Support']);
+	if (!$supported) {
+		http_response_code(501);
+		return;
+	}
+	$w = nfClampImageSize($p['w']);
+	$h = nfClampImageSize($p['h']);
+	$src = $conf['src'] . '/' . $name . '.png';
+	$dst = $conf['dst'] . '/' . $name . '_' . $w . 'x' . $h . '.' . $format;
+	if (!is_file($src)) {
+		// Sin original: la imagen por omisión, con una sola copia por tamaño para todos los que no tienen.
+		$src = (string) ($conf['default'] ?? '');
+		$dst = $conf['dst'] . '/_default_' . $w . 'x' . $h . '.' . $format;
+	}
+	if ($src === '' || !is_file($src)) {
+		http_response_code(404);
+		return;
+	}
+	// Se regenera si no existe o si el original es más reciente.
+	if (!is_file($dst) || filemtime($dst) < filemtime($src)) {
+		if (!is_dir($conf['dst'])) {
+			mkdir($conf['dst'], 0777, true);
+		}
+		$manager = new ImageManager(new GdDriver());
+		$manager->decodePath($src)->cover($w, $h)->save($dst);
+	}
+	$nframework->serveFile($dst, 'image/' . $format, (int) ($conf['maxage'] ?? 0));
 }
 
 $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (string $route, array $p) {

@@ -128,9 +128,16 @@ class User implements ArrayAccess
         return $this->info;
     }
 
-    public function gravatar($width = '', $height = '')
+    /**
+     * URL de la foto de perfil ($height = $width si se omite). Usa AVIF o WebP según el navegador
+     * (nfImageFormat()); la ruta /images/pngto{formato}/users/ la sirve nframework/router.php.
+     */
+    public function gravatar($width = 32, $height = null)
     {
-        return '/images/pngtoavif/users/32/32/' . $this->info['_id'] . '.avif';
+        $width = max(1, min(2048, (int) $width ?: 32));
+        $height = $height === null || $height === '' ? $width : max(1, min(2048, (int) $height ?: $width));
+        $format = nfImageFormat();
+        return '/images/pngto' . $format . '/users/' . $width . '/' . $height . '/' . $this->info['_id'] . '.' . $format;
     }
 
     public function usermenu()
@@ -143,14 +150,16 @@ class User implements ArrayAccess
         $registerButton = '';
         if ($this->info['username'] != 'guest' && $this->info['username'] != '') {
             $safeUsername = htmlspecialchars((string) $this->info['username'], ENT_QUOTES, 'UTF-8');
+            $avatar32 = htmlspecialchars($this->gravatar(32), ENT_QUOTES, 'UTF-8');
+            $avatar120 = htmlspecialchars($this->gravatar(120), ENT_QUOTES, 'UTF-8');
             $result = <<<HTML
                 <a href="#" class="app-bar-item">
-                    <img src="/images/pngtoavif/users/32/32/{$this->info['_id']}.avif" alt="user picture" class="avatar">
+                    <img src="{$avatar32}" alt="user picture" class="avatar">
                     <span class="ml-2 app-bar-name">{$safeUsername}</span>
                 </a>
                 <div class="d-menu context drop-down place-right" data-role="dropdown" data-stay-on-click="true" id="logindrop">
                     <div class="p-3 bg-white fg-black text-center" style="width:300px">
-                        <img src="/images/pngtoavif/users/120/120/{$this->info['_id']}.avif" alt="user picture" class="avatar">
+                        <img src="{$avatar120}" alt="user picture" class="avatar">
                         <div class="h4 mb-0">{$safeUsername}</div>
                         <div>{$this->title}</div>
                     </div>

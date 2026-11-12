@@ -98,25 +98,44 @@ class UserTest extends TestCase
         $this->assertEquals('test@example.com', $data['email']);
     }
 
-    /**
-     * Test User gravatar method
-     */
-    public function testUserGravatar(): void
+    protected function tearDown(): void
     {
+        unset($_SESSION['nf']['browser']['avif']);
+    }
+
+    /**
+     * Sin soporte AVIF registrado en la sesión la foto se pide en WebP.
+     */
+    public function testUserGravatarDefaultsToWebp(): void
+    {
+        unset($_SESSION['nf']['browser']['avif']);
         $user = $this->getMockUser([
             '_id' => '507f1f77bcf86cd799439011',
             'username' => 'testuser'
         ]);
 
-        $gravatar = $user->gravatar();
-
-        $this->assertStringContainsString('/images/pngtoavif/users/32/32/', $gravatar);
-        $this->assertStringContainsString('507f1f77bcf86cd799439011', $gravatar);
-        $this->assertStringEndsWith('.avif', $gravatar);
+        $this->assertSame('/images/pngtowebp/users/32/32/507f1f77bcf86cd799439011.webp', $user->gravatar());
     }
 
     /**
-     * Test User gravatar with custom dimensions
+     * Si el navegador aceptó AVIF (y GD lo genera) la foto se pide en AVIF.
+     */
+    public function testUserGravatarUsesAvifWhenBrowserSupportsIt(): void
+    {
+        if (!nfSupportsAvif()) {
+            $this->markTestSkipped('GD sin soporte AVIF');
+        }
+        $_SESSION['nf']['browser']['avif'] = true;
+        $user = $this->getMockUser([
+            '_id' => '507f1f77bcf86cd799439011',
+            'username' => 'testuser'
+        ]);
+
+        $this->assertSame('/images/pngtoavif/users/32/32/507f1f77bcf86cd799439011.avif', $user->gravatar());
+    }
+
+    /**
+     * Tamaño: el alto toma el ancho si se omite; ambos se limitan a 1..2048.
      */
     public function testUserGravatarWithDimensions(): void
     {
@@ -125,12 +144,10 @@ class UserTest extends TestCase
             'username' => 'testuser'
         ]);
 
-        // The gravatar method doesn't currently use width/height params,
-        // but we test that it doesn't break when provided
-        $gravatar = $user->gravatar(64, 64);
-
-        $this->assertIsString($gravatar);
-        $this->assertStringContainsString('.avif', $gravatar);
+        $this->assertStringContainsString('/users/64/48/', $user->gravatar(64, 48));
+        $this->assertStringContainsString('/users/120/120/', $user->gravatar(120));
+        $this->assertStringContainsString('/users/2048/2048/', $user->gravatar(9999));
+        $this->assertStringContainsString('/users/32/32/', $user->gravatar(''));
     }
 
     /**
