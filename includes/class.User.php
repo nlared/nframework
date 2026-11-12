@@ -130,7 +130,7 @@ class User implements ArrayAccess
 
     public function gravatar($width = '', $height = '')
     {
-        return '/images/pngtowebp/users/32/32/' . $this->info['_id'] . '.webp';
+        return '/images/pngtoavif/users/32/32/' . $this->info['_id'] . '.avif';
     }
 
     public function usermenu()
@@ -145,12 +145,12 @@ class User implements ArrayAccess
             $safeUsername = htmlspecialchars((string) $this->info['username'], ENT_QUOTES, 'UTF-8');
             $result = <<<HTML
                 <a href="#" class="app-bar-item">
-                    <img src="/images/pngtowebp/users/32/32/{$this->info['_id']}.webp" alt="user picture" class="avatar">
+                    <img src="/images/pngtoavif/users/32/32/{$this->info['_id']}.avif" alt="user picture" class="avatar">
                     <span class="ml-2 app-bar-name">{$safeUsername}</span>
                 </a>
                 <div class="d-menu context drop-down place-right" data-role="dropdown" data-stay-on-click="true" id="logindrop">
                     <div class="p-3 bg-white fg-black text-center" style="width:300px">
-                        <img src="/images/pngtowebp/users/120/120/{$this->info['_id']}.webp" alt="user picture" class="avatar">
+                        <img src="/images/pngtoavif/users/120/120/{$this->info['_id']}.avif" alt="user picture" class="avatar">
                         <div class="h4 mb-0">{$safeUsername}</div>
                         <div>{$this->title}</div>
                     </div>

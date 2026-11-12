@@ -16,7 +16,7 @@ if (!is_file($muestra) && function_exists('imagecreatetruecolor')) {
 	imagedestroy($img);
 }
 
-// Registrar la carpeta: habilita /images/resize/galeria/... y /images/pngtowebp/galeria/...
+// Registrar la carpeta: habilita /images/resize/galeria/... y /images/pngtoavif/galeria/...
 $_SESSION['imagesresize']['galeria'] = [
 	'src' => $carpeta,                      // originales
 	'dst' => $carpeta . '/cache',           // tamaños generados (se reutilizan mientras el original no cambie)
@@ -24,7 +24,7 @@ $_SESSION['imagesresize']['galeria'] = [
 ];
 ?>
 <div class="container">
-	<?= docHeader('Imágenes', 'Rutas que generan imágenes al vuelo y las guardan en caché con <code>ETag</code>: miniaturas, conversión a WebP, páginas de PDF y el logo del sitio. Las carpetas se registran en la sesión, así que el navegador solo conoce un identificador.') ?>
+	<?= docHeader('Imágenes', 'Rutas que generan imágenes al vuelo y las guardan en caché con <code>ETag</code>: miniaturas, conversión a AVIF, páginas de PDF y el logo del sitio. Las carpetas se registran en la sesión, así que el navegador solo conoce un identificador.') ?>
 
 	<h3>Miniaturas</h3>
 	<p>
@@ -43,9 +43,10 @@ $_SESSION['imagesresize']['galeria'] = [
 PHP) ?>
 	<p>La imagen se ajusta y recorta al tamaño pedido conservando la proporción. Ancho y alto se limitan a 2048 px. El navegador la guarda y la revalida con <code>ETag</code> (respuesta 304 vacía si no cambió); con <code>'maxage' => 3600</code> en la configuración la reutiliza una hora sin preguntar.</p>
 
-	<h3>PNG a WebP</h3>
-	<p><img src="/images/pngtowebp/galeria/240/150/muestra.webp" alt="webp" class="border bd-default"></p>
-	<?= docCode('<img src="/images/pngtowebp/galeria/240/150/muestra.webp">   <!-- busca muestra.png en src -->', 'html') ?>
+	<h3>PNG a AVIF</h3>
+	<p><img src="/images/pngtoavif/galeria/240/150/muestra.avif" alt="avif" class="border bd-default"></p>
+	<?= docCode('<img src="/images/pngtoavif/galeria/240/150/muestra.avif">   <!-- busca muestra.png en src -->', 'html') ?>
+	<p>El servidor necesita GD compilado con soporte AVIF. La ruta anterior <code>/images/pngtowebp/</code> sigue disponible para sitios que aún la utilicen.</p>
 
 	<h3>Páginas de un PDF</h3>
 	<?= docCode(<<<'PHP'
@@ -58,8 +59,9 @@ $_SESSION['frompdf']['contrato'] = [
 ?>
 <!-- Número de páginas -->
 GET /images/frompdf/contrato/info.json          → {"numberOfPages": 3}
-<!-- Página 2 a 600 px de ancho, en png, jpg o webp -->
+<!-- Página 2 a 600 px de ancho, en png, jpg, webp o avif -->
 <img src="/images/frompdf/contrato/600/0/2.png">
+<img src="/images/frompdf/contrato/600/0/2.avif">
 PHP) ?>
 	<p>Vea un ejemplo funcionando al subir un PDF en <a href="files.php">Archivos</a>.</p>
 
@@ -73,5 +75,5 @@ PHP) ?>
 HTML, 'html') ?>
 
 	<h3>Foto de perfil</h3>
-	<?= docCode('<img src="<?= $user->gravatar() ?>">   <!-- /images/pngtowebp/users/32/32/{_id}.webp -->', 'html') ?>
+	<?= docCode('<img src="<?= $user->gravatar() ?>">   <!-- /images/pngtoavif/users/32/32/{_id}.avif -->', 'html') ?>
 </div>
