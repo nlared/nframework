@@ -110,9 +110,9 @@ class UserTest extends TestCase
 
         $gravatar = $user->gravatar();
 
-        $this->assertStringContainsString('/images/pngtowebp/users/32/32/', $gravatar);
+        $this->assertStringContainsString('/images/pngtoavif/users/32/32/', $gravatar);
         $this->assertStringContainsString('507f1f77bcf86cd799439011', $gravatar);
-        $this->assertStringEndsWith('.webp', $gravatar);
+        $this->assertStringEndsWith('.avif', $gravatar);
     }
 
     /**
@@ -130,7 +130,7 @@ class UserTest extends TestCase
         $gravatar = $user->gravatar(64, 64);
 
         $this->assertIsString($gravatar);
-        $this->assertStringContainsString('.webp', $gravatar);
+        $this->assertStringContainsString('.avif', $gravatar);
     }
 
     /**

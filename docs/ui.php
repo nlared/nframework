@@ -66,7 +66,7 @@ $nframework->addfileupload();   // blueimp file upload
 PHP) ?>
 
 	<h3>Usuario en la barra superior</h3>
-	<p><code>$user->usermenu()</code> dibuja el menú de usuario (iniciar sesión o perfil y salir) que aparece en la barra de esta documentación. <code>$user->gravatar()</code> devuelve la URL de su foto de perfil (WebP de 32×32 en <code>/images/pngtowebp/users/</code>).</p>
+	<p><code>$user->usermenu()</code> dibuja el menú de usuario (iniciar sesión o perfil y salir) que aparece en la barra de esta documentación. <code>$user->gravatar()</code> devuelve la URL de su foto de perfil (AVIF de 32×32 en <code>/images/pngtoavif/users/</code>).</p>
 
 	<h3>Iconos</h3>
 	<p><?= new Icon('home') ?> <?= new Icon('user') ?> <?= new Icon('cog') ?> <code>new Icon('home')</code> imprime <code>&lt;span class="icon mif-home"&gt;</code>; con una ruta de imagen imprime un <code>&lt;img&gt;</code>. Catálogo completo en <a href="https://metroui.org.ua/icons.html" target="_blank">Metro UI icons</a>.</p>

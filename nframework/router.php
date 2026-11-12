@@ -63,6 +63,11 @@ function nfClampImageSize($size, int $max = 2048): int
 	return max(1, min($max, (int) $size));
 }
 
+function nfSupportsAvif(): bool
+{
+	return function_exists('imageavif') && !empty(gd_info()['AVIF Support']);
+}
+
 
 //https://github.com/alexdodonov/mezon-router#routing--
 
@@ -678,10 +683,15 @@ function nfServePdfPage(string $id, int $width, int $page, string $format): void
 		'png' => [\Spatie\PdfToImage\Enums\OutputFormat::Png, 'image/png'],
 		'jpg' => [\Spatie\PdfToImage\Enums\OutputFormat::Jpg, 'image/jpeg'],
 		'webp' => [\Spatie\PdfToImage\Enums\OutputFormat::Webp, 'image/webp'],
+		'avif' => [\Spatie\PdfToImage\Enums\OutputFormat::Png, 'image/avif'],
 	];
 	$options = $_SESSION['frompdf'][$id] ?? null;
 	if (!is_array($options) || empty($options['filename']) || !is_file($options['filename']) || $page < 1) {
 		http_response_code(404);
+		return;
+	}
+	if ($format === 'avif' && !nfSupportsAvif()) {
+		http_response_code(501);
 		return;
 	}
 	$dir = rtrim((string) ($options['directory'] ?? ''), '/');
@@ -700,11 +710,23 @@ function nfServePdfPage(string $id, int $width, int $page, string $format): void
 			if ($format === 'jpg') {
 				$pdf->resolution(150);
 			}
-			$pdf->selectPage($page)->size($width)->save($dst);
+			$renderedFile = $dst;
+			if ($format === 'avif') {
+				$renderedFile = $dst . '.png';
+			}
+			$pdf->selectPage($page)->size($width)->save($renderedFile);
+			if ($format === 'avif') {
+				$manager = new ImageManager(new GdDriver());
+				$manager->decodePath($renderedFile)->save($dst);
+				unlink($renderedFile);
+			}
 		} catch (\Throwable $e) {
+			if ($format === 'avif' && isset($renderedFile) && is_file($renderedFile)) {
+				unlink($renderedFile);
+			}
 			// Página fuera de rango o PDF dañado.
 			error_log('nframework frompdf: ' . $e->getMessage());
-			http_response_code(404);
+			http_response_code($format === 'avif' ? 500 : 404);
 			return;
 		}
 	}
@@ -719,7 +741,7 @@ function nfServePdfPage(string $id, int $width, int $page, string $format): void
 	}
 }
 
-foreach (['png', 'jpg', 'webp'] as $nfPdfFormat) {
+foreach (['png', 'jpg', 'webp', 'avif'] as $nfPdfFormat) {
 	$router->addRoute('/images/frompdf/[s:id]/[i:w]/[i:h]/[i:p].' . $nfPdfFormat, function (string $route, array $p) use ($nfPdfFormat) {
 		nfServePdfPage((string) $p['id'], (int) $p['w'], (int) $p['p'], $nfPdfFormat);
 	}, 'GET');
@@ -846,7 +868,8 @@ $router->addRoute('/images/resize/[s:id]/[i:w]/[i:h]/[s:file]', function (string
 		$nframework->serveFile($dst, 'image/png', (int) ($conf['maxage'] ?? 0));
 	}
 }, 'GET');
-$router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (string $route, array $p) {
+function nfServeConvertedImage(array $p, string $format): void
+{
 	global $nframework;
 	if (isset($_SESSION['imagesresize'][$p['id']])) {
 		$conf = $_SESSION['imagesresize'][$p['id']];
@@ -860,11 +883,23 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 		$actualizar = false;
 		$pos = strrpos($filename, '.');
 		$name = substr($filename, 0, $pos);
-		$ext = substr($filename, $pos);
-		$dst = $conf['dst'] . '/' . $name . '_' . $p['w'] . 'x' . $p['h'] . '.webp';
+		$dst = $conf['dst'] . '/' . $name . '_' . $p['w'] . 'x' . $p['h'] . '.' . $format;
 		$src = $conf['src'] . '/' . $name . '.png';
-		//echo "$name  $ext $dst";
-		if (!file_exists($dst)) {
+		if (!is_file($src)) {
+			$src = $conf['default'] ?? '';
+		}
+		if (!is_file($src)) {
+			http_response_code(404);
+			return;
+		}
+		$supported = $format === 'avif'
+			? nfSupportsAvif()
+			: function_exists('imagewebp') && !empty(gd_info()['WebP Support']);
+		if (!$supported) {
+			http_response_code(501);
+			return;
+		}
+		if (!is_file($dst)) {
 			if (!file_exists($conf['dst'])) {
 				mkdir($conf['dst'], 0777, true);
 			}
@@ -878,17 +913,20 @@ $router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (str
 		}
 		if ($actualizar) {
 			$manager = new ImageManager(new GdDriver());
-			if (!file_exists($src)) {
-				$src = $conf['default'];
-			}
 			$img = $manager->decodePath($src);
 			$img->cover($p['w'], $p['h']);
 			$img->save($dst);
-			$lasttimedst = filemtime($dst);
 		}
 
-		$nframework->serveFile($dst, 'image/webp', (int) ($conf['maxage'] ?? 0));
+		$nframework->serveFile($dst, 'image/' . $format, (int) ($conf['maxage'] ?? 0));
 	}
+}
+
+$router->addRoute('/images/pngtowebp/[s:id]/[i:w]/[i:h]/[s:file]', function (string $route, array $p) {
+	nfServeConvertedImage($p, 'webp');
+}, 'GET');
+$router->addRoute('/images/pngtoavif/[s:id]/[i:w]/[i:h]/[s:file]', function (string $route, array $p) {
+	nfServeConvertedImage($p, 'avif');
 }, 'GET');
 
 
@@ -1059,4 +1097,3 @@ $router->addRoute('/nftables/[s:collection]/[s:id]', function (string $route, ar
 		$m->{$config['sitedb']}->{$tabla->nfcollection}->deleteOne(['_id' => tomongoid($p['id'])]);
 	}
 },  'DELETE');
-
