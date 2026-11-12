@@ -704,15 +704,13 @@ function nfServePdfPage(string $id, int $width, int $page, string $format): void
 		if (!is_dir($dir)) {
 			mkdir($dir, 0777, true);
 		}
+		// AVIF: Spatie no lo genera; se renderiza un PNG intermedio y GD lo convierte.
+		$renderedFile = $format === 'avif' ? $dst . '.png' : $dst;
 		try {
 			$pdf = new \Spatie\PdfToImage\Pdf($options['filename']);
 			$pdf->format($formats[$format][0]);
 			if ($format === 'jpg') {
 				$pdf->resolution(150);
-			}
-			$renderedFile = $dst;
-			if ($format === 'avif') {
-				$renderedFile = $dst . '.png';
 			}
 			$pdf->selectPage($page)->size($width)->save($renderedFile);
 			if ($format === 'avif') {
@@ -721,12 +719,14 @@ function nfServePdfPage(string $id, int $width, int $page, string $format): void
 				unlink($renderedFile);
 			}
 		} catch (\Throwable $e) {
-			if ($format === 'avif' && isset($renderedFile) && is_file($renderedFile)) {
+			// Si el PNG intermedio existe, el PDF se leyó bien y falló la conversión a AVIF → 500.
+			// Página fuera de rango o PDF dañado → 404.
+			$conversionFailed = $format === 'avif' && is_file($renderedFile);
+			if ($conversionFailed) {
 				unlink($renderedFile);
 			}
-			// Página fuera de rango o PDF dañado.
 			error_log('nframework frompdf: ' . $e->getMessage());
-			http_response_code($format === 'avif' ? 500 : 404);
+			http_response_code($conversionFailed ? 500 : 404);
 			return;
 		}
 	}
