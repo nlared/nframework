@@ -38,13 +38,40 @@ helpers for Excel/Word/PDF exports, images, background jobs and Mexican SAT (CFD
 ## Requirements
 
 - PHP **8.3+** (8.4+ to run the test suite, which uses PHPUnit 13)
-- PHP extensions: `mongodb`, `gd` (or `imagick`), `mbstring`, `openssl`, `json`, `intl`
+- PHP extensions: `mongodb`, `intl`, `gd`, `curl`, `zip`, `mbstring`, `openssl`, `xml` (`dom`, `simplexml`,
+  `xmlreader`, `xmlwriter`, `xsl`), `pdo_sqlite`, `imagick`
 - MongoDB server (a replica set if you use transactions)
-- Composer
-- Apache or Nginx
-- Optional: `pdftk`, LibreOffice/`unoconv` (Word/Excel → PDF), Ghostscript/Imagick (PDF → image)
+- Composer, as `includes/composer.phar` (also used by Admin → Update)
+- Nginx or Apache
+- Optional: Ghostscript (PDF → image), `pdftk`, LibreOffice/`unoconv` (Word/Excel → PDF)
+
+`php nframework/test.php` lists whatever is missing with the command to install it.
 
 ## Installation
+
+### Automated (Debian/Ubuntu)
+
+```bash
+git clone https://github.com/nlared/nframework.git
+cd nframework
+./install.sh --host=www.example.com
+```
+
+[`install.sh`](install.sh) runs the manual steps below and skips the ones already done. It asks before
+running `apt-get` or writing to `/etc/php` (`--yes` answers for you):
+
+1. installs the PHP extensions, Ghostscript, `git` and `unzip` with `apt-get` (`--php=8.4` picks the PHP
+   version, `--no-apt` skips this step);
+2. downloads `includes/composer.phar` from getcomposer.org, verifying the installer signature;
+3. runs `php composer.phar install --ignore-platform-reqs` in `includes/` (`--no-dev` leaves out PHPUnit/Pint);
+4. creates `includes/config.php` with a block for `--host` if it does not exist (`--db=` and `--mongo=` set the
+   database name and connection string);
+5. adds `includes/` to PHP's `include_path` (CLI, FPM and Apache) in `conf.d/99-nframework.ini`;
+6. runs `php nframework/test.php --host=...` to install the database and report what is still missing.
+
+It does not install MongoDB or configure the web server (step 4 of the manual installation).
+
+### Manual
 
 1. **Clone the repository** into the web root of the site:
    ```bash
@@ -52,12 +79,32 @@ helpers for Excel/Word/PDF exports, images, background jobs and Mexican SAT (CFD
    cd nframework
    ```
 
-2. **Install the runtime dependencies** (they live in `includes/`, not in the repository root):
+2. **Install Composer as `includes/composer.phar`** ([official instructions](https://getcomposer.org/download/);
+   check the installer signature published there):
    ```bash
-   cd includes && composer install && cd ..
+   cd includes
+   php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+   php composer-setup.php
+   php -r "unlink('composer-setup.php');"
+   ```
+   `composer.phar` is ignored by git. Keep it up to date with `php composer.phar self-update`.
+
+3. **Install the runtime dependencies** (they live in `includes/`, not in the repository root):
+   ```bash
+   php composer.phar install --ignore-platform-reqs
+   cd ..
+   ```
+   `--ignore-platform-reqs` installs the packages even if the PHP running Composer lacks an extension or is a
+   different version from the one serving the site (CLI and FPM often load different `php.ini` files). The
+   framework still needs those extensions at runtime: `nframework/test.php` (step 6) reports any that are
+   missing. Use the same flag for `update`, `require` and `remove`:
+   ```bash
+   cd includes
+   php composer.phar update --ignore-platform-reqs
+   php composer.phar require vendor/package --ignore-platform-reqs
    ```
 
-3. **Create the configuration**:
+4. **Create the configuration**:
    ```bash
    cp includes/config.example.php includes/config.php
    ```
@@ -76,18 +123,24 @@ helpers for Excel/Word/PDF exports, images, background jobs and Mexican SAT (CFD
    At runtime the document `{_id: 'site'}` of the `configs` collection (edited in Admin → Site / Security)
    is merged on top of this array.
 
-4. **Configure the web server**
+5. **Configure the web server**
    - Document root at the repository root.
    - `includes/` in PHP's `include_path` (pages do `require 'include.php';`).
    - Every request that is not an existing file rewritten to `/router.php`.
+   - The block from [`docs/security.php`](docs/security.php) ("Servidor web") so that `includes/`, `.git`,
+     logs and hidden files are not downloadable.
    - PHP `error_log` outside the document root (a relative `error_log = php_errors.log` writes the log
      next to the script, where it can be downloaded).
 
-5. **Install the database** (guest/admin users, groups, indexes) and check the environment:
+6. **Install the database** (guest/admin users, groups, indexes) and check the environment:
    ```bash
    php nframework/test.php --host=www.example.com
    ```
-   The same diagnostic is available in the browser at `/nframework/test.php` (only for admins once installed).
+   It checks PHP, extensions, Composer packages, `config.php`, MongoDB, `include_path`, opcache and the web
+   server rules, and prints the command to fix each problem. If something essential is missing (the `mongodb`
+   extension, `includes/vendor` or `config.php`) it stops before touching the database and exits with code 1.
+   The same diagnostic is available in the browser at `/nframework/test.php` (only for admins once
+   installed); run it there too, since PHP-FPM may load different extensions than the CLI.
 
 ## Quick start
 
@@ -203,6 +256,7 @@ Run a worker per queue: `HTTP_HOST=www.example.com php includes/job_worker.php r
 
 ```
 .
+├── install.sh            # Automated installer (Debian/Ubuntu)
 ├── router.php            # Front controller: built-in routes, CMS pages, crouter.php, 404
 ├── includes/             # Framework core (must be in PHP's include_path)
 │   ├── include.php          # Bootstrap: config, MongoDB, security, session, user, i18n, output
@@ -214,7 +268,8 @@ Run a worker per queue: `HTTP_HOST=www.example.com php includes/job_worker.php r
 │   ├── i18n/                # es-MX / en-US texts and legal templates
 │   ├── job_worker.php       # Job queue worker (CLI)
 │   ├── config.example.php   # Configuration reference (copy to config.php, not versioned)
-│   └── composer.json        # Runtime dependencies
+│   ├── composer.json        # Runtime dependencies
+│   └── composer.phar        # Composer (not versioned; see Installation)
 ├── nframework/           # Built-in endpoints: router, uploads, datatable, OAuth, Twig templates, installer
 ├── admin/                # Admin panel
 ├── docs/                 # Live documentation and examples

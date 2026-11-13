@@ -29,7 +29,8 @@ clase en `includes/`.
 ## Comandos
 
 ```bash
-cd includes && composer install      # dependencias de ejecución (viven en includes/, no en la raíz)
+./install.sh --host=www.ejemplo.com  # instalación automatizada (apt, composer.phar, config, include_path, BD)
+cd includes && php composer.phar install --ignore-platform-reqs   # dependencias (viven en includes/, no en la raíz)
 ./run-tests.sh [unit|feature|coverage]
 ./includes/vendor/bin/phpunit tests/Unit/FunctionsTest.php
 ./includes/vendor/bin/pint            # estilo de código
