@@ -48,9 +48,14 @@ if (PHP_SAPI === 'cli') {
 }
 if (PHP_SAPI !== 'cli' && !in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true)) {
 	@include 'config.php';
-	require_once 'vendor/autoload.php';
 	$nfInstalled = false;
 	try {
+		// Sin dependencias no se puede saber si está instalado: se trata como no instalado (aplica install_key)
+		// para que el diagnóstico diga qué falta en lugar de morir con un error fatal.
+		if (!nfTestVendorUsable(dirname(__DIR__) . '/includes') || !extension_loaded('mongodb')) {
+			throw new RuntimeException('Faltan dependencias');
+		}
+		require_once 'vendor/autoload.php';
 		$nfInstallClient = new MongoDB\Client($config['mongo_connection_string'] ?? 'mongodb://127.0.0.1');
 		$nfInstalled = !empty($config['sitedb']) && !empty($nfInstallClient->{$config['sitedb']}->usersgroups->findOne(
 			['name' => 'admins', 'users.0' => ['$exists' => true]]
@@ -73,10 +78,91 @@ if (PHP_SAPI !== 'cli' && !in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1',
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);//*/
 $buffers = '';
+$errores = [];
+$nfTestPrinted = false;
+$nfTestStage = '';
 function out($msg)
 {
 	global $buffers;
 	$buffers .= $msg . '<br>';
+}
+
+// Muestra los pendientes ($errores) y todo lo acumulado en $buffers. Se llama al final o, si algo termina el
+// script antes (error fatal, exit de config.php), desde el manejador de cierre: el reporte nunca se pierde.
+function nfTestReport(): void
+{
+	global $buffers, $errores, $nfTestPrinted;
+	if ($nfTestPrinted) {
+		return;
+	}
+	$nfTestPrinted = true;
+	if (count($errores) > 0) {
+		out('<br><b>Pendientes</b>');
+		foreach ($errores as $err) {
+			out("👉 $err");
+		}
+	} else {
+		out('No se encontraron errores de configuración');
+	}
+	$errores = [];
+	if (PHP_SAPI === 'cli') {
+		echo html_entity_decode(strip_tags(preg_replace('/(<br\s*\/?>\s*)+/i', "\n", $buffers))), "\n";
+	} else {
+		echo $buffers;
+	}
+}
+register_shutdown_function(function () {
+	global $errores, $nfTestPrinted, $nfTestStage;
+	if ($nfTestPrinted) {
+		return;
+	}
+	$e = error_get_last();
+	if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+		$errores[] = 'Error fatal' . ($nfTestStage ? " ($nfTestStage)" : '') . ': '
+			. htmlspecialchars($e['message']) . ' en ' . htmlspecialchars($e['file']) . ':' . $e['line'];
+	} elseif ($nfTestStage === 'config.php') {
+		$errores[] = 'config.php terminó la ejecución: el dominio ' . htmlspecialchars($_SERVER['HTTP_HOST'] ?? '')
+			. ' no tiene bloque en includes/config.php (en CLI indique --host=&lt;dominio&gt;).';
+	} elseif ($nfTestStage !== '') {
+		$errores[] = "La ejecución terminó durante: $nfTestStage";
+	}
+	if (PHP_SAPI !== 'cli') {
+		while (ob_get_level() > 0) {
+			ob_end_clean();
+		}
+	}
+	nfTestReport();
+});
+
+// Versión mínima de PHP que exige vendor/ (platform_check.php de Composer); sin vendor, la del framework.
+function nfTestPhpMin(string $includesDir): string
+{
+	$check = @file_get_contents("$includesDir/vendor/composer/platform_check.php");
+	if ($check && preg_match('/PHP_VERSION_ID >= (\d+)(\d\d)(\d\d)\)/', $check, $mm)) {
+		return (int) $mm[1] . '.' . (int) $mm[2] . '.' . (int) $mm[3];
+	}
+	return '8.3.0';
+}
+
+// vendor/autoload.php existe y se puede incluir sin que platform_check.php termine con un error fatal.
+function nfTestVendorUsable(string $includesDir): bool
+{
+	return is_file("$includesDir/vendor/autoload.php")
+		&& version_compare(PHP_VERSION, nfTestPhpMin($includesDir), '>=');
+}
+
+// Paquete apt (Debian/Ubuntu, nombres de los repositorios ondrej/sury) que trae una extensión.
+function nfTestExtPackage(string $ext, string $phpver): string
+{
+	$ext = strtolower($ext);
+	$map = [
+		'dom' => 'xml', 'simplexml' => 'xml', 'xmlreader' => 'xml', 'xmlwriter' => 'xml', 'xml' => 'xml', 'xsl' => 'xml',
+		'pdo_sqlite' => 'sqlite3', 'sqlite3' => 'sqlite3', 'pdo_mysql' => 'mysql', 'mysqli' => 'mysql',
+		'ctype' => 'common', 'fileinfo' => 'common', 'iconv' => 'common', 'phar' => 'common', 'tokenizer' => 'common',
+		'exif' => 'common', 'ftp' => 'common', 'gettext' => 'common', 'sockets' => 'common', 'calendar' => 'common',
+		'opcache' => 'opcache',
+	];
+	return "php$phpver-" . ($map[$ext] ?? $ext);
 }
 function fail($msg)
 {
@@ -92,7 +178,6 @@ function warn($msg)
 }
 
 
-$errores = [];
 function return_bytes($val)
 {
 	$val = trim((string) $val);
@@ -117,13 +202,13 @@ function checkGhostscript()
 	// Try multiple common names: gs, gswin64c, gswin32c (Windows)
 	$candidates = ['gs --version', 'gswin64c --version', 'gswin32c --version'];
 	foreach ($candidates as $cmd) {
-		$output = @shell_exec("$cmd 2>&1");
+		$output = function_exists('shell_exec') ? @shell_exec("$cmd 2>&1") : null;
 		if ($output) {
-			out(ok("Ghostscript detectado: $cmd → " . trim($output)));
+			ok("Ghostscript detectado: $cmd → " . trim($output));
 			return true;
 		}
 	}
-	out(warn("No se detectó Ghostscript en PATH (gs/gswin64c/gswin32c). Imagick no podrá leer PDFs sin Ghostscript."));
+	warn("No se detectó Ghostscript en PATH (gs/gswin64c/gswin32c). Imagick no podrá leer PDFs sin Ghostscript.");
 	return false;
 }
 
@@ -153,12 +238,12 @@ function detectPolicyBlock()
 				out("👉 Cambia a: <policy domain=\"coder\" rights=\"read|write\" pattern=\"PDF\" /> y reinicia el servicio (apache/php-fpm).");
 				return true; // blocked
 			} else {
-				out(ok("No se encontró regla de bloqueo explícito para PDF en policy.xml."));
+				ok("No se encontró regla de bloqueo explícito para PDF en policy.xml.");
 			}
 		}
 	}
 	if (!$found) {
-		out(warn("No se encontró policy.xml en rutas comunes. Si hay bloqueo, vendrá de otra ubicación de configuración."));
+		warn("No se encontró policy.xml en rutas comunes. Si hay bloqueo, vendrá de otra ubicación de configuración.");
 	}
 	return false; // not blocked or not found
 }
@@ -174,116 +259,199 @@ function tryReadWrite($pdfPath, $outputDir)
 		$imagick->readImage($pdfPath . '[0]');
 		$width = $imagick->getImageWidth();
 		$height = $imagick->getImageHeight();
-		out(ok("Lectura de PDF OK. Tamaño página 1: {$width}x{$height}px"));
+		ok("Lectura de PDF OK. Tamaño página 1: {$width}x{$height}px");
 
 		// Opcional: formato/compresión antes de guardar
 		$imagick->setImageFormat('png');
 		$imagick->setImageCompressionQuality(90);
 		if ($imagick->writeImage($outputFile)) {
-			out(ok("Escritura OK: $outputFile"));
+			ok("Escritura OK: $outputFile");
 		} else {
-			out(fail("Imagick no pudo escribir el archivo: $outputFile"));
+			fail("Imagick no pudo escribir el archivo: $outputFile");
 		}
 
 		$imagick->clear();
 		$imagick->destroy();
 		return true;
 	} catch (ImagickException $e) {
-		out(fail("ImagickException al leer/escribir PDF: " . $e->getMessage()));
+		fail("ImagickException al leer/escribir PDF: " . $e->getMessage());
 		// Sugerencias específicas
 		if (stripos($e->getMessage(), 'not authorized') !== false) {
-			out(fail("Posible bloqueo por policy.xml (\"not authorized\"). Revisa configuración de ImageMagick."));
+			fail("Posible bloqueo por policy.xml (\"not authorized\"). Revisa configuración de ImageMagick.");
 		}
 		if (
 			stripos($e->Message ?? '', 'no decode delegate for this image format') !== false ||
 			stripos($e->getMessage(), 'no decode delegate') !== false
 		) {
-			out(fail("Falta delegado para PDF (Ghostscript). Instala/expón Ghostscript en PATH."));
+			fail("Falta delegado para PDF (Ghostscript). Instala/expón Ghostscript en PATH.");
 		}
 		return false;
 	} catch (Throwable $t) {
-		out(fail("Error inesperado: " . $t->getMessage()));
+		fail("Error inesperado: " . $t->getMessage());
 		return false;
 	}
 }
-$inipath = php_ini_loaded_file();
-$archivo = file_get_contents($inipath);
 date_default_timezone_set('America/Monterrey');
-$exts = get_loaded_extensions();
+$inipath = php_ini_loaded_file();
 if (ini_get('display_errors')) {
-	$errores[] = "display_errors=Off";
+	$errores[] = 'Desactive display_errors en ' . ($inipath ?: 'php.ini') . ': <code>display_errors=Off</code>';
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// Requisitos: PHP, extensiones, dependencias de Composer y config.php. Se revisan antes de cargar vendor/,
+// conectarse a MongoDB o incluir include.php; si falta algo indispensable se muestra qué instalar y cómo, y el
+// script termina aquí en lugar de morir con un error fatal sin reporte.
+// ---------------------------------------------------------------------------------------------------------------
+$nfIncludesDir = dirname(__DIR__) . '/includes';
+$phpver = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+$criticos = 0;
+out('<b>Requisitos</b> (PHP ' . PHP_VERSION . ' ' . PHP_SAPI . ', php.ini: ' . ($inipath ?: 'ninguno') . ')');
+if (PHP_SAPI === 'cli') {
+	out("ℹ️ CLI y PHP-FPM cargan php.ini y extensiones distintos: revise también /nframework/test.php desde el navegador.");
+}
 
-$memory_limit = ini_get('memory_limit');
+// PHP
+$phpMin = nfTestPhpMin($nfIncludesDir);
+if (version_compare(PHP_VERSION, $phpMin, '<')) {
+	fail("PHP " . PHP_VERSION . ": las dependencias requieren PHP $phpMin o superior");
+	$criticos++;
+	$errores[] = "Instale PHP $phpMin o superior. Ubuntu: <code>sudo add-apt-repository ppa:ondrej/php && sudo apt-get update"
+		. " && sudo apt-get install php" . implode('.', array_slice(explode('.', $phpMin), 0, 2)) . "-fpm php"
+		. implode('.', array_slice(explode('.', $phpMin), 0, 2)) . "-cli</code> (Debian: repositorio packages.sury.org/php)";
+} else {
+	ok("PHP " . PHP_VERSION . " (mínimo $phpMin)");
+}
 
-$inineeds = [
-	'display_errors',
-	'memory_limit',
-	'opcache.jit',
-	'auto_append_file',
-	'post_max_size',
-	'upload_max_filesize'
+// Extensiones: las que usa el framework + las que exigen los paquetes de vendor/ (sin los de desarrollo).
+$extsRequeridas = [
+	'mongodb' => 'núcleo, MongoDB', 'intl' => 'idioma/formatos', 'gd' => 'imágenes', 'curl' => 'HTTP, SAT',
+	'pdo_sqlite' => 'caché local', 'zip' => 'Excel/Word', 'mbstring' => 'texto', 'openssl' => 'e.firma, cifrado',
+	'dom' => 'XML', 'simplexml' => 'XML', 'xmlreader' => 'Excel', 'xmlwriter' => 'Excel/Word', 'xsl' => 'CFDI',
+	'imagick' => 'PDF a imagen',
 ];
-
-
-
-/*$iniPath = php_ini_loaded_file(); // Get path to active php.ini
-$directive = 'memory_limit';
-$newValue = '512M';
-
-/*
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-//*/
-
-$phpver = number_format((float)phpversion(), 1);
+$extsMinimas = [];
+$installed = @json_decode((string) @file_get_contents("$nfIncludesDir/vendor/composer/installed.json"), true);
+if (is_array($installed)) {
+	$devPackages = $installed['dev-package-names'] ?? [];
+	foreach ($installed['packages'] ?? $installed as $pkg) {
+		if (!is_array($pkg) || in_array($pkg['name'] ?? '', $devPackages, true)) {
+			continue;
+		}
+		foreach ($pkg['require'] ?? [] as $req => $constraint) {
+			if (!str_starts_with($req, 'ext-')) {
+				continue;
+			}
+			$ext = strtolower(substr($req, 4));
+			$extsRequeridas[$ext] ??= $pkg['name'];
+			if (preg_match('/(\d+\.\d+(?:\.\d+)?)/', (string) $constraint, $mm)
+				&& version_compare($mm[1], $extsMinimas[$ext] ?? '0', '>')) {
+				$extsMinimas[$ext] = $mm[1];
+			}
+		}
+	}
+}
+ksort($extsRequeridas);
 $apts = [];
+$enmods = [];
+$faltanExt = [];
+foreach ($extsRequeridas as $ext => $uso) {
+	if (!extension_loaded($ext)) {
+		$faltanExt[] = $ext;
+		// Paquete instalado pero extensión deshabilitada: basta phpenmod.
+		if (is_file("/etc/php/$phpver/mods-available/$ext.ini")) {
+			$enmods[] = $ext;
+		} else {
+			$apts[] = nfTestExtPackage($ext, $phpver);
+		}
+		fail("Extensión $ext no cargada ($uso)");
+		if ($ext === 'mongodb') {
+			$criticos++;
+		}
+	} elseif (isset($extsMinimas[$ext]) && version_compare((string) phpversion($ext), $extsMinimas[$ext], '<')) {
+		fail("Extensión $ext " . phpversion($ext) . " es antigua (se requiere {$extsMinimas[$ext]} o superior)");
+		$errores[] = "Actualice la extensión $ext: <code>sudo apt-get install --only-upgrade " . nfTestExtPackage($ext, $phpver)
+			. "</code> o <code>sudo pecl upgrade $ext</code>";
+		if ($ext === 'mongodb') {
+			$criticos++;
+		}
+	}
+}
+if ($faltanExt) {
+	if ($apts) {
+		$errores[] = 'Instale las extensiones de PHP: <code>sudo apt-get install ' . implode(' ', array_unique($apts)) . '</code>';
+	}
+	if ($enmods) {
+		$errores[] = 'Habilite las extensiones ya instaladas: <code>sudo phpenmod -v ' . $phpver . ' ' . implode(' ', $enmods) . '</code>';
+	}
+	if (in_array("php$phpver-mongodb", $apts, true)) {
+		$errores[] = "Si php$phpver-mongodb no existe en sus repositorios: <code>sudo apt-get install php$phpver-dev php-pear"
+			. " && sudo pecl install mongodb && echo 'extension=mongodb.so' | sudo tee /etc/php/$phpver/mods-available/mongodb.ini"
+			. " && sudo phpenmod -v $phpver mongodb</code>";
+	}
+	$errores[] = "Después reinicie PHP: <code>sudo systemctl restart php$phpver-fpm</code>";
+} else {
+	ok(count($extsRequeridas) . ' extensiones de PHP cargadas');
+}
 
-
-$depends = [
-	'mongodb' => "php$phpver-mongodb",
-	'intl' => "php$phpver-intl",
-	'gd' => "php$phpver-gd",
-	'curl' => "php$phpver-curl",
-	'pdo_sqlite' => "php$phpver-sqlite",
-	'zip' => "php$phpver-zip",
-	'mbstring' => "php$phpver-mbstring",
-	// libxml viene en el núcleo de PHP; php*-xml es el que trae dom, SimpleXML, xmlreader/xmlwriter y xsl
-	// (PhpSpreadsheet, PhpWord, CFDI/XSD).
-	'dom' => "php$phpver-xml",
-	'SimpleXML' => "php$phpver-xml",
-	'xmlreader' => "php$phpver-xml",
-	'xmlwriter' => "php$phpver-xml",
-	'xsl' => "php$phpver-xml",
-	'imagick' => 'php-imagick'
-];
-
-foreach ($depends as $ext => $command) {
-	if (!in_array($ext, $exts)) {
-		$apts[] = $command;
+// Dependencias de Composer (includes/vendor)
+// Se usa includes/composer.phar (el mismo que Admin → Actualizar); --ignore-platform-reqs instala aunque el CLI
+// no tenga todas las extensiones: lo que falte se reporta arriba.
+$composerCmd = 'cd ' . $nfIncludesDir . ' && php composer.phar install --ignore-platform-reqs';
+$composerComoInstalar = is_file("$nfIncludesDir/composer.phar") ? '' : ' Primero descargue composer.phar en includes/:'
+	. ' <code>' . dirname(__DIR__) . '/install.sh --no-apt</code> (lo instala y corre composer) o'
+	. ' <code>cd ' . $nfIncludesDir . ' && php -r "copy(\'https://getcomposer.org/installer\', \'composer-setup.php\');"'
+	. ' && php composer-setup.php && rm composer-setup.php</code> (vea https://getcomposer.org/download/).';
+if (!is_file("$nfIncludesDir/vendor/autoload.php")) {
+	fail("No existen las dependencias de Composer ($nfIncludesDir/vendor)");
+	$criticos++;
+	$errores[] = "Instale las dependencias: <code>$composerCmd</code>." . $composerComoInstalar;
+} else {
+	$composerJson = @json_decode((string) @file_get_contents("$nfIncludesDir/composer.json"), true);
+	$instalados = [];
+	foreach (is_array($installed) ? ($installed['packages'] ?? $installed) : [] as $pkg) {
+		if (is_array($pkg) && isset($pkg['name'])) {
+			$instalados[strtolower($pkg['name'])] = true;
+		}
+	}
+	$faltanPkg = [];
+	foreach (array_keys($composerJson['require'] ?? []) as $pkg) {
+		if ($pkg !== 'php' && !str_starts_with($pkg, 'ext-') && !isset($instalados[strtolower($pkg)])) {
+			$faltanPkg[] = $pkg;
+		}
+	}
+	if ($faltanPkg) {
+		fail('Paquetes de composer.json sin instalar: ' . htmlspecialchars(implode(', ', $faltanPkg)));
+		$errores[] = "Actualice las dependencias: <code>$composerCmd</code> (si el lock no los incluye: <code>php composer.phar update --ignore-platform-reqs</code>)."
+			. $composerComoInstalar;
+	} else {
+		ok('Dependencias de Composer instaladas');
 	}
 }
 
-$classMongoExists = class_exists('MongoDB\\Driver\\Manager');
-if (!$classMongoExists) {
-	$errores[] = "MongoDB extension no está instalada o no se cargó (clase MongoDB\\Driver\\Manager no encontrada).";
+// config.php
+$configFile = stream_resolve_include_path('config.php');
+if ($configFile === false) {
+	fail('No se encontró config.php en el include_path (' . htmlspecialchars(get_include_path()) . ')');
+	$criticos++;
+	$errores[] = "Cree la configuración: <code>cp $nfIncludesDir/config.example.php $nfIncludesDir/config.php</code> y edite"
+		. " mongo_connection_string, sitedb, cookie_domain y url del bloque de su dominio.";
+} else {
+	ok("config.php: $configFile");
 }
 
-
-
-if (count($apts) > 0) {
-	$errores[] = 'sudo apt-get install ' . implode(' ', array_unique($apts));
-}
-
-
-
+// Herramientas externas (no indispensables)
 if (!checkGhostscript()) {
-	$errores[] = "Instala Ghostscript y asegúrate que el comando 'gs' esté en PATH.";
+	$errores[] = "Instale Ghostscript (PDF a imagen): <code>sudo apt-get install ghostscript</code>";
 }
 if (detectPolicyBlock()) {
 	$errores[] = "Revisa y corrige policy.xml de ImageMagick para permitir manejo de PDFs.";
+}
+
+if ($criticos > 0) {
+	out('<br>❌ <b>Faltan requisitos indispensables</b>: se omitieron la instalación de la base de datos y el resto del diagnóstico.'
+		. ' Instale lo indicado abajo y vuelva a ejecutar este script.');
+	nfTestReport();
+	exit(1);
 }
 
 
@@ -314,31 +482,34 @@ foreach ($opcache_settings as $directive => $expected_value) {
 		$current_bytes = return_bytes($current);
 		$expected_bytes = (int)$expected_value;
 		if ($current_bytes != $expected_bytes) {
-			out(warn("$directive actual: $current (esperado: $expected_value)"));
+			warn("$directive actual: $current (esperado: $expected_value)");
 			$opcache_needs_update = true;
 		} else {
-			out(ok("$directive configurado correctamente: $current"));
+			ok("$directive configurado correctamente: $current");
 		}
 	} else if ($directive === 'opcache.jit') {
 		// JIT can be 'disable' or a number
 		if ($current === 'disable' || $current != $expected_value) {
-			out(warn("$directive actual: $current (esperado: $expected_value)"));
+			warn("$directive actual: $current (esperado: $expected_value)");
 			$opcache_needs_update = true;
 		} else {
-			out(ok("$directive configurado correctamente: $current"));
+			ok("$directive configurado correctamente: $current");
 		}
 	} else {
 		// opcache.enable_cli - simple comparison
 		if ($current != $expected_value) {
-			out(warn("$directive actual: $current (esperado: $expected_value)"));
+			warn("$directive actual: $current (esperado: $expected_value)");
 			$opcache_needs_update = true;
 		} else {
-			out(ok("$directive configurado correctamente: $current"));
+			ok("$directive configurado correctamente: $current");
 		}
 	}
 }
 
-if ($opcache_needs_update) {
+if ($opcache_needs_update && !$inipath) {
+	$errores[] = 'PHP no cargó ningún php.ini (<code>php --ini</code>): agregue opcache.enable_cli=1, opcache.jit_buffer_size=500000000'
+		. ' y opcache.jit=1235 al php.ini de su instalación.';
+} elseif ($opcache_needs_update) {
 	$contents = file_get_contents($inipath);
 	$updated = false;
 
@@ -360,7 +531,7 @@ if ($opcache_needs_update) {
 			ok("php.ini actualizado con configuración de opcache");
 			$errores[] = "Reinicia PHP para aplicar cambios: sudo systemctl restart php" . number_format((float)phpversion(), 1) . "-fpm";
 		} else {
-			out(fail("No se pudo escribir en php.ini (permisos insuficientes)"));
+			fail("No se pudo escribir en php.ini (permisos insuficientes)");
 			$directives = [];
 			foreach ($opcache_settings as $directive => $value) {
 				$directives[] = "$directive=$value";
@@ -409,13 +580,15 @@ foreach (glob('/etc/php/*/{cli,fpm,apache2}', GLOB_BRACE | GLOB_ONLYDIR) ?: [] a
 
 
 
-include('config.php');
-if (!isset($config)) {
-	$errores[] = 'config.php not found OR include_path = "' . $includespath . '"';
-}
-
-if ((include 'vendor/autoload.php') != TRUE) {
-	$errores[] = 'composer update --ignore-platform-reqs';
+$nfTestStage = 'config.php';
+require_once $configFile;
+$nfTestStage = 'vendor/autoload.php';
+require_once $nfIncludesDir . '/vendor/autoload.php';
+$nfTestStage = '';
+foreach (['mongo_connection_string', 'sitedb', 'cookie_domain', 'url'] as $clave) {
+	if (empty($config[$clave])) {
+		$errores[] = "Falta \$config['$clave'] en el bloque de " . htmlspecialchars($_SERVER['HTTP_HOST'] ?? '') . " de $configFile";
+	}
 }
 
 if (ini_get('auto_append_file') == '') {
@@ -428,18 +601,25 @@ if (extension_loaded('imagick')) {
 	out("Map limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_MAP) . " MB\n");
 	out("Disk limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_DISK) . " MB\n");
 	out("Thread limit: " . $imagick->getResourceLimit(Imagick::RESOURCETYPE_THREAD) . "\n");
-} else {
-	$errores[] = 'Imagick extension is not loaded';
 }
 
-if ($config['sitedb'] == '') {
-	$errores[] = '$config[sitedb] no configurada';
-} else {
+// Conexión a MongoDB: sin ella no se instala la base de datos ni se carga include.php.
+$dbOk = false;
+if (!empty($config['sitedb']) && !empty($config['mongo_connection_string'])) {
 	try {
-		$m = new MongoDB\Client($config['mongo_connection_string']);
-
-
-
+		$m = new MongoDB\Client($config['mongo_connection_string'], [], ['serverSelectionTimeoutMS' => 5000]);
+		$m->selectDatabase($config['sitedb'])->command(['ping' => 1]);
+		ok('Conexión a MongoDB (base ' . htmlspecialchars($config['sitedb']) . ')');
+		$dbOk = true;
+	} catch (Throwable $e) {
+		fail('No se pudo conectar a MongoDB: ' . htmlspecialchars($e->getMessage()));
+		$errores[] = 'Revise que MongoDB esté instalado y en ejecución (<code>sudo systemctl status mongod</code>; instalación:'
+			. ' https://www.mongodb.com/docs/manual/administration/install-on-linux/) y que mongo_connection_string de'
+			. ' config.php sea correcta (usuario, contraseña, authSource).';
+	}
+}
+if ($dbOk) {
+	try {
 		$guest = $m->{$config['sitedb']}->users->findOne(['username' => 'guest']);
 		if (empty($guest)) {
 			$errores[] = "guest no existe";
@@ -505,8 +685,8 @@ if ($config['sitedb'] == '') {
 			}
 		}
 		*/
-	} catch (Exception $e) {
-		$errores[] = 'Excepción capturada: ' .  $e->getMessage();
+	} catch (Throwable $e) {
+		$errores[] = 'Excepción capturada: ' .  htmlspecialchars($e->getMessage());
 	}
 
 	$indexes = [
@@ -667,17 +847,10 @@ Tu capacidad de subida es de:' .
 		$a . '<br>Determinada por post_max_size' :
 		$b . '<br>Determinada por upload_max_filesize') .
 	'<br>');
-if (count($errores) > 0) {
-	foreach ($errores  as $errs) {
-		out($errs . '<br>');
-	}
-} else {
-	out("No se encontraron errores de configuración");
+if ($dbOk) {
+	$nfTestStage = 'include.php';
+	require_once 'include.php';
+	$nfTestStage = '';
+	out("sid: " . session_id() . '<br>Lenguaje: ' . ($_SESSION['nf']['browser']['language'] ?? ''));
 }
-require_once 'include.php';
-out("sid: " . session_id() . '<br>Lenguaje: ' . $_SESSION['nf']['browser']['language']);
-if (PHP_SAPI === 'cli') {
-	echo html_entity_decode(strip_tags(preg_replace('/(<br\s*\/?>\s*)+/i', "\n", $buffers))), "\n";
-} else {
-	echo $buffers;
-}
+nfTestReport();
