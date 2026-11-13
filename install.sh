@@ -192,6 +192,8 @@ if [ -n "$PHPV" ] && [ -d "/etc/php/$PHPV" ]; then
             printf '; Generado por install.sh\n%s\n' "$LINEA" | $SUDO tee "$DIR/99-nframework.ini" >/dev/null
             ok "Escrito $DIR/99-nframework.ini"
             [ "$sapi" = fpm ] && REINICIAR=1
+        else
+            aviso "Se omitió PHP $PHPV $sapi. A mano: echo '$LINEA' | sudo tee $DIR/99-nframework.ini"
         fi
     done
     if [ "$REINICIAR" = 1 ] && command -v systemctl >/dev/null 2>&1; then
