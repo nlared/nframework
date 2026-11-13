@@ -629,7 +629,8 @@ if ($dbOk) {
 		}
 
 		$admin = $m->{$config['sitedb']}->users->findOne(['username' => 'admin']);
-		if (empty($admin)) {
+		$adminCreado = empty($admin);
+		if ($adminCreado) {
 			$errores[] = "admin no existe";
 
 
@@ -658,7 +659,8 @@ if ($dbOk) {
 			]);
 			//$m->{$config['sitedb']}->usersgroups->createIndex(["name" => 1], ['unique' => true]);
 		} else {
-			if (count($gadmin->users) == 0) {
+			// Grupo vacío, o admin recreado (el grupo conserva el _id del admin borrado): se agrega el nuevo.
+			if ($adminCreado || count($gadmin->users ?? []) == 0) {
 				$m->{$config['sitedb']}->usersgroups->updateOne(['name' => 'admins'], [
 					'$addToSet' => [
 						'users' => $adminid
@@ -675,6 +677,8 @@ if ($dbOk) {
 				'description' => 'developers',
 				'users' => [$adminid]
 			]);
+		} elseif ($adminCreado) {
+			$m->{$config['sitedb']}->usersgroups->updateOne(['name' => 'developers'], ['$addToSet' => ['users' => $adminid]]);
 		}
 
 		/*$rules = $m->{$config['sitedb']}->securityrules->findOne([]);
@@ -692,7 +696,7 @@ if ($dbOk) {
 	$indexes = [
 		['colletion' => 'users', 'key' => ['username' => 1], 'options' => ['unique' => true]],
 		['colletion' => 'pages', 'key' => ['path' => 1]],
-		['colletion' => 'usergroups', 'key' => ['name' => 1]],
+		['colletion' => 'usersgroups', 'key' => ['name' => 1]],
 		['colletion' => 'nfuristats', 'key' => ['ip' => 1, 'created_at' => 1]],
 		['colletion' => 'nfuristats', 'key' => ['created_at' => 1, 'ip' => 1]],
 		['colletion' => 'nfsecurityrules', 'key' => ['enabled' => 1]],
