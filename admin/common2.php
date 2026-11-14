@@ -89,4 +89,6 @@ $sidebar = new Sidebar([
 ]);
 if (!$nframework->isAjax()) {
     echo $sidebar;
+    // En línea: no depende de cómo el sitio exponga la carpeta /admin.
+    echo '<style>' . file_get_contents(__DIR__ . '/admin.css') . '</style>';
 }

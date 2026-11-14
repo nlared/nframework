@@ -768,11 +768,19 @@ $icons = [
     .diag-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
     .diag-tile { flex: 1 1 140px; padding: 12px 16px; border-radius: 6px; color: #fff; }
     .diag-tile b { display: block; font-size: 2em; line-height: 1.1; }
+    .diag-table { width: 100%; table-layout: fixed; }
     .diag-table td { vertical-align: top; }
     .diag-table td:first-child { width: 32px; text-align: center; font-size: 1.2em; }
-    .diag-table td:nth-child(2) { width: 240px; font-weight: 600; }
+    .diag-table td:nth-child(2) { width: 220px; font-weight: 600; }
+    .diag-table code { white-space: normal; overflow-wrap: anywhere; }
     .diag-fix { margin: 6px 0 0; padding-left: 18px; }
-    .diag-fix code { word-break: break-all; }
+    /* Pantallas angostas: icono + título en una línea y el detalle debajo a todo lo ancho. */
+    @media (max-width: 640px) {
+        .diag-table, .diag-table tbody { display: block; }
+        .diag-table tr { display: grid; grid-template-columns: 32px 1fr; }
+        .diag-table td { display: block; width: auto !important; }
+        .diag-table td:nth-child(3) { grid-column: 1 / -1; padding-top: 0; }
+    }
     .diag-only-problems tr.diag-ok, .diag-only-problems .diag-group.diag-clean { display: none; }
 </style>
 <div class="container p-5" id="diag">

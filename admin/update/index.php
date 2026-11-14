@@ -182,6 +182,13 @@ if ($nframework->isAjax()) {
 
 $nframework->usecommon = true;
 ?>
+<style>
+    /* Tabla de estado: ancho fijo para que los remotos largos se desplacen dentro de su <pre>. */
+    .upd-info { width: 100%; table-layout: fixed; }
+    .upd-info th { width: 160px; }
+    .upd-packages { min-width: 640px; }
+    @media (max-width: 640px) { .upd-info th { width: 96px; } }
+</style>
 <div class="container p-5">
     <div class="box shadow-large">
         <div class="box-title"><?= $nframework->language['updates'] ?></div>
@@ -196,8 +203,8 @@ $nframework->usecommon = true;
                     <button class="button" onclick="updRun('git_fetch', {}, updGitStatus)"><span class="mif-download"></span> Fetch</button>
                     <button class="button primary" onclick="updConfirm('¿Actualizar el código con git pull (--ff-only)?', 'git_pull', {}, updGitStatus)"><span class="mif-cloud-download"></span> Pull</button>
                 </div>
-                <table class="table compact subcompact">
-                    <tr><th style="width:160px">Rama</th><td id="upd-branch"></td></tr>
+                <table class="table compact subcompact upd-info">
+                    <tr><th>Rama</th><td id="upd-branch"></td></tr>
                     <tr><th>Upstream</th><td id="upd-upstream"></td></tr>
                     <tr><th>Adelante / Atrás</th><td id="upd-aheadbehind"></td></tr>
                     <tr><th>Remotos</th><td><pre id="upd-remote" class="stay-on m-0"></pre></td></tr>
@@ -232,10 +239,12 @@ $nframework->usecommon = true;
                         <button class="button success" onclick="updRequire()"><span class="mif-plus"></span> Require</button>
                     </div>
                 </div>
-                <table class="table compact striped">
-                    <thead><tr><th>Paquete</th><th>Instalada</th><th>Disponible</th><th>Descripción</th><th style="width:110px">Opciones</th></tr></thead>
-                    <tbody id="upd-packages"></tbody>
-                </table>
+                <div class="nf-scroll-x">
+                    <table class="table compact striped upd-packages">
+                        <thead><tr><th>Paquete</th><th>Instalada</th><th>Disponible</th><th>Descripción</th><th style="width:110px">Opciones</th></tr></thead>
+                        <tbody id="upd-packages"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
         <h6 class="mt-4">Salida</h6>

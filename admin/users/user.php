@@ -63,6 +63,8 @@ if ($nframework->isAjax()) {
 				]
 			],
 			[
+			$session->abortTransaction();
+			$result = [
 				'$addFields' => [
 					'last_accessed' => ['$toString' => '$last_accessed']
 				]
@@ -118,7 +120,7 @@ if ($nframework->isAjax()) {
 	</dialog>
 	<style>
 		#dialogPass {
-			width: 600px;
+			width: min(600px, calc(100vw - 2rem));
 
 		}
 	</style>

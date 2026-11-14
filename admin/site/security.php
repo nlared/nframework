@@ -227,7 +227,7 @@ if ($nframework->isAjax()) {
 
 	<style>
 		#dialogs_0 {
-			width: 800px;
+			width: min(800px, calc(100vw - 2rem));
 		}
 	</style>
 	<div class="container p-5">

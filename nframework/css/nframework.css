@@ -438,6 +438,19 @@ label,
     font-size: .8125rem;
 }
 
+/* Metro no parte el texto de casillas y switches (nowrap): un texto largo se salía de su contenedor en móvil. */
+.checkbox,
+.switch {
+    max-width: 100%;
+}
+
+.checkbox .caption-prepend,
+.checkbox .caption-append,
+.switch .caption-prepend,
+.switch .caption-append {
+    white-space: normal;
+}
+
 /* --------------------------------------------------------------------------------------- contenedores */
 
 .card,

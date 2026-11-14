@@ -59,9 +59,10 @@
 }
 
 @media screen and (min-width: 768px) {
+    /* La altura sigue descontando la barra superior (52px): con 100% el final de la página y los
+       elementos sticky al fondo quedaban fuera de la pantalla. */
     #page-content {
         padding: 1rem 1rem 4rem 1rem;
-        height: calc(100% - 2px);
     }
 }
 
