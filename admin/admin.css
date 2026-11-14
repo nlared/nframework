@@ -1,0 +1,47 @@
+/*
+ * Estilos comunes del panel de administración (los carga admin/common2.php).
+ * Solo ajustes de layout que comparten todas las secciones; lo propio de cada página va en ella.
+ */
+
+/* Bloques de código y medios nunca más anchos que su tarjeta: el código largo se desplaza dentro de su caja. */
+#page-content pre {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+#page-content img,
+#page-content video,
+#page-content iframe {
+    max-width: 100%;
+}
+
+/* DataTables con muchas columnas: se desplazan dentro de su tarjeta. */
+#page-content .dataTables_wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* Envoltura para tablas anchas (muchas columnas): se desplazan dentro de la tarjeta en lugar de romper la página. */
+.nf-scroll-x {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/*
+ * Pantallas angostas: main, .container.p-5 y .box suman ~100px de relleno por lado más la barra de iconos,
+ * y dejaban ~200px útiles en un teléfono.
+ */
+@media (max-width: 640px) {
+    #page-content > .container {
+        max-width: 100%;
+        padding: .25rem !important;
+    }
+
+    #page-content .box {
+        padding: 1rem;
+    }
+
+    #page-content .box-title {
+        font-size: 1.25rem;
+    }
+}

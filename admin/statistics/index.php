@@ -97,7 +97,7 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
 
             .stats-summary {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
                 gap: 10px;
                 margin-bottom: 14px;
             }
@@ -150,8 +150,9 @@ $nframework->jss[] = 'https://cdn.jsdelivr.net/npm/chart.js';
             }
 
             @media (max-width: 980px) {
+                /* minmax(0, …): sin él la columna toma el ancho mínimo del canvas y se sale de la tarjeta */
                 .stats-grid {
-                    grid-template-columns: 1fr;
+                    grid-template-columns: minmax(0, 1fr);
                 }
 
                 .stats-status {

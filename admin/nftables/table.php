@@ -150,46 +150,34 @@ addjs
         <div class="box shadow-large">
             <div class="box-title">Tabla</div>
             <?= secureform() ?>
-            <div class="grid">
-                <div class="row">
-                    <div class="cell-6">
-                        <div class="row">
-                            <div class="cell"><?= $tabla_coleccion ?></div>
-                        </div>
-                        <div class="row">
-                            <div class="cell-6"><?= $tabla_singular ?></div>
-                            <div class="cell-6"><?= $tabla_plural ?></div>
-                        </div>
-                        <div class="row">
-                            <div class="cell"><?= $tabla_descripcion ?></div>
-                        </div>
+            <div class="row">
+                <div class="cell-md-6">
+                    <?= $tabla_coleccion ?>
+                    <div class="row">
+                        <div class="cell-6"><?= $tabla_singular ?></div>
+                        <div class="cell-6"><?= $tabla_plural ?></div>
                     </div>
-                    <div class="cell-6">
-                        <div class="row">
-                            <div class="cell">Campos</div>
-                        </div>
-                        <div class="row"">
-							<div class=" cell" id="lista_campos"></div>
-                        <div class="button" onclick="<?= $arrayCampos->function_new() ?>">Agregar</div>
-                    </div>
+                    <?= $tabla_descripcion ?>
+                </div>
+                <div class="cell-md-6">
+                    <div class="mb-2">Campos</div>
+                    <div id="lista_campos"></div>
+                    <div class="button" onclick="<?= $arrayCampos->function_new() ?>">Agregar</div>
                 </div>
             </div>
-            <div class="row">
-                <div class="cell">
-                    <div id="tablepreview"></div>
-                </div>
+            <div class="nf-scroll-x mt-4">
+                <div id="tablepreview"></div>
             </div>
             <div class="row">
                 <div class="cell-md-2 offset-md-8"><a href="./" class="button primary btn btn-primary w-100"><span class="mif-exit"></span>&nbsp;<?= $nframework->language['close'] ?></a></div>
                 <div class="cell-md-2"><button class="button success btn btn-success secureop  w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;<?= $nframework->language['save'] ?></button></div>
             </div>
+            </form>
         </div>
-        </form>
-    </div>
     </div>
     <style>
         #dialogs_0 {
-            width: 800px;
+            width: min(800px, calc(100vw - 2rem));
         }
     </style>
 <?php } ?>

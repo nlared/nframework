@@ -28,10 +28,15 @@ $themes=new inputFiles([
 ]);
 ?>
 <div class="container">
-	<div class="bg-cyan fg-white p-3"><h4><?=$nframework->language['themes']?></h4></div>
-	<div class="bg-white p-3">
+	<div class="bg-cyan fg-white p-3"><h4 class="m-0"><?= htmlspecialchars($nframework->language['themes'] ?? 'Temas') ?></h4></div>
+	<div class="bg-white p-3 nf-scroll-x theme-files">
 		<form method="post">
 			<?=$themes?>
 		</form>
 	</div>
 </div>
+<style>
+	/* Lista de temas: en pantallas angostas se desplaza en lugar de partir las cabeceras a media palabra. */
+	.theme-files table { min-width: 420px; }
+	.theme-files th { word-break: normal; }
+</style>
