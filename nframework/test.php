@@ -12,18 +12,28 @@
  * Uso en CLI (el host elige el bloque de includes/config.php, es decir, la base de datos):
  *   php nframework/test.php --host=www.ejemplo.com
  *   php nframework/test.php www.ejemplo.com
+ *   php /opt/nframework/nframework/test.php --host=www.ejemplo.com --docroot=/var/www/www.ejemplo.com   (multisitio)
  */
 if (PHP_SAPI === 'cli') {
 	$cliHost = null;
+	$cliDocroot = dirname(__DIR__);
 	foreach (array_slice($argv, 1) as $arg) {
 		if ($arg === '-h' || $arg === '--help') {
 			echo "Uso: php " . $argv[0] . " --host=<dominio>\n"
 				. "  --host=<dominio>  Dominio del sitio a instalar/revisar (elige el bloque de includes/config.php).\n"
-				. "                    También se acepta el dominio como primer argumento.\n";
+				. "                    También se acepta el dominio como primer argumento.\n"
+				. "  --docroot=<dir>   Document root del sitio (multisitio: la carpeta del vhost con las ligas a admin/,\n"
+				. "                    nframework/ y router.php). Por omisión, la carpeta del framework.\n";
 			exit(0);
 		}
 		if (str_starts_with($arg, '--host=')) {
 			$cliHost = substr($arg, 7);
+		} elseif (str_starts_with($arg, '--docroot=')) {
+			$cliDocroot = realpath(substr($arg, 10));
+			if ($cliDocroot === false || !is_dir($cliDocroot)) {
+				fwrite(STDERR, "--docroot no es una carpeta: " . substr($arg, 10) . "\n");
+				exit(1);
+			}
 		} elseif ($arg !== '' && $arg[0] !== '-' && $cliHost === null) {
 			$cliHost = $arg;
 		}
@@ -41,10 +51,13 @@ if (PHP_SAPI === 'cli') {
 	$_SERVER['REQUEST_URI'] ??= '/nframework/test.php';
 	$_SERVER['REQUEST_METHOD'] ??= 'GET';
 	$_SERVER['HTTP_USER_AGENT'] ??= 'nframework-cli';
-	$_SERVER['DOCUMENT_ROOT'] = dirname(__DIR__);
+	$_SERVER['DOCUMENT_ROOT'] = $cliDocroot;
 	// En CLI el include_path puede no tener includes/ (se configura en el php.ini de FPM).
 	set_include_path(dirname(__DIR__) . '/includes' . PATH_SEPARATOR . get_include_path());
 	echo "Host: $cliHost\n";
+	if ($cliDocroot !== dirname(__DIR__)) {
+		echo "Document root: $cliDocroot\n";
+	}
 }
 if (PHP_SAPI !== 'cli' && !in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true)) {
 	@include 'config.php';

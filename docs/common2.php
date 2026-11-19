@@ -17,6 +17,7 @@ if (empty($nframework)) {
 $docsMenu = [
 	'Introducción' => [
 		'index.php' => ['Inicio', 'mif-home', 'Índice de todos los ejemplos.'],
+		'install.php' => ['Instalación', 'mif-download', 'Requisitos e install.sh: sitio único o multisitio con ligas simbólicas, nginx y actualización.'],
 		'intro.php' => ['Primeros pasos', 'mif-apps', 'Anatomía de una página: include, usecommon, peticiones AJAX y $result.'],
 		'vars.php' => ['Variables especiales', 'mif-money', 'Variables globales que cambian el comportamiento del framework.'],
 	],
