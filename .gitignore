@@ -1,5 +1,6 @@
 /includes/vendor/*
 /includes/config.php
+/includes/config.php.bak
 /includes/composer.lock
 /includes/composer.phar
 /test/*

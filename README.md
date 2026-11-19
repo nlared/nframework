@@ -49,13 +49,30 @@ helpers for Excel/Word/PDF exports, images, background jobs and Mexican SAT (CFD
 
 ## Installation
 
+Full guide (in Spanish): [`docs/install.php`](docs/install.php), `/docs/install.php` on a development site.
+
 ### Automated (Debian/Ubuntu)
 
-```bash
-git clone https://github.com/nlared/nframework.git
-cd nframework
-./install.sh --host=www.example.com
-```
+`install.sh` has two modes:
+
+- **Single site** (`--mode=single`): the cloned repository *is* the site's document root; the framework files
+  (`admin/`, `nframework/`, `router.php`...) live next to the site's pages.
+  ```bash
+  git clone https://github.com/nlared/nframework.git /var/www/www.example.com
+  cd /var/www/www.example.com
+  ./install.sh --mode=single --host=www.example.com
+  ```
+- **Multisite** (`--mode=multi`): the framework lives in its own folder and each vhost gets its own document
+  root (`--docroot`, created if missing) with symlinks to `/admin`, `/nframework` and `/router.php` (plus the
+  login background images; `--docs` also links `/docs`). All sites share `includes/` (code, vendor and
+  `config.php`, one `case` block per domain). Run it once per site:
+  ```bash
+  sudo git clone https://github.com/nlared/nframework.git /opt/nframework && cd /opt/nframework
+  ./install.sh --mode=multi --host=www.example.com --docroot=/var/www/www.example.com
+  ./install.sh --mode=multi --host=shop.example.com --docroot=/var/www/shop.example.com --db=shop
+  ```
+
+Without `--mode` it asks (with `--yes`, single site).
 
 [`install.sh`](install.sh) runs the manual steps below and skips the ones already done. It asks before
 running `apt-get` or writing to `/etc/php` (`--yes` answers for you):
@@ -64,12 +81,14 @@ running `apt-get` or writing to `/etc/php` (`--yes` answers for you):
    version, `--no-apt` skips this step);
 2. downloads `includes/composer.phar` from getcomposer.org, verifying the installer signature;
 3. runs `php composer.phar install --ignore-platform-reqs` in `includes/` (`--no-dev` leaves out PHPUnit/Pint);
-4. creates `includes/config.php` with a block for `--host` if it does not exist (`--db=` and `--mongo=` set the
-   database name and connection string);
+4. creates `includes/config.php` with a block for `--host`, or adds that block before `default:` in an existing
+   one (backup in `config.php.bak`); `--db=` and `--mongo=` set the database name and connection string;
 5. adds `includes/` to PHP's `include_path` (CLI, FPM and Apache) in `conf.d/99-nframework.ini`;
-6. runs `php nframework/test.php --host=...` to install the database and report what is still missing.
+6. multisite: creates the document root, the symlinks and a sample `index.php` (existing files are never
+   overwritten);
+7. runs `php nframework/test.php --host=... --docroot=...` to install the database and report what is still missing.
 
-It does not install MongoDB or configure the web server (step 4 of the manual installation).
+It finishes by printing an nginx `server` block for the site. It does not install MongoDB or nginx.
 
 ### Manual
 
@@ -135,6 +154,7 @@ It does not install MongoDB or configure the web server (step 4 of the manual in
 6. **Install the database** (guest/admin users, groups, indexes) and check the environment:
    ```bash
    php nframework/test.php --host=www.example.com
+   # multisite: php /opt/nframework/nframework/test.php --host=www.example.com --docroot=/var/www/www.example.com
    ```
    It checks PHP, extensions, Composer packages, `config.php`, MongoDB, `include_path`, opcache and the web
    server rules, and prints the command to fix each problem. If something essential is missing (the `mongodb`

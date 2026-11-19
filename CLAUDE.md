@@ -21,7 +21,8 @@ clase en `includes/`.
    `admin/`, `docs/`, `sat/`, `router.php`.
 2. **Un sitio basado en nframework**: otro repositorio/document root con sus propias páginas `.php`. Usa el
    núcleo a través del `include_path` de PHP (que apunta a `includes/` del framework), así que sus páginas
-   hacen `require 'include.php';` sin ruta. Suele tener su propio `common2.php` (sesión obligatoria, menú,
+   hacen `require 'include.php';` sin ruta, y su document root liga `/admin`, `/nframework` y `/router.php`
+   al framework (multisitio, ver `docs/install.php`). Suele tener su propio `common2.php` (sesión obligatoria, menú,
    `usecommon`, estilos) que todas sus páginas incluyen, y `crouter.php` para rutas propias.
    **En un sitio no modifique archivos del framework**: el código del sitio va en el sitio; los cambios
    genéricos se hacen en este repositorio.
@@ -29,12 +30,13 @@ clase en `includes/`.
 ## Comandos
 
 ```bash
-./install.sh --host=www.ejemplo.com  # instalación automatizada (apt, composer.phar, config, include_path, BD)
+./install.sh --mode=single --host=www.ejemplo.com   # instalación: el repositorio es el document root
+./install.sh --mode=multi --host=www.ejemplo.com --docroot=/var/www/sitio   # framework compartido + ligas en el vhost
 cd includes && php composer.phar install --ignore-platform-reqs   # dependencias (viven en includes/, no en la raíz)
 ./run-tests.sh [unit|feature|coverage]
 ./includes/vendor/bin/phpunit tests/Unit/FunctionsTest.php
 ./includes/vendor/bin/pint            # estilo de código
-php nframework/test.php --host=www.ejemplo.com   # instala/repara BD (usuarios, grupos, índices) y diagnostica
+php nframework/test.php --host=www.ejemplo.com [--docroot=/var/www/sitio]   # instala/repara BD y diagnostica
 HTTP_HOST=www.ejemplo.com php includes/job_worker.php <cola> 5   # worker de la cola de trabajos
 ```
 
