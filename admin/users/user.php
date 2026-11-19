@@ -63,8 +63,6 @@ if ($nframework->isAjax()) {
 				]
 			],
 			[
-			$session->abortTransaction();
-			$result = [
 				'$addFields' => [
 					'last_accessed' => ['$toString' => '$last_accessed']
 				]
