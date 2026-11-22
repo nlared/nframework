@@ -3,6 +3,44 @@
 Cambios del framework que pueden notar los sitios que lo usan. Cada entrada dice qué cambió, a quién afecta
 y qué revisar. Las más recientes van primero.
 
+## 2026-11-22 — nftables: todos los componentes, Select AJAX, autocompletar y datos embebidos
+
+### Admin → nftables y `/nftables/`
+
+El editor de Admin → nftables se rehízo y los campos (`nffields`) ahora los interpreta `nfTableSchema`:
+
+- **Tipos:** cualquier componente del framework (ver `nfTableSchema::TYPES`), con las propiedades que cada uno
+  permite. Los documentos guardados antes (`inputtext`, `inputcheckboxes`, `required: "1"`) se siguen leyendo igual.
+  Antes, `inputcheckboxes` daba un error fatal (la clase es `inputCheckBoxs`) y `select` se mostraba sin opciones.
+- **Validación al guardar:** el editor ya no guarda campos inválidos (nombres con `$`, repetidos, Select sin opciones)
+  ni tablas sobre colecciones del framework (`users`, `usersgroups`, `configs`, `jobs`, `pages`, `menus`, `nftables`…).
+- **Celdas:** las celdas de `/nftables/<colección>/` se escapan. Si guardaba HTML a propósito, ahora se verá como texto.
+- **Guardar un registro:** valida el token CSRF.
+- **Archivos y firmas:** requieren la nueva clave `nftables_files` en `includes/config.php`. Sin ella, esos campos
+  se muestran con un aviso.
+
+### `embededArray`: cómo se guardan los elementos (afecta a todos los sitios que lo usan)
+
+- **Elemento nuevo:** se agrega con `$push`. Antes se usaba `$set` en `campo.N.subcampo`, y si el arreglo no
+  existía MongoDB creaba un objeto `{"0": {...}}` en lugar de un arreglo.
+- **Casilla (`inputCheckBox`):** una casilla desmarcada se guarda como `false`. Antes no se podía desmarcar.
+  Al editar, la casilla se marca según el valor guardado.
+- **Número (`inputNumber`):** se guarda como número (`int`/`float`). Antes se guardaba el texto; un valor vacío
+  ahora se guarda como `null`.
+
+**Revise:** consultas o comparaciones del sitio que esperen como texto los números de un arreglo embebido
+(`'partidas.cantidad' => '3'`), y documentos viejos con el objeto `{"0": ...}`, que conviene convertir a arreglo.
+
+```bash
+grep -rn "new embededArray" --include=*.php .
+```
+
+### Otros
+
+- `inputHidden` con valor `null` ya no genera un aviso de función obsoleta.
+- La primera firma de una página (`Signature_pad`) ya no genera el warning `Undefined array key "Signature_pad"`.
+- `inputFile` e `inputFiles` ya tienen los textos "Arrastre el archivo aquí…" que les faltaban en `es-MX`/`en-US`.
+
 ## 2026-11-21 — TablefIA: más contexto para la IA y reutilización por colección
 
 ### La IA ahora recibe valores reales de muestra (privacidad)

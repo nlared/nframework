@@ -1,79 +1,119 @@
 <?php
+/**
+ * Formulario de un registro de una tabla administrable: /nftables/<colección>/<_id> (o /create).
+ * Los controles salen de nffields mediante nfTableSchema (Admin → nftables los define).
+ *
+ * @global MongoDB\Client $m
+ * @global class_config $config
+ * @global class_nframework $nframework
+ * @global array<string, string> $p Parámetros de la ruta: collection, id.
+ */
 
 $tabla = $m->{$config['sitedb']}->nftables->findOne([
-    'nfcollection' => $p['collection']
+    'nfcollection' => (string) $p['collection'],
 ]);
 
-
-if (!$tabla) {
-    echo 'No se encontró la tabla';
+if (!$tabla || !nfTableSchema::validCollection($tabla['nfcollection'] ?? null)) {
+    http_response_code(404);
+    $nframework->usecommon = true;
+    echo '<div class="container p-5"><div class="remark alert">No existe la tabla ' . htmlspecialchars((string) $p['collection']) . '.</div></div>';
+    return;
 }
-if (!isset($tabla->nffields) || count($tabla->nffields) == 0) {
-    echo 'La tabla no tiene campos definidos';
+$collection = (string) $tabla['nfcollection'];
+$fields = nfTableSchema::normalizeFields($tabla['nffields'] ?? []);
+if ($fields === []) {
+    $nframework->usecommon = true;
+    echo '<div class="container p-5"><div class="remark warning">La tabla no tiene campos definidos. Agréguelos en <a href="/admin/nftables/">Admin → nftables</a>.</div></div>';
+    return;
 }
 
-if ($p['id'] == 'create') {
-    $newid = new MongoDB\BSON\ObjectID();
-    header('Location: /nftables/' . $p['collection'] . '/' . $newid);
+if ($p['id'] === 'create') {
+    header('Location: /nftables/' . rawurlencode($collection) . '/' . new MongoDB\BSON\ObjectId());
     exit;
 }
+if (!isValidObjectId($p['id'])) {
+    http_response_code(400);
+    echo 'Registro inválido';
+    return;
+}
 
-$elements = [];
-$dataset = new dataset(
-    [
-        'collection' => $m->{$config['sitedb']}->{$tabla->nfcollection},
-        '_id' => $p['id'],
-        'simpleid' => false,
-        'nameprefix' => 'data'
-    ]
-);
+$dataset = new dataset([
+    'collection' => $m->{$config['sitedb']}->{$collection},
+    '_id' => $p['id'],
+    'simpleid' => false,
+    'nameprefix' => 'data',
+]);
+$context = [
+    'db' => $config['sitedb'],
+    'collection' => $collection,
+    '_id' => (string) $p['id'],
+    'files' => $config['nftables_files'] ?? null,
+];
 
-foreach ($tabla->nffields as $field) {
-    $className = $field->type;
-    $elements[] = new $className([
-        'field' => $field->field,
-        'dataset' => &$dataset,
-        'caption' => $field->short_description,
-        'required' => $field->required
-    ]);
+$elements = [];   // [campo, control o arreglo embebido, ayuda]
+foreach ($fields as $field) {
+    $elements[] = [$field, nfTableSchema::build($field, $dataset, $context)];
 }
 
 if ($nframework->isAjax()) {
     $nframework->usecommon = false;
-    if ($_POST['op'] == 'save') {
-        try {
-            $result = [
-                'error' => $dataset->save(),
-            ];
-        } catch (Exception $e) {
-            $result = [
-                'error' => $e->getMessage()
-            ];
+    if (($_POST['op'] ?? '') === 'save') {
+        if (!csrfValidate()) {
+            $result = ['error' => 'Formulario caducado, recargue la página.'];
+        } else {
+            try {
+                $result = ['error' => $dataset->save()];
+            } catch (Exception $e) {
+                $result = ['error' => $e->getMessage()];
+            }
         }
     }
-} else {
-    $nframework->usecommon = true;
-
-
-?>
-    <div class="container">
-        <?= secureform() ?>
-        <div class="box shadow-large">
-            <div class="box-title"><?= $tabla->singular  ?></div>
-            <div class="grid">
-                <?php
-                foreach ($elements as $element) {
-                    echo '<div class="cell">' . $element . '</div>';
-                }
-                ?>
-                <div class="row">
-                    <div class="cell-md-2 offset-md-8"><a href="/nftables/<?= $tabla->nfcollection ?>" class="button primary btn btn-primary w-100"><span class="mif-exit"></span>&nbsp;<?= $nframework->language['close']  ?></a></div>
-                    <div class="cell-md-2"><button class="button success btn btn-success secureop  w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;<?= $nframework->language['save']  ?></button></div>
-                </div>
-            </div>
-        </div>
-        </form>
-    </div>
-<?php
+    return;
 }
+
+$nframework->usecommon = true;
+$nframework->metas['title'] = (string) ($tabla['singular'] ?? $collection);
+$base = '/nftables/' . rawurlencode($collection) . '/';
+$dialogs = [];
 ?>
+<div class="container p-5">
+    <?= secureform() ?>
+    <div class="box shadow-large">
+        <div class="box-title"><?= htmlspecialchars((string) ($tabla['singular'] ?? $collection)) ?></div>
+        <div class="row">
+            <?php foreach ($elements as [$field, $element]) {
+                $wide = in_array($field['type'], ['textArea', 'inputMCE', 'embededArray', 'mapmarker', 'mapshape', 'inputaddress', 'inputFiles'], true);
+                echo '<div class="' . ($wide ? 'cell-12' : 'cell-md-6') . ' mb-2">';
+                if ($element === null) {
+                    echo '<label>' . htmlspecialchars($field['short_description']) . '</label>'
+                        . '<div class="remark warning">Para usar campos de archivo configure <code>nftables_files</code> (carpeta fuera del document root) en <code>includes/config.php</code>.</div>';
+                } elseif (is_array($element)) {
+                    // Lista de subdocumentos: su diálogo se imprime fuera de este formulario.
+                    $dialogs[] = $element;
+                    echo '<label>' . htmlspecialchars($field['short_description']) . '</label>'
+                        . '<div id="' . htmlspecialchars($element['containerid']) . '"></div>'
+                        . '<button type="button" class="button small mt-1" onclick="' . htmlspecialchars($element['list']->function_new()) . '"><span class="mif-plus"></span> Agregar</button>';
+                } else {
+                    echo $element;
+                }
+                if ($field['long_description'] !== '' && !is_array($element)) {
+                    echo '<small class="text-muted">' . htmlspecialchars($field['long_description']) . '</small>';
+                }
+                echo '</div>';
+            } ?>
+        </div>
+        <div class="row mt-4">
+            <div class="cell-md-2 offset-md-8"><a href="<?= htmlspecialchars($base) ?>" class="button primary w-100"><span class="mif-exit"></span>&nbsp;<?= $nframework->language['close'] ?></a></div>
+            <div class="cell-md-2"><button class="button success secureop w-100" value="save"><span class="mif-floppy-disk"></span>&nbsp;<?= $nframework->language['save'] ?></button></div>
+        </div>
+    </div>
+    </form>
+</div>
+<?php
+foreach ($dialogs as $embedded) {
+    echo $embedded['dialog'];
+    echo $embedded['list'];
+}
+if ($dialogs) {
+    echo '<style>dialog{width:min(800px,calc(100vw - 2rem))}</style>';
+}

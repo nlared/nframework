@@ -38,6 +38,7 @@ La documentación de /docs/ es ejecutable: cada página muestra el resultado jun
 - [DataTable AJAX](/docs/datatableajax.php): Tabla paginada en el servidor desde una colección.
 - [TableF: filtros](/docs/tablef.php): Constructor visual de filtros sobre una DataTable AJAX, con exportación a CSV y Excel.
 - [TablefIA: consultas con IA](/docs/tablefia.php): Preguntas en lenguaje natural convertidas en pipelines de MongoDB, guardadas para reutilizarlas.
+- [Tablas administrables (nftables)](/docs/nftables.php): Admin → nftables: lista, alta y edición de una colección sin código, con Select AJAX, autocompletar y datos embebidos.
 - [Databinding SQL (PDO)](/docs/datasetpdo.php): datasetpdo: los mismos controles ligados a un registro de MySQL, PostgreSQL o SQLite.
 - [Caso: domicilio INEGI](/docs/inegi.php): Formulario completo con mapa y catálogos de INEGI.
 

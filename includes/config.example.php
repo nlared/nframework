@@ -89,6 +89,9 @@ switch ($_SERVER['HTTP_HOST'] ?? 'localhost') {
             // Carpeta con las fotos de perfil ({_id del usuario}.png) que sirve /images/pngto{avif|webp}/users/.
             // Sin foto se muestra una silueta. Por omisión: $_SERVER['DOCUMENT_ROOT'] . '/img/nf/users'.
             // 'users_pictures' => '/var/www/compartido/usuarios',
+            // Carpeta (fuera del document root) de los archivos y firmas que se capturan en /nftables/: cada uno
+            // va en {carpeta}/{colección}/{_id}/{campo}/. Sin ella los campos de tipo archivo y firma no se muestran.
+            // 'nftables_files' => '/var/www/compartido/nftables',
 
             // --- e.firma del SAT ----------------------------------------------------------------------
             // Directorio (formato `openssl rehash`) o archivo PEM con las AC del SAT. Admin → SAT lo crea y

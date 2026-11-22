@@ -273,7 +273,12 @@ Dentro de rutas está además `$twig` (plantillas de `nframework/templates`). **
   las variables de Metro 5 con tokens `--nf-*` (`--nf-accent`, `--nf-surface`, `--nf-line`, `--nf-radius*`, `--nf-shadow*`;
   oscuro en `.dark-side`). Use esos tokens en CSS nuevo; el sitio los personaliza en su CSS. `'modern_css' => false` lo desactiva.
 - **i18n**: `$nframework->lang` (`es-MX`/`en-US`), `$nframework->language[...]` (textos en `includes/i18n/<lang>.php`).
-- **Tablas administrables**: Admin → nftables define colecciones editables en `/nftables/<colección>/`.
+- **Tablas administrables**: Admin → nftables define colecciones editables en `/nftables/<colección>/` (lista con
+  filtros, alta, edición, importación). Cada campo de `nffields` usa una clase del framework con sus propiedades,
+  `Select` con lista fija o con colección (Select AJAX), `inputText` con autocompletar y `embededArray` con subcampos.
+  `nfTableSchema` es lo único que interpreta `nffields` (validar, construir controles, columnas, filtros, `toPhp()`):
+  cambie ahí, no en `nframework/nftable.php`/`nfdialog.php`. Archivos y firmas requieren `nftables_files` en
+  `config.php`. Ver `docs/nftables.php`.
 - **Utilidades**: `mongoToArray()`, `mongoDateToReadable()`, `readableToMongoDate()`, `getNestedValue()`,
   `assignArrayByPath()`, `clean_filename()`, `formatSize()`, `delTree()` (ver `includes/functions.php` y `docs/functions.php`).
 - **Autoload**: `new Foo` carga `class.Foo.php` de `includes/` o de cualquier directorio del `include_path`.

@@ -33,6 +33,11 @@ class FakeCollection
         return $this->name;
     }
 
+    public function getDatabaseName(): string
+    {
+        return 'pruebas';
+    }
+
     /** @return list<array<mixed>> Argumentos de cada updateOne(). */
     public function updates(): array
     {

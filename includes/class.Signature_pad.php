@@ -105,7 +105,7 @@ class Signature_pad extends baseInput
     global $nframework, $javas;
     $_SESSION['nf5imageup'][$this->id] = $this->sessionConfig();
     addVarToGarbage('nf5imageup\\' . $this->id, time() + (60 * 60));
-    if (!$nframework->onces['Signature_pad']) {
+    if (empty($nframework->onces['Signature_pad'])) {
       $nframework->jss['115'] = 'https://cdn.jsdelivr.net/npm/signature_pad@5.1.0/dist/signature_pad.umd.min.js';
       $javas->addjs('var signaturePad=[];');
       $nframework->onces['Signature_pad'] = true;

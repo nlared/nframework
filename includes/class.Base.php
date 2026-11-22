@@ -597,7 +597,7 @@ class inputHidden extends baseInput
     public function __toString()
     {
         return '<input type="hidden"' . ' id="' . $this->id . '" name="' . $this->name . '"' . $this->writetags() .
-            ' value="' . htmlspecialchars($this->value) . '">';
+            ' value="' . htmlspecialchars((string) $this->value) . '">';
     }
 }
 

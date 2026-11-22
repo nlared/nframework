@@ -143,6 +143,12 @@
                     "description": "Preguntas en lenguaje natural convertidas en pipelines de MongoDB, guardadas para reutilizarlas."
                 },
                 {
+                    "file": "nftables.php",
+                    "title": "Tablas administrables (nftables)",
+                    "icon": "mif-table",
+                    "description": "Admin → nftables: lista, alta y edición de una colección sin código, con Select AJAX, autocompletar y datos embebidos."
+                },
+                {
                     "file": "datasetpdo.php",
                     "title": "Databinding SQL (PDO)",
                     "icon": "mif-database",
@@ -485,6 +491,13 @@
             "category": "datos",
             "doc": "tablefia.php",
             "summary": "Consultas en lenguaje natural convertidas en pipelines de MongoDB por Claude, con campos y valores inferidos de una muestra y consultas guardadas como ejemplo."
+        },
+        {
+            "class": "nfTableSchema",
+            "file": "includes/class.nfTableSchema.php",
+            "category": "datos",
+            "doc": "nftables.php",
+            "summary": "Esquema de las tablas administrables: valida los campos de Admin → nftables y genera controles, columnas, filtros, Select AJAX, autocompletar, listas embebidas y el PHP equivalente."
         },
         {
             "class": "Dialog",

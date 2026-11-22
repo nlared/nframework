@@ -32,6 +32,30 @@ function getParentPositions(array $nodes, string $startId): array
 }
 
 
+/**
+ * Convierte el valor de un subcampo según su control: casilla → bool, número → int/float ('' → null).
+ */
+function embeddedConvert($value, string $class)
+{
+    if (strcasecmp($class, 'inputCheckBox') === 0) {
+        return is_bool($value) ? $value : filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+    if (strcasecmp($class, 'inputNumber') === 0 && is_string($value)) {
+        $value = trim($value);
+        return $value === '' ? null : (is_numeric($value) ? $value + 0 : $value);
+    }
+    return $value;
+}
+
+/**
+ * true si el arreglo guardado ya tiene la posición $pos (editar) y no hay que agregarla.
+ */
+function embeddedHasPosition($dataset, string $field, int $pos): bool
+{
+    $stored = get_data(mongotoArray($dataset->info), $field);
+    return is_array($stored) && array_key_exists($pos, $stored);
+}
+
 use Twig\Environment;
 use Twig\Extension\StringLoaderExtension;
 
@@ -200,7 +224,14 @@ try {
             if ($pos === null) {
                 throw new InvalidArgumentException('Posición inválida.');
             }
+            // Una casilla sin marcar no se envía: sin esto nunca se podría desmarcar.
+            foreach ($fieldRules as $k => $rules) {
+                if (strcasecmp((string) ($rules['class'] ?? ''), 'inputCheckBox') === 0 && !array_key_exists($k, $payload)) {
+                    $payload[$k] = false;
+                }
+            }
             $set = [];
+            $item = [];
             foreach ($payload as $k => $pfield) {
                 // Solo nombres de campo simples: '.' o '$' permitirían escribir en cualquier parte del documento.
                 if (!is_string($k) || !preg_match('/^[A-Za-z0-9_\-]+$/', $k) || (!empty($fieldRules) && !array_key_exists($k, $fieldRules))) {
@@ -212,13 +243,21 @@ try {
                     throw new InvalidArgumentException($validation['message']);
                 }
 
+                $pfield = embeddedConvert($pfield, (string) ($rules['class'] ?? ''));
                 $set[$field . '.' . $pos . '.' . $k] = $pfield;
+                $item[$k] = $pfield;
                 $items[$pos][$k] = $pfield;
             }
             if (empty($set)) {
                 throw new InvalidArgumentException('No hay datos para guardar.');
             }
-            $m->{$info['database']}->{$info['collection']}->updateOne(['_id' => ($info['simpleid'] ? $info['_id'] : tomongoid($info['_id']))], ['$set' => $set], ['upsert' => true]);
+            $filter = ['_id' => ($info['simpleid'] ? $info['_id'] : tomongoid($info['_id']))];
+            if (!embeddedHasPosition($dataset, $field, $pos)) {
+                // Elemento nuevo: $push crea el arreglo si no existe ($set con 'campo.0.x' crearía un objeto {"0": ...}).
+                $m->{$info['database']}->{$info['collection']}->updateOne($filter, ['$push' => [$field => $item]], ['upsert' => true]);
+            } else {
+                $m->{$info['database']}->{$info['collection']}->updateOne($filter, ['$set' => $set], ['upsert' => true]);
+            }
         } elseif ($op === 'delete') {
             if ($pos === null || !isset($items[$pos])) {
                 throw new InvalidArgumentException('No se encontró la posición a eliminar.');

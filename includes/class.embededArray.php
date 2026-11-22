@@ -70,6 +70,7 @@ class embededArray
 				'pattern' => $element->pattern ?? '',
 				'validate' => $element->validate ?? '',
 				'type' => $element->type ?? get_class($element),
+				'class' => get_class($element),
 			];
 		}
 
@@ -302,7 +303,10 @@ class embededArray
 			    		$(selector).prop('checked', true);
 			    	}else{
 				    	const input = document.querySelector('#{$this->nameprefix}_'+key);
-				    	if (input) {
+				    	if (input && input.type === 'checkbox') {
+				    		const v = result.item[key];
+				    		input.checked = v === true || v === 1 || v === '1' || v === 'true' || v === 'on';
+				    	} else if (input) {
 				        	input.value = result.item[key];
 				    	}
 			    	}

@@ -161,13 +161,8 @@ function nfimportReadInputData(array $file, string $importType, string $separato
 
 function nfimportTypeByField(string $fieldType): string
 {
-    return match (strtolower($fieldType)) {
-        'inputnumber' => 'integer',
-        'inputdate' => 'date',
-        'inputdatetime' => 'datetime',
-        'inputcheckbox' => 'boolean',
-        default => 'string',
-    };
+    // Mismo catálogo que el editor de Admin → nftables (acepta los nombres viejos en minúsculas).
+    return nfTableSchema::importType($fieldType);
 }
 
 function nfimportBuildFieldCatalog($tabla): array
