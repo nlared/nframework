@@ -17,6 +17,27 @@ class DocsCatalogTest extends TestCase
         return json_decode(file_get_contents(self::ROOT . '/docs/components.json'), true, 512, JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * Clases declaradas en un archivo según sus tokens: las que están dentro de un comentario no cuentan.
+     *
+     * @return list<string>
+     */
+    private static function declaredClasses(string $file): array
+    {
+        $tokens = array_values(array_filter(
+            token_get_all(file_get_contents($file)),
+            fn($t) => !is_array($t) || !in_array($t[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)
+        ));
+        $classes = [];
+        foreach ($tokens as $i => $token) {
+            if (is_array($token) && in_array($token[0], [T_CLASS, T_ENUM], true)
+                && is_array($tokens[$i + 1] ?? null) && $tokens[$i + 1][0] === T_STRING) {
+                $classes[] = $tokens[$i + 1][1];
+            }
+        }
+        return $classes;
+    }
+
     public function testEveryPageExistsAndIsListedOnce(): void
     {
         $files = [];
@@ -72,7 +93,7 @@ class DocsCatalogTest extends TestCase
             $this->assertContains($component['category'], ['formulario', 'datos', 'interfaz', 'backend'], "$class: categoría desconocida");
             $source = self::ROOT . '/' . $component['file'];
             $this->assertFileExists($source, "$class: no existe {$component['file']}");
-            $this->assertMatchesRegularExpression('/^\s*(abstract |final )?class ' . preg_quote($class, '/') . '\b/m', file_get_contents($source), "$class no se define en {$component['file']}");
+            $this->assertContains($class, self::declaredClasses($source), "$class no se define en {$component['file']}");
             if ($component['doc'] !== null) {
                 $this->assertFileExists(self::ROOT . '/docs/' . $component['doc'], "$class: no existe docs/{$component['doc']}");
             }

@@ -281,7 +281,7 @@ Run a worker per queue: `HTTP_HOST=www.example.com php includes/job_worker.php r
 ├── includes/             # Framework core (must be in PHP's include_path)
 │   ├── include.php          # Bootstrap: config, MongoDB, security, session, user, i18n, output
 │   ├── functions.php        # Helpers (cache, security, Mongo, redirects, files...)
-│   ├── class.Base.php       # Form components, dataset, datasetArray, Icon, TreeView
+│   ├── class.Base.php       # Form components, dataset, datasetpdo, Icon, TreeView
 │   ├── class.User.php       # Users, groups and permissions
 │   ├── class.Table.php      # DataTables (local and server-side)
 │   ├── class.*.php          # Dialog, Javas, Job, bgprocess, embededArray, XMLS, Sidebar...

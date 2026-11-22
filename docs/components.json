@@ -452,13 +452,6 @@
             "summary": "Documento de MongoDB ligado a controles; save() valida y convierte tipos."
         },
         {
-            "class": "datasetArray",
-            "file": "includes/class.Base.php",
-            "category": "datos",
-            "doc": null,
-            "summary": "dataset sobre un arreglo en memoria."
-        },
-        {
             "class": "datasetpdo",
             "file": "includes/class.Base.php",
             "category": "datos",
