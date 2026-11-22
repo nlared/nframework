@@ -731,22 +731,20 @@ if ($dbOk) {
 			'partialFilterExpression' => ['fijada' => false],
 		]];
 	}
-	// TablefIA: consultas guardadas antes de la normalización de preguntas y de las favoritas.
+	// Migraciones de datos (upgrades/*.php del framework y del sitio): las que falten, una sola vez cada una.
 	try {
 		// En web esto corre antes de include.php (sin el autoload del framework).
-		require_once 'class.TablefIA.php';
-		$tablefia = $m->{$config['sitedb']}->nftablesfia;
-		$migradas = 0;
-		foreach ($tablefia->find(['promptnorm' => ['$exists' => false]], ['projection' => ['prompt' => 1]]) as $q) {
-			$tablefia->updateOne(['_id' => $q['_id']], ['$set' => ['promptnorm' => TablefIA::normalizePrompt((string) $q['prompt'])]]);
-			$migradas++;
+		require_once 'class.nfUpgrader.php';
+		$nfUp = new nfUpgrader($m->{$config['sitedb']}, nfUpgrader::defaultDirs($_SERVER['DOCUMENT_ROOT'] ?? ''), $_SERVER['DOCUMENT_ROOT'] ?? '');
+		$nfUpRun = $nfUp->run();
+		foreach ($nfUpRun['log'] as $line) {
+			out(htmlspecialchars($line) . "\n");
 		}
-		$migradas += $tablefia->updateMany(['fijada' => ['$exists' => false]], ['$set' => ['fijada' => false, 'favoritos' => []]])->getModifiedCount();
-		if ($migradas > 0) {
-			out("nftablesfia: {$migradas} actualización(es) de consultas guardadas\n");
+		if (!$nfUpRun['ok']) {
+			$errores[] = 'Migración fallida: ' . htmlspecialchars((string) ($nfUpRun['failed'] ?? '')) . ' (revise Admin → Actualizar → Migraciones)';
 		}
-	} catch (MongoDB\Driver\Exception\Exception $e) {
-		$errores[] = 'nftablesfia: ' . $e->getMessage();
+	} catch (Throwable $e) {
+		$errores[] = 'Migraciones: ' . htmlspecialchars($e->getMessage());
 	}
 	// Opcional: borrar automáticamente las estadísticas de peticiones con más de N días.
 	if (!empty($config['nfuristats_ttl_days'])) {

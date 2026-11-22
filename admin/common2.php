@@ -6,6 +6,22 @@ if (!$user->in('admins')) {
     exit();
 }
 
+// Migraciones pendientes del sitio (el framework se actualizó pero esta base no): aviso en todo el panel.
+// Se cachea 5 minutos; un POST de un admin a /admin/ vacía la caché.
+if (!$nframework->isAjax()) {
+    try {
+        $nfPendientes = nfCacheRemember('nfupgrader:' . $config['sitedb'], 300, function () use ($m, $config) {
+            $docroot = (string) ($_SERVER['DOCUMENT_ROOT'] ?? '');
+            return count((new nfUpgrader($m->{$config['sitedb']}, nfUpgrader::defaultDirs($docroot), $docroot))->status()['pending']);
+        });
+        if ($nfPendientes > 0 && !str_starts_with((string) ($_SERVER['REQUEST_URI'] ?? ''), '/admin/update')) {
+            notify('Actualización pendiente', $nfPendientes . ' migración(es) de base de datos sin aplicar: Admin → Actualizar → Migraciones.', ['timeout' => 10000]);
+        }
+    } catch (Throwable $e) {
+        error_log('nfUpgrader: ' . $e->getMessage());
+    }
+}
+
 
 $sidemenu .= '
 	<li class="slide">

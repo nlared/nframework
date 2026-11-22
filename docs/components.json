@@ -243,6 +243,12 @@
                     "description": "Job y job_worker.php: tareas diferidas con reintentos."
                 },
                 {
+                    "file": "upgrades.php",
+                    "title": "Actualizaciones y migraciones",
+                    "icon": "mif-database",
+                    "description": "Versión del framework, migraciones de base de datos (upgrades/) por sitio y revisión del código de los sitios."
+                },
+                {
                     "file": "cms.php",
                     "title": "Páginas y menús del CMS",
                     "icon": "mif-files-empty",
@@ -582,6 +588,13 @@
             "category": "backend",
             "doc": "backgroundps.php",
             "summary": "Comando largo en segundo plano con estado y log."
+        },
+        {
+            "class": "nfUpgrader",
+            "file": "includes/class.nfUpgrader.php",
+            "category": "backend",
+            "doc": "upgrades.php",
+            "summary": "Migraciones versionadas por sitio (upgrades/*.php, colección nfmigrations) y reglas para revisar o corregir el código de los sitios."
         },
         {
             "class": "Denue",

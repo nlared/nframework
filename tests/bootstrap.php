@@ -29,6 +29,7 @@ require_once __DIR__ . '/../includes/class.embededArray.php';
 require_once __DIR__ . '/../includes/class.User.php';
 require_once __DIR__ . '/../includes/class.Notifications.php';
 require_once __DIR__ . '/../includes/class.nfTableSchema.php';
+require_once __DIR__ . '/../includes/class.nfUpgrader.php';
 
 // Copias de toMongoId()/toMongoIds() de include.php (que no se carga en los tests: conecta a MongoDB).
 if (!function_exists('toMongoId')) {

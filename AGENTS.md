@@ -45,6 +45,7 @@ cd includes && php composer.phar install --ignore-platform-reqs   # dependencias
 ./includes/vendor/bin/phpunit tests/Unit/FunctionsTest.php
 ./includes/vendor/bin/pint            # estilo de código
 php nframework/test.php --host=www.ejemplo.com [--docroot=/var/www/sitio]   # instala/repara BD y diagnostica
+php nframework/upgrade.php --host=www.ejemplo.com [--docroot=...] [--dry-run] [--code]   # migraciones del sitio
 HTTP_HOST=www.ejemplo.com php includes/job_worker.php <cola> 5   # worker de la cola de trabajos
 ```
 
@@ -327,7 +328,11 @@ tests/                  PHPUnit: bootstrap.php simula $config y $m = null
   corrija lo que falle. Para lógica que toca MongoDB, separe la parte pura en un método estático y pruébela
   (`TablefIA::summarizeSample()`, `fewShotExamples()`), o use las colecciones falsas de
   `tests/Unit/CoreFixesTest.php` (`FakeMongo`, `FakeCollection`) para revisar qué se envía a la base.
-- Cambios de esquema o índices van en `nframework/test.php` (instalador idempotente).
+- Índices van en `nframework/test.php` (instalador idempotente). Cambios a datos que ya existen en los sitios
+  (convertir campos, renombrar, rellenar) van en una migración `upgrades/AAAAMMDD_nombre.php` (`nfUpgrader`,
+  `docs/upgrades.php`): se aplica una vez por sitio, al actualizar desde Admin o con `php nframework/upgrade.php
+  --host=...`. Si el cambio obliga a tocar el código de los sitios, agregue a la migración una regla `code`
+  (con `replace` solo si la corrección es mecánica y segura). Al publicar, suba `VERSION` y etiquete igual.
 - Un cambio que altere el comportamiento visible para los sitios (aunque corrija un error) se anota en
   `UPGRADING.md`: qué cambió, a quién afecta y cómo buscarlo en el código del sitio.
 - Ignorados por git: `includes/vendor/`, `includes/config.php`, `composer.lock`, `*.log`, `.github/`, `.vscode/`, `.idea/`.

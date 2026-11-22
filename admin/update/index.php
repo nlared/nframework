@@ -47,17 +47,48 @@ function updGit(array $args): array
     return updRun(array_merge(['git', '-C', $repoDir], $args), $repoDir);
 }
 
+/** PHP de la misma versión que el sitio: /usr/bin/php puede ser otra versión con otras extensiones. */
+function updPhp(): string
+{
+    foreach ([PHP_BINDIR . '/php' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, PHP_BINDIR . '/php'] as $candidate) {
+        if (is_executable($candidate)) {
+            return $candidate;
+        }
+    }
+    return 'php';
+}
+
+/**
+ * Migraciones de este sitio en un proceso nuevo (nframework/upgrade.php): después de Pull / Forzar el proceso
+ * web todavía tiene cargado el código anterior.
+ */
+function updMigrateCli(array $extra = []): array
+{
+    global $repoDir;
+    return updRun(array_merge([updPhp(), $repoDir . '/nframework/upgrade.php', '--host=' . updHost(),
+        '--docroot=' . ($_SERVER['DOCUMENT_ROOT'] ?? $repoDir)], $extra), $repoDir);
+}
+
+/** Host del sitio para la CLI (el del bloque de config.php que atiende esta petición). */
+function updHost(): string
+{
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    return preg_match('/^[A-Za-z0-9.\-]+(:\d+)?$/', $host) ? $host : 'localhost';
+}
+
+function updUpgrader(): nfUpgrader
+{
+    global $m, $config;
+    $docroot = (string) ($_SERVER['DOCUMENT_ROOT'] ?? '');
+    $up = new nfUpgrader($m->{$config['sitedb']}, nfUpgrader::defaultDirs($docroot), $docroot);
+    $up->context = ['host' => updHost(), 'docroot' => $docroot, 'config' => $config, 'client' => $m];
+    return $up;
+}
+
 function updComposer(array $args, bool $stderr = true): array
 {
     global $composerDir;
-    // Misma versión de PHP que el sitio: /usr/bin/php puede ser otra versión con otras extensiones.
-    $php = 'php';
-    foreach ([PHP_BINDIR . '/php' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, PHP_BINDIR . '/php'] as $candidate) {
-        if (is_executable($candidate)) {
-            $php = $candidate;
-            break;
-        }
-    }
+    $php = updPhp();
     $r = updRun(array_merge([$php, $composerDir . '/composer.phar'], $args, ['--no-interaction', '--no-ansi', '--working-dir=' . $composerDir]), $composerDir, $stderr);
     if ($r['code'] !== 0 && preg_match('/Could not delete|could not be (created|written)|is not writable|Permission denied/i', $r['output'])) {
         $owner = function_exists('posix_getpwuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? '') : get_current_user();
@@ -185,6 +216,29 @@ if ($nframework->isAjax()) {
                 $log[] = 'Si cambiaron dependencias, ejecute Composer → Install.';
             }
             $result = ['success' => $r['code'] === 0, 'output' => implode("\n", array_filter($log, fn($l) => $l !== ''))];
+            if ($r['code'] === 0 && ($_POST['migrate'] ?? '1') === '1') {
+                $mg = updMigrateCli();
+                $result['output'] .= "\n\n--- Migraciones ---\n" . $mg['output'];
+                $result['success'] = $mg['code'] === 0;
+            }
+            break;
+        case 'mig_status':
+            $result = ['success' => true] + updUpgrader()->status();
+            break;
+        case 'mig_run':
+            $run = updUpgrader()->run(($_POST['dry'] ?? '') === '1');
+            $result = ['success' => $run['ok'], 'output' => implode("\n", $run['log'])];
+            break;
+        case 'mig_code':
+            $docroot = (string) ($_SERVER['DOCUMENT_ROOT'] ?? '');
+            $hits = nfUpgrader::scanCode(nfUpgrader::discover(nfUpgrader::defaultDirs($docroot)), $docroot);
+            $result = ['success' => true, 'matches' => $hits, 'output' => count($hits) . ' coincidencia(s) en ' . $docroot];
+            break;
+        case 'mig_apply_code':
+            $docroot = (string) ($_SERVER['DOCUMENT_ROOT'] ?? '');
+            $only = array_values(array_filter((array) ($_POST['rules'] ?? []), 'is_string'));
+            $applied = nfUpgrader::applyCode(nfUpgrader::discover(nfUpgrader::defaultDirs($docroot)), $docroot, $only ?: null);
+            $result = ['success' => true, 'output' => implode("\n", $applied['log'] ?: ['No hubo cambios.'])];
             break;
         case 'git_fetch':
             $r = updGit(['fetch', '--prune']);
@@ -194,6 +248,11 @@ if ($nframework->isAjax()) {
             // Solo fast-forward: nunca crea merges ni pisa cambios locales.
             $r = updGit(['pull', '--ff-only']);
             $result = ['success' => $r['code'] === 0, 'output' => $r['output']];
+            if ($r['code'] === 0 && ($_POST['migrate'] ?? '1') === '1') {
+                $mg = updMigrateCli();
+                $result['output'] .= "\n\n--- Migraciones ---\n" . $mg['output'];
+                $result['success'] = $mg['code'] === 0;
+            }
             break;
         case 'composer_info':
             $ver = updComposer(['--version']);
@@ -269,15 +328,19 @@ $nframework->usecommon = true;
         <ul data-role="tabs" data-expand="true">
             <li><a href="#upd-git"><span class="mif-github"></span> Git</a></li>
             <li><a href="#upd-composer"><span class="mif-cube"></span> Composer</a></li>
+            <li><a href="#upd-mig"><span class="mif-database"></span> Migraciones <span id="upd-mig-badge" class="badge inline bg-orange fg-white" style="display:none"></span></a></li>
         </ul>
         <div class="border bd-default no-border-top p-3">
             <div id="upd-git">
                 <div class="mb-2">
                     <button class="button" onclick="updGitStatus()"><span class="mif-loop2"></span> Actualizar estado</button>
                     <button class="button" onclick="updRun('git_fetch', {}, updGitStatus)"><span class="mif-download"></span> Fetch</button>
-                    <button class="button primary" onclick="updConfirm('¿Actualizar el código con git pull (--ff-only)?', 'git_pull', {}, updGitStatus)"><span class="mif-cloud-download"></span> Pull</button>
+                    <button class="button primary" onclick="updConfirm('¿Actualizar el código con git pull (--ff-only)?', 'git_pull', {migrate: updMigrateFlag()}, updAfterUpdate)"><span class="mif-cloud-download"></span> Pull</button>
                     <button class="button alert" onclick="updForce()" title="Deja el código igual que GitHub aunque Pull no pueda"><span class="mif-warning"></span> Forzar actualización</button>
                 </div>
+                <label class="d-block mb-2" title="Ejecuta upgrades/*.php pendientes con el código recién descargado">
+                    <input type="checkbox" id="upd-migrate" checked> Aplicar las migraciones de base de datos al terminar Pull / Forzar
+                </label>
                 <div id="upd-force-hint" class="remark warning" style="display:none">
                     Pull no puede actualizar esta copia (rama sin upstream o con historial distinto al de GitHub).
                     Use <b>Forzar actualización</b>: deja el código igual que GitHub y respalda lo local.
@@ -294,6 +357,26 @@ $nframework->usecommon = true;
                 <pre id="upd-incoming" class="stay-on bg-light p-2"></pre>
                 <h6>Últimos commits</h6>
                 <pre id="upd-log" class="stay-on bg-light p-2"></pre>
+            </div>
+            <div id="upd-mig">
+                <table class="table compact subcompact upd-info">
+                    <tr><th>Framework</th><td id="upd-mig-fw"></td></tr>
+                    <tr><th>Este sitio</th><td id="upd-mig-site"></td></tr>
+                </table>
+                <div class="mb-2">
+                    <button class="button" onclick="updMigStatus()"><span class="mif-loop2"></span> Actualizar estado</button>
+                    <button class="button" onclick="updRun('mig_run', {dry: '1'})"><span class="mif-eye"></span> Simular</button>
+                    <button class="button primary" onclick="updConfirm('¿Aplicar las migraciones pendientes a la base de datos de este sitio?', 'mig_run', {}, updMigStatus)"><span class="mif-database"></span> Aplicar pendientes</button>
+                    <button class="button" onclick="updMigCode()"><span class="mif-search"></span> Revisar código del sitio</button>
+                </div>
+                <h6>Pendientes</h6>
+                <pre id="upd-mig-pending" class="stay-on bg-light p-2"></pre>
+                <h6>Código del sitio</h6>
+                <p class="text-muted">Cambios del framework que pueden afectar páginas del sitio. Solo los marcados como automáticos se corrigen solos (con respaldo en <code>.nfupgrade/</code>); el resto hay que revisarlo a mano.</p>
+                <div class="nf-scroll-x"><table class="table compact striped"><thead><tr><th>Archivo</th><th>Cambio</th><th>Línea</th></tr></thead><tbody id="upd-mig-code"><tr><td colspan="3" class="text-muted">Use «Revisar código del sitio».</td></tr></tbody></table></div>
+                <button class="button success mt-2" id="upd-mig-fix" style="display:none" onclick="updMigFix()"><span class="mif-magic-wand"></span> Aplicar correcciones automáticas</button>
+                <h6 class="mt-4">Aplicadas</h6>
+                <pre id="upd-mig-applied" class="stay-on bg-light p-2"></pre>
             </div>
             <div id="upd-composer">
                 <div class="mb-2" id="upd-composer-version"></div>
@@ -367,6 +450,44 @@ $nframework->usecommon = true;
         if (confirm(question)) updRun(action, data, after);
     }
 
+    function updMigrateFlag() {
+        return $('#upd-migrate').is(':checked') ? '1' : '0';
+    }
+
+    function updAfterUpdate() {
+        updGitStatus();
+        updMigStatus();
+    }
+
+    function updMigStatus() {
+        updPost('mig_status').done(function (r) {
+            $('#upd-mig-fw').text(r.framework);
+            $('#upd-mig-site').html(updEsc(r.site || '(sin registrar)') + (r.outdated ? ' <span class="fg-orange text-bold">— hay que actualizar</span>' : ' <span class="fg-green">— al día</span>'));
+            var p = (r.pending || []).map(function (x) { return x.id + '  (' + x.version + ')  ' + x.description; });
+            $('#upd-mig-pending').text((r.errors || []).map(function (e) { return 'Aviso: ' + e; }).concat(p).join('\n') || 'Nada pendiente.');
+            $('#upd-mig-applied').text((r.applied || []).map(function (a) { return (a.ok ? '✓ ' : '✗ ') + a.fecha + '  ' + a.id + (a.salida ? '\n    ' + a.salida.replace(/\n/g, '\n    ') : ''); }).join('\n') || 'Ninguna.');
+            var n = (r.pending || []).length;
+            $('#upd-mig-badge').text(n).toggle(n > 0);
+        });
+    }
+
+    function updMigCode() {
+        updRun('mig_code', {}).done(function (r) {
+            var rows = (r.matches || []).map(function (h) {
+                return '<tr><td><code>' + updEsc(h.file) + ':' + h.line + '</code></td><td>' + (h.fixable ? '<span class="badge inline bg-green fg-white">automática</span> ' : '') +
+                    updEsc(h.description) + '</td><td><code>' + updEsc(h.text) + '</code></td></tr>';
+            });
+            $('#upd-mig-code').html(rows.join('') || '<tr><td colspan="3">Sin coincidencias: el código del sitio no usa lo que cambió.</td></tr>');
+            $('#upd-mig-fix').toggle((r.matches || []).some(function (h) { return h.fixable; }));
+        });
+    }
+
+    function updMigFix() {
+        if (confirm('¿Aplicar las correcciones automáticas al código del sitio? Los archivos originales se copian a .nfupgrade/<fecha>/.')) {
+            updRun('mig_apply_code', {}, updMigCode);
+        }
+    }
+
     function updForce() {
         var msg = 'Forzar actualización\n\n' +
             'El código quedará igual que la rama de GitHub (origin), aunque la rama local sea otra o el historial haya cambiado.\n\n' +
@@ -374,7 +495,7 @@ $nframework->usecommon = true;
             '- Los cambios sin commit se guardan con git stash.\n' +
             '- No se tocan los archivos sin seguimiento (config.php, vendor/, datos del sitio).\n\n' +
             '¿Continuar?';
-        if (confirm(msg)) updRun('git_force', {}, updGitStatus);
+        if (confirm(msg)) updRun('git_force', {migrate: updMigrateFlag()}, updAfterUpdate);
     }
 
     function updGitStatus() {
@@ -441,5 +562,6 @@ $nframework->usecommon = true;
     $(function () {
         updGitStatus();
         updComposerInfo();
+        updMigStatus();
     });
 </script>

@@ -1,7 +1,35 @@
 # Actualización de sitios basados en nframework
 
 Cambios del framework que pueden notar los sitios que lo usan. Cada entrada dice qué cambió, a quién afecta
-y qué revisar. Las más recientes van primero.
+y qué revisar. Las más recientes van primero; cada versión (archivo `VERSION`, etiqueta de git) agrupa sus
+entradas.
+
+## Cómo actualizar un sitio
+
+1. Actualice el código del framework: Admin → Actualizar → **Pull**. Si Pull no puede (rama sin upstream o
+   historial distinto), use **Forzar actualización**.
+2. Las **migraciones de base de datos** (`upgrades/*.php`) se aplican solas al terminar el paso 1. También se
+   pueden aplicar en Admin → Actualizar → Migraciones, o con
+   `php nframework/upgrade.php --host=<dominio> [--docroot=<dir>]`. Mientras falte alguna, todo Admin lo avisa.
+   En multisitio cada sitio tiene su base: aplíquelas en cada uno (o con la terminal, un `--host` por sitio).
+3. **Código del sitio:** use Migraciones → «Revisar código del sitio» (o `--code`) para ver qué páginas usan
+   algo que cambió. Las correcciones marcadas como automáticas se aplican con un botón (o `--apply-code`) y
+   respaldo en `.nfupgrade/<fecha>/`; las demás se revisan con las notas de abajo.
+4. Si cambiaron dependencias: Composer → Install.
+
+Ver `docs/upgrades.php`.
+
+# 2026.1
+
+## 2026-11-22 — Versionado y migraciones automáticas
+
+- El framework tiene versión (`VERSION`, 2026.1) y migraciones (`upgrades/`). Cada sitio registra lo aplicado
+  en la colección nueva `nfmigrations`.
+- Pull y Forzar actualización aplican las migraciones al terminar (casilla «Aplicar las migraciones…»).
+- La normalización de las consultas de TablefIA pasó de `nframework/test.php` a la migración
+  `20261121_tablefia_promptnorm`. La migración `20261122_nftables_campos` convierte a arreglo las listas embebidas
+  de nftables guardadas como objeto `{"0": …}` y guarda los tipos de campo con su nombre actual.
+- Un sitio puede tener sus propias migraciones en `<document root>/upgrades/` (o `$config['upgrades_dir']`).
 
 ## 2026-11-22 — `inputMCE`: las imágenes ya no llegan a la carpeta del framework
 

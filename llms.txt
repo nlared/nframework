@@ -59,6 +59,7 @@ La documentación de /docs/ es ejecutable: cada página muestra el resultado jun
 - [Imágenes](/docs/images.php): Miniaturas, AVIF o WebP según el navegador, fotos de perfil y páginas de PDF como imagen.
 - [Procesos en segundo plano](/docs/backgroundps.php): bgprocess: lanzar y vigilar un comando largo.
 - [Colas de trabajo](/docs/jobs.php): Job y job_worker.php: tareas diferidas con reintentos.
+- [Actualizaciones y migraciones](/docs/upgrades.php): Versión del framework, migraciones de base de datos (upgrades/) por sitio y revisión del código de los sitios.
 - [Páginas y menús del CMS](/docs/cms.php): nfPage(), nfMetroMenu() y renderEmbeddedFunctions(): contenido editable desde el panel.
 
 ## Servicios
