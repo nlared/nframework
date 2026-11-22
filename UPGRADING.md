@@ -3,6 +3,33 @@
 Cambios del framework que pueden notar los sitios que lo usan. Cada entrada dice qué cambió, a quién afecta
 y qué revisar. Las más recientes van primero.
 
+## 2026-11-22 — `inputMCE`: las imágenes ya no llegan a la carpeta del framework
+
+Antes, el editor subía las imágenes pegadas o arrastradas aunque el campo no tuviera `upload`. Si `mediadir`
+faltaba o era inválido, terminaban en la carpeta del framework (`nframework/mceclip0.jpg`, `mceu_….jpg`). Además,
+cada imagen pegada se llama igual (`mceclip0.jpg`) y sobrescribía a la anterior. Ahora:
+
+- **Sin `upload`, o con un `mediadir` inválido:** el editor no sube ni incrusta imágenes. Con `upload` y un
+  `mediadir` inválido se anota en el log `inputMCE …: mediadir inválido`.
+- **`mediadir` válido:** debe ser una ruta absoluta que no sea la raíz del framework ni esté dentro de
+  `includes/`, `nframework/`, `admin/` o `sat/`. Se revisa también siguiendo ligas simbólicas; la validación está en
+  `inputMCE::uploadDir()`.
+- **Nombres repetidos:** si ya existe un archivo con ese nombre, la imagen se guarda como `nombre-1.jpg`,
+  `nombre-2.jpg`…
+
+**Revise:**
+- Los editores con `'upload' => true` deben tener un `mediadir` absoluto, por ejemplo
+  `$_SERVER['DOCUMENT_ROOT'] . '/media/'`, y su `baseurl`.
+- Las imágenes `mceclip*` y `mceu_*` que quedaron sueltas en `nframework/`: muévalas a la carpeta de medios del
+  sitio si algún contenido las usa.
+
+```bash
+grep -rn "new inputMCE\|new inputmce" --include=*.php .
+ls nframework/mceclip* nframework/mceu_* 2>/dev/null
+```
+
+`.gitignore` ahora excluye `/sat/certs/` y `/comprobantes/`, que son datos del sitio y no del framework.
+
 ## 2026-11-22 — nftables: todos los componentes, Select AJAX, autocompletar y datos embebidos
 
 ### Admin → nftables y `/nftables/`

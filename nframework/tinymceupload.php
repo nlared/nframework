@@ -31,7 +31,12 @@ if (!isset($_SESSION['tinymceup'][$mceId])) {
     header("HTTP/1.1 403 Forbidden");
     return;
 }
-$imageFolder = rtrim($_SESSION['tinymceup'][$mceId]['mediadir'], '/') . '/';
+// Se vuelve a validar: una sesión vieja o un mediadir vacío escribían en la carpeta del framework.
+$imageFolder = inputMCE::uploadDir($_SESSION['tinymceup'][$mceId]['mediadir'] ?? null);
+if ($imageFolder === null) {
+    header("HTTP/1.1 403 Forbidden");
+    return;
+}
 
 
   reset ($_FILES);
@@ -64,8 +69,12 @@ $imageFolder = rtrim($_SESSION['tinymceup'][$mceId]['mediadir'], '/') . '/';
 		mkdir($imageFolder,0777,true);
 	}
     // Accept upload if there was no origin, or if it is an accepted origin
-    $filetowrite = $imageFolder . $temp['name'];
-    move_uploaded_file($temp['tmp_name'], $filetowrite);
+    // TinyMCE nombra igual cada imagen pegada (mceclip0.jpg): nunca se sobrescribe una existente.
+    $filetowrite = $imageFolder . inputMCE::uniqueFilename($imageFolder, $temp['name']);
+    if (!move_uploaded_file($temp['tmp_name'], $filetowrite)) {
+        header("HTTP/1.1 500 Server Error");
+        return;
+    }
 
     // Determine the base URL
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on' ? "https://" : "http://";
@@ -79,7 +88,7 @@ $imageFolder = rtrim($_SESSION['tinymceup'][$mceId]['mediadir'], '/') . '/';
     	//'imagefolder'=>$imagefolder,
     	//'base'=>$baseurl,
     	//'fileto'=>$filetowrite,
-    	'location' => basename($filetowrite)));
+    	'location' => basename($filetowrite)));   // el editor le antepone images_upload_base_path (baseurl)
   } else {
     // Notify editor that the upload failed
     header("HTTP/1.1 500 Server Error");

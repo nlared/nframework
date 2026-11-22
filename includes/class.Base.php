@@ -1237,9 +1237,19 @@ class inputDateTime extends baseInput
 /**
  * Editor HTML enriquecido (TinyMCE). Con upload sube imágenes a mediadir. El contenido es HTML: no lo muestre a
  * otros usuarios sin sanearlo.
+ *
+ * Sin upload (o con un mediadir inválido) el editor no sube nada: tampoco las imágenes que se pegan o arrastran,
+ * que antes llegaban a /nframework/tinymceupload.php y terminaban en la carpeta del framework. mediadir debe ser
+ * una ruta absoluta fuera del código del framework (includes/, nframework/, admin/, sat/); ver uploadDir().
+ *
+ *   new inputMCE(['dataset' => &$dataset, 'field' => 'html', 'upload' => true,
+ *       'mediadir' => $_SERVER['DOCUMENT_ROOT'] . '/media/', 'baseurl' => '/media/']);
  */
 class inputMCE extends baseInput
 {
+    /** Carpetas del framework (relativas a su raíz) donde nunca se guardan imágenes del editor. */
+    public const PROTECTED_DIRS = ['includes', 'nframework', 'admin', 'sat'];
+
     /** @var bool */
     public $upload = false;
     /** @var string|null Carpeta en disco para las imágenes subidas. */
@@ -1251,6 +1261,74 @@ class inputMCE extends baseInput
     public $extended_valid_elements;
     /** @var string|null */
     public $content_css;
+
+    /**
+     * Carpeta normalizada (absoluta, con / final) donde se pueden guardar las imágenes, o null si no es válida:
+     * vacía, relativa, con '..', la raíz del sistema, la raíz del framework o dentro de PROTECTED_DIRS. La carpeta
+     * puede no existir todavía (tinymceupload.php la crea).
+     *
+     * @param mixed $mediadir
+     * @param string|null $frameworkRoot Raíz del framework; null = la carpeta padre de includes/.
+     * @return string|null
+     */
+    public static function uploadDir($mediadir, ?string $frameworkRoot = null): ?string
+    {
+        if (!is_string($mediadir) || $mediadir === '' || $mediadir[0] !== '/' || str_contains($mediadir, "\0")) {
+            return null;
+        }
+        $parts = array_values(array_filter(explode('/', $mediadir), fn($p) => $p !== '' && $p !== '.'));
+        if (in_array('..', $parts, true)) {
+            return null;
+        }
+        // La parte que ya existe se resuelve con realpath (ligas simbólicas); el resto se agrega tal cual.
+        $missing = [];
+        $existing = '/' . implode('/', $parts);
+        while ($existing !== '/' && !is_dir($existing)) {
+            array_unshift($missing, basename($existing));
+            $existing = dirname($existing);
+        }
+        $real = realpath($existing);
+        if ($real === false) {
+            return null;
+        }
+        $dir = rtrim($real, '/') . '/' . ($missing ? implode('/', $missing) . '/' : '');
+        if ($dir === '/') {
+            return null;
+        }
+        $root = realpath($frameworkRoot ?? dirname(__DIR__));
+        if ($root !== false) {
+            $root = rtrim($root, '/') . '/';
+            if ($dir === $root) {
+                return null;
+            }
+            foreach (self::PROTECTED_DIRS as $protected) {
+                if (str_starts_with($dir, $root . $protected . '/')) {
+                    return null;
+                }
+            }
+        }
+        return $dir;
+    }
+
+    /**
+     * Nombre libre en $dir para $name: si ya existe agrega -1, -2... (TinyMCE nombra igual, mceclip0.jpg, cada
+     * imagen pegada y antes se sobrescribían entre sí).
+     *
+     * @param string $dir Carpeta con / final.
+     * @param string $name Nombre ya validado.
+     * @return string
+     */
+    public static function uniqueFilename(string $dir, string $name): string
+    {
+        $ext = pathinfo($name, PATHINFO_EXTENSION);
+        $base = pathinfo($name, PATHINFO_FILENAME);
+        $candidate = $name;
+        for ($i = 1; file_exists($dir . $candidate); $i++) {
+            $candidate = $base . '-' . $i . ($ext !== '' ? '.' . $ext : '');
+        }
+        return $candidate;
+    }
+
     /**
      * @global class_nframework $nframework
      * @global Javas $javas
@@ -1259,6 +1337,10 @@ class inputMCE extends baseInput
     public function __toString()
     {
         global $nframework, $javas;
+        $uploadDir = $this->upload ? self::uploadDir($this->mediadir) : null;
+        if ($this->upload && $uploadDir === null) {
+            error_log('inputMCE ' . $this->id . ': mediadir inválido (' . var_export($this->mediadir, true) . '); se desactiva la subida de imágenes.');
+        }
         /*
         'a11ychecker','advcode', 'editimage', 'powerpaste', 'tinymcespellchecker', 'tinydrive'
         */
@@ -1304,7 +1386,7 @@ hugerte.PluginManager.add('myPlugin', function(editor, url) {
         $javas->addjs("hugerte.init({
 	selector:'textarea#" . $this->id . "',
 	plugins: 'accordion advlist anchor autolink autosave charmap code codesample directionality emoticons fullscreen help image insertdatetime link lists media nonbreaking pagebreak preview quickbars save searchreplace table template visualblocks visualchars wordcount',
-	image_list: '/nframework/tinymceimgs.php?_id=" . $this->id . "',
+	" . ($uploadDir !== null ? "image_list: '/nframework/tinymceimgs.php?_id=" . $this->id . "'," : '') . "
 	convert_urls: false," .
             ($nframework->lang != 'en-US' ?
                 "language_url: '//cdn.nlared.com/hugerte/langs/" . $nframework->lang_ . ".js',
@@ -1313,9 +1395,13 @@ hugerte.PluginManager.add('myPlugin', function(editor, url) {
 	content_css: " . json_encode($this->content_css) . ",
 	relative_urls: false,
 	//document_base_url: '//" . $_SERVER['HTTP_HOST'] . $this->baseurl . "',
-    image_uploadtab: " . ($this->upload ? 'true' : 'false') . ",
-    images_upload_url: '/nframework/tinymceupload.php?_id=" . $this->id . "',
-	images_upload_base_path: '" . $this->baseurl . "',
+    image_uploadtab: " . ($uploadDir !== null ? 'true' : 'false') . ",
+    " . ($uploadDir !== null
+                ? "images_upload_url: '/nframework/tinymceupload.php?_id=" . $this->id . "',
+	images_upload_base_path: " . json_encode((string) $this->baseurl) . ","
+                // Sin subida: las imágenes pegadas o arrastradas no se suben ni se incrustan en base64.
+                : "automatic_uploads: false,
+	paste_data_images: false,") . "
 	extended_valid_elements: '" . $this->extended_valid_elements . "',
 setup: function(editor) {
   editor.on('PreInit', function() {
@@ -1341,10 +1427,15 @@ setup: function(editor) {
         $_SESSION['ANTIXSS'][($this->id)][0] = ['html'];
         $_SESSION['ANTIXSS'][($this->id)] = ['html'];
 
-        $_SESSION['tinymceup'][$this->id] = [
-            'mediadir' => $this->mediadir,
-            'baseurl' => $this->baseurl,
-        ];
+        // Solo una carpeta válida autoriza a tinymceupload.php / tinymceimgs.php.
+        if ($uploadDir !== null) {
+            $_SESSION['tinymceup'][$this->id] = [
+                'mediadir' => $uploadDir,
+                'baseurl' => $this->baseurl,
+            ];
+        } else {
+            unset($_SESSION['tinymceup'][$this->id]);
+        }
 
         return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') .
             '<textarea name="' . $this->name . '" id="' . $this->id

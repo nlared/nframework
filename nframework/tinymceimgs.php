@@ -5,7 +5,12 @@ if (isset($_SESSION['tinymceup'][$_GET['_id']])){
 	/*********************************************
 	   * Change this line to set the upload folder *
 	   *********************************************/
-	$imageFolder = remove_trailing_separator($_SESSION['tinymceup'][$_GET['_id']]['mediadir']);
+	$imageFolder = inputMCE::uploadDir($_SESSION['tinymceup'][$_GET['_id']]['mediadir'] ?? null);
+	if ($imageFolder === null || !is_dir($imageFolder)) {
+		echo '[]';
+		exit;
+	}
+	$imageFolder = remove_trailing_separator($imageFolder);
 	$baseurl= remove_trailing_separator($_SESSION['tinymceup'][$_GET['_id']]['baseurl']);
 	function getDirContents($dir){
 	 		global $baseurl,$imageFolder;

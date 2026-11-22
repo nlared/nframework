@@ -23,3 +23,7 @@
 vendor/
 
 composer.lock
+
+# Datos de los sitios que no son parte del framework
+/sat/certs/
+/comprobantes/

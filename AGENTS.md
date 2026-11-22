@@ -127,6 +127,8 @@ Constructor con arreglo de opciones; se imprimen con `echo`/`<?= ?>` (`__toStrin
   `$result = ['items' => [...]]` en su bloque `isAjax()`) o `['collection', 'columns', 'value', 'label', 'pipeline',
   'distinct', 'fields', 'depends' => ['campo' => '#selector'], 'onselect' => 'js']`. En el navegador
   `input.nfSuggest.setItems()` / evento `nf:suggest-select`. No use `data-autocomplete` de Metro. Ver `docs/autocomplete.php`.
+- `inputMCE` solo sube imágenes con `'upload' => true` y un `mediadir` absoluto fuera de `includes/`, `nframework/`,
+  `admin/` y `sat/` (`inputMCE::uploadDir()`); sin eso no acepta imágenes pegadas ni arrastradas.
 - Archivos: `inputFile`, `inputFiles` (`dir`, `path`, `accept`, `countlimit`, `sizelimit`, `preview`,
   `delete`, `download`, `extension` + `onupload`/`ondelete`, `allowext` para aceptar extensiones
   protegidas como `py`/`sh`; las de PHP solo fuera del document root). La carpeta destino la decide el servidor.
