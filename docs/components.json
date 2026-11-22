@@ -484,7 +484,7 @@
             "file": "includes/class.TablefIA.php",
             "category": "datos",
             "doc": "tablefia.php",
-            "summary": "Consultas en lenguaje natural convertidas en pipelines de MongoDB por Claude."
+            "summary": "Consultas en lenguaje natural convertidas en pipelines de MongoDB por Claude, con campos y valores inferidos de una muestra y consultas guardadas como ejemplo."
         },
         {
             "class": "Dialog",

@@ -183,6 +183,10 @@ $t->Ajax([   // paginado/búsqueda/orden en MongoDB vía /nframework/datatable.p
 `TablefIA` (`docs/tablefia.php`): el usuario pregunta en lenguaje natural y Claude genera el pipeline (requiere
 `anthropic_api_key`). Declare `collections` (con `match` obligatorio y `hidden`) y `relations` (únicos `$lookup`
 permitidos); el servidor valida el pipeline y guarda cada consulta en `nftablesfia` por `uso` para reutilizarla.
+La IA recibe los campos inferidos de una muestra con valores categóricos y rangos (`stats`, activo; apáguelo si
+esos valores son sensibles), el significado de `notes`, ejemplos de texto libre solo con `values => true`, y
+hasta `fewshot` consultas guardadas como ejemplo. Una consulta se reutiliza mientras no cambien sus colecciones
+(`TablefIA::queryHash()`), aunque cambien otras del componente.
 
 **JavaScript desde PHP**: `$javas->addjs($codigo, 'general'|'ready'|'resize'|'scroll')`. Pase datos con
 `json_encode()`, nunca interpolando strings. `notify($titulo, $texto)` y `speak($texto)` son atajos.
@@ -312,6 +316,10 @@ tests/                  PHPUnit: bootstrap.php simula $config y $m = null
 - Al cambiar o añadir un componente, actualice/añada su ejemplo en `docs/`, regístrelo en
   `docs/components.json` (la página en `sections`, la clase en `components`; `DocsCatalogTest` lo verifica) y
   agregue tests en `tests/Unit` cuando no dependan de MongoDB.
+- Los tests son la señal para verificar un cambio: ejecute `./run-tests.sh unit` antes de darlo por terminado y
+  corrija lo que falle. Para lógica que toca MongoDB, separe la parte pura en un método estático y pruébela
+  (`TablefIA::summarizeSample()`, `fewShotExamples()`), o use las colecciones falsas de
+  `tests/Unit/CoreFixesTest.php` (`FakeMongo`, `FakeCollection`) para revisar qué se envía a la base.
 - Cambios de esquema o índices van en `nframework/test.php` (instalador idempotente).
 - Un cambio que altere el comportamiento visible para los sitios (aunque corrija un error) se anota en
   `UPGRADING.md`: qué cambió, a quién afecta y cómo buscarlo en el código del sitio.

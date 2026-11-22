@@ -132,15 +132,21 @@ try {
 			}
 			$fullPrompt = $base ? mb_substr($base['prompt'] . ' · ' . $prompt, 0, 4000) : $prompt;
 			$normalized = TablefIA::normalizePrompt($fullPrompt);
-			$hash = TablefIA::configHash($cfg);
 
-			// La misma pregunta (normalizada) con la misma configuración: se reutiliza sin llamar a la IA.
+			// La misma pregunta (normalizada) cuyas colecciones no cambiaron: se reutiliza sin llamar a la IA.
+			// Cambiar otra colección del componente ya no impide reutilizarla (TablefIA::reusable()).
 			tablefiaProgress($progressFile, 'Buscando una consulta guardada igual…');
-			$filter = ['uso' => $cfg['uso'], 'confighash' => $hash, '$or' => [['promptnorm' => $normalized], ['prompt' => $fullPrompt]]];
+			$filter = ['uso' => $cfg['uso'], '$or' => [['promptnorm' => $normalized], ['prompt' => $fullPrompt]]];
 			if (!$cfg['shared']) {
 				$filter['usuario'] = $userId;
 			}
-			$doc = $saved->findOne($filter, ['sort' => ['fecha' => -1]] + TABLEFIA_TYPEMAP);
+			$doc = null;
+			foreach ($saved->find($filter, ['sort' => ['fecha' => -1], 'limit' => 20] + TABLEFIA_TYPEMAP) as $candidate) {
+				if (TablefIA::reusable($cfg, $candidate)) {
+					$doc = $candidate;
+					break;
+				}
+			}
 			if ($doc) {
 				tablefiaProgress($progressFile, 'Ejecutando la consulta guardada…');
 				$result = tablefiaRunResult($saved, $db, $cfg, $doc);
@@ -158,7 +164,20 @@ try {
 			foreach ($cfg['collections'] as $name => $options) {
 				$fields[$name] = TablefIA::describeFields($db->{$name}, $options, $cfg['fieldsample'] ?? 200);
 			}
-			$system = TablefIA::systemPrompt($cfg, $fields);
+			// Ejemplos para la IA: consultas de este uso, primero las favoritas y las más ejecutadas.
+			$examples = [];
+			if (($cfg['fewshot'] ?? 0) > 0) {
+				$exampleFilter = ['uso' => $cfg['uso']];
+				if (!$cfg['shared']) {
+					$exampleFilter['usuario'] = $userId;
+				}
+				$examples = TablefIA::fewShotExamples($cfg, $saved->find($exampleFilter, [
+					'sort' => ['fijada' => -1, 'ejecuciones' => -1, 'fecha' => -1],
+					'limit' => 40,
+					'projection' => ['prompt' => 1, 'coleccion' => 1, 'columnas' => 1, 'pipeline' => 1, 'confighash' => 1, 'colecciones' => 1],
+				] + TABLEFIA_TYPEMAP), (int) $cfg['fewshot'], $normalized);
+			}
+			$system = TablefIA::systemPrompt($cfg, $fields, $examples);
 
 			// Hasta 'attempts' intentos: cada uno recibe los pipelines rechazados antes y por qué.
 			$attempts = $cfg['attempts'] ?? 3;
@@ -203,6 +222,7 @@ try {
 			$truncated = count($rows) > $cfg['limit'];
 			$rows = TablefIA::jsonRows(array_slice($rows, 0, $cfg['limit']));
 			$now = new MongoDB\BSON\UTCDateTime();
+			$involved = TablefIA::involvedCollections((string) $answer['coleccion'], $stages);
 			$doc = [
 				'uso' => $cfg['uso'],
 				'prompt' => $fullPrompt,
@@ -212,7 +232,10 @@ try {
 				'pipeline' => (string) $answer['pipeline'],
 				'columnas' => $columns,
 				'explicacion' => (string) $answer['explicacion'],
-				'confighash' => $hash,
+				// Huella solo de las colecciones que usa: cambiar otras no impide reutilizarla.
+				'colecciones' => $involved,
+				'confighash' => TablefIA::queryHash($cfg, $involved),
+				'ejemplos' => count($examples),
 				'modelo' => $answer['modelo'] ?? $cfg['model'],
 				'tokens' => $usage,
 				'intentos' => $attempt,

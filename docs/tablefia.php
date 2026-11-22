@@ -9,16 +9,16 @@ $consultas = new TablefIA([
 	'collections' => [
 		'demo_pedidos' => [
 			'description' => 'Pedidos de venta',
-			'fields' => [
-				'folio' => 'int, número de pedido',
-				'cliente' => 'objectId, _id del cliente',
-				'fecha' => 'date, fecha del pedido',
-				'importe' => 'double, total en pesos',
-				'estado' => "string: 'pagado', 'pendiente' o 'cancelado'",
-				'productos' => 'int, cantidad de productos',
+			// Tipos, valores de 'estado' y rangos de 'importe'/'fecha' se infieren de una muestra; aquí solo el significado.
+			'notes' => [
+				'folio' => 'número de pedido',
+				'cliente' => '_id del cliente',
+				'importe' => 'total en pesos',
+				'productos' => 'cantidad de productos',
 			],
 		],
-		'demo_clientes' => ['description' => 'Clientes'],   // campos tomados de una muestra de documentos
+		// Sin notas: campos, tipos y valores tomados de una muestra. 'values' => true agrega ejemplos de nombres.
+		'demo_clientes' => ['description' => 'Clientes', 'values' => true],
 	],
 	'relations' => [
 		['from' => 'demo_pedidos', 'localField' => 'cliente', 'to' => 'demo_clientes', 'foreignField' => '_id', 'as' => 'cliente'],
@@ -47,7 +47,7 @@ echo new TablefIA([
     'collections' => [
         'pedidos' => [
             'description' => 'Pedidos de venta',
-            'fields' => ['importe' => 'double, total en pesos', 'estado' => "'pagado' o 'pendiente'"],   // opcional
+            'notes' => ['importe' => 'total en pesos'],   // significado; tipos, valores y rangos se infieren
             'match' => ['empresa' => toMongoId($empresaId)],   // filtro obligatorio, antes de todo
         ],
         'clientes' => ['description' => 'Clientes', 'hidden' => ['notas_internas']],   // campos que la IA no ve ni puede leer
@@ -68,7 +68,7 @@ PHP) ?>
 		<tbody>
 			<tr><td><code>id</code></td><td>Id del componente; varios en una página necesitan ids distintos.</td></tr>
 			<tr><td><code>uso</code></td><td>Identifica dónde se usa: el listado muestra solo las consultas de este uso. Por defecto, la ruta de la página + <code>#id</code>.</td></tr>
-			<tr><td><code>collections</code></td><td>Colecciones que la IA puede consultar. Por colección: <code>description</code>; <code>fields</code> (<code>['campo' => 'tipo y significado']</code>; si se omite, se infieren de los documentos que cumplen su <code>match</code>: una muestra de <code>fieldsample</code> documentos más las claves de primer nivel de los 5000 más recientes, en caché 1 hora); <code>match</code> (filtro que se aplica siempre, p. ej. por empresa o usuario); <code>hidden</code> (campos que se eliminan antes de cualquier etapa).</td></tr>
+			<tr><td><code>collections</code></td><td>Colecciones que la IA puede consultar. Por colección: <code>description</code>; <code>fields</code> (<code>['campo' => 'tipo y significado']</code>; si se omite, se infieren de los documentos que cumplen su <code>match</code>: una muestra de <code>fieldsample</code> documentos más las claves de primer nivel de los 5000 más recientes, en caché 1 hora); <code>match</code> (filtro que se aplica siempre, p. ej. por empresa o usuario); <code>hidden</code> (campos que se eliminan antes de cualquier etapa; tampoco se muestrean sus valores); <code>notes</code> (<code>['campo' => 'significado']</code>, se agrega a lo inferido); <code>stats</code> (<code>true</code> por defecto: la IA recibe de la muestra los valores de los campos categóricos —hasta <?= TablefIA::ENUM_MAX ?> valores distintos que se repiten, como <code>estado</code>— y el rango de números y fechas); <code>values</code> (<code>false</code> por defecto: con <code>true</code> también recibe tres ejemplos de los campos de texto libre; pueden ser datos personales).</td></tr>
 			<tr><td><code>relations</code></td><td>Relaciones entre colecciones: <code>from</code>.<code>localField</code> → <code>to</code>.<code>foreignField</code>, con <code>as</code> y <code>description</code> opcionales. Son los únicos <code>$lookup</code> que se aceptan; el lado unido también lleva su <code>match</code> y <code>hidden</code>.</td></tr>
 			<tr><td><code>instructions</code></td><td>Contexto del negocio para la IA (significado de estados, moneda, reglas).</td></tr>
 			<tr><td><code>db</code></td><td>Base de datos; por defecto <code>$config['sitedb']</code>.</td></tr>
@@ -77,6 +77,7 @@ PHP) ?>
 			<tr><td><code>attempts</code></td><td>Intentos con la IA cuando el pipeline no pasa la validación, MongoDB lo rechaza o el resultado no trae las columnas (3, máximo 5). Cada intento recibe los anteriores y el error de cada uno.</td></tr>
 			<tr><td><code>maxtime</code></td><td>Tiempo máximo de ejecución del pipeline en MongoDB, en milisegundos (30000).</td></tr>
 			<tr><td><code>sample</code></td><td>Filas del resultado que se guardan como muestra en <code>nftablesfia</code> (20; 0 para no guardar datos).</td></tr>
+			<tr><td><code>fewshot</code></td><td>Consultas guardadas de este <code>uso</code> que la IA recibe como ejemplos de pregunta → pipeline (5, máximo 10, 0 = ninguna). Se eligen las favoritas y las más ejecutadas, y solo si sus colecciones no cambiaron y pasan la validación actual.</td></tr>
 			<tr><td><code>shared</code></td><td><code>true</code> (defecto): todos ven y reutilizan las consultas del uso; <code>false</code>: cada usuario ve solo las suyas.</td></tr>
 			<tr><td><code>ratelimit</code></td><td>Preguntas nuevas a la IA por usuario: <code>[30, 3600]</code> = 30 por hora. Las reutilizadas no cuentan.</td></tr>
 			<tr><td><code>model</code>, <code>effort</code></td><td><code>claude-opus-5-5</code> y <code>medium</code> por defecto.</td></tr>
@@ -88,8 +89,8 @@ PHP) ?>
 	<h3>Cómo funciona</h3>
 	<ol>
 		<li>El navegador envía la pregunta a <code>/nframework/tablefia.php</code>; la configuración del componente vive en la sesión, así que el usuario no puede agregar colecciones ni relaciones.</li>
-		<li>Si ya existe una consulta guardada con la misma pregunta, el mismo <code>uso</code> y la misma configuración, se ejecuta esa sin llamar a la IA. La pregunta se compara normalizada (<code>TablefIA::normalizePrompt()</code>: minúsculas, sin acentos ni signos de puntuación, espacios colapsados), así que <em>«¿Ventas por año?»</em> y <em>«ventas por ano»</em> no generan dos consultas.</li>
-		<li>Si no, Claude recibe las colecciones con sus campos, las relaciones y las reglas, y responde con la colección base, el pipeline (Extended JSON), las columnas y una explicación (salida estructurada con <code>json_schema</code>).</li>
+		<li>Si ya existe una consulta guardada con la misma pregunta y el mismo <code>uso</code>, y no cambió la configuración de las colecciones que usa (su colección base, las de sus <code>$lookup</code>, las relaciones entre ellas y <code>instructions</code>; ver <code>TablefIA::queryHash()</code>), se ejecuta esa sin llamar a la IA: agregar o cambiar otra colección del componente no la invalida. La pregunta se compara normalizada (<code>TablefIA::normalizePrompt()</code>: minúsculas, sin acentos ni signos de puntuación, espacios colapsados), así que <em>«¿Ventas por año?»</em> y <em>«ventas por ano»</em> no generan dos consultas.</li>
+		<li>Si no, Claude recibe las colecciones con sus campos (tipo, valores de muestra y rangos, notas), las relaciones, las reglas y hasta <code>fewshot</code> consultas guardadas como ejemplo, y responde con la colección base, el pipeline (Extended JSON), las columnas y una explicación (salida estructurada con <code>json_schema</code>).</li>
 		<li>El servidor valida el pipeline y lo arma: <code>match</code> + <code>$unset</code> de <code>hidden</code> + etapas de la IA + <code>$limit</code>. Si no pasa la validación, MongoDB lo rechaza (se envía el código y el mensaje) o el resultado no trae las columnas declaradas, se le pide a la IA una corrección con todos los intentos anteriores, hasta <code>attempts</code> veces.</li>
 		<li>Mientras espera, el usuario ve la etapa (buscando, leyendo campos, generando, corrigiendo, ejecutando) y los segundos transcurridos; <strong>Cancelar</strong> solo deja de esperar.</li>
 		<li>Se ejecuta (máximo <code>maxtime</code>), se muestra en una DataTable y se guarda en <code>nftablesfia</code>. Los números llegan como número (la tabla los ordena numéricamente) y las fechas como <code>Y-m-d H:i:s</code>. Se indica si la consulta se reutilizó (sin costo) o se generó, con los tokens usados.</li>
@@ -121,7 +122,10 @@ PHP) ?>
   "pipeline": "[{\"$match\": {\"estado\": \"pagado\", ...}}, ...]",   // texto JSON tal como lo generó la IA
   "columnas": ["Ciudad", "Total"],
   "explicacion": "Suma de importes pagados en 2026 agrupada por la ciudad del cliente.",
-  "confighash": "…",            // huella de colecciones/relaciones/instrucciones
+  "colecciones": ["clientes", "pedidos"],   // las que usa: base + $lookup
+  "confighash": "…",            // huella de esas colecciones, sus relaciones e instrucciones (queryHash);
+                                // las consultas anteriores (sin "colecciones") usan la de toda la configuración
+  "ejemplos": 3,                // consultas guardadas que recibió la IA como ejemplo
   "modelo": "claude-opus-5-5",
   "tokens": {"input": 1830, "output": 412, "cache": 0},   // suma de todos los intentos
   "intentos": 1,

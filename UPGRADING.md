@@ -3,6 +3,44 @@
 Cambios del framework que pueden notar los sitios que lo usan. Cada entrada dice qué cambió, a quién afecta
 y qué revisar. Las más recientes van primero.
 
+## 2026-11-21 — TablefIA: más contexto para la IA y reutilización por colección
+
+### La IA ahora recibe valores reales de muestra (privacidad)
+
+Hasta ahora `TablefIA` enviaba a la API de Anthropic solo nombres y tipos de campos. Ahora, para las colecciones
+sin `fields`, también envía lo que encuentra en una muestra de documentos (que ya cumplen su `match` y sin los
+campos de `hidden`):
+
+- **por omisión (`'stats' => true`)**: los valores de los campos categóricos (hasta 12 valores distintos que se
+  repiten, p. ej. `estado: "pagado", "pendiente"`) y el rango de números y fechas (`importe: de 150 a 8999`);
+- **solo con `'values' => true`**: tres ejemplos de los campos de texto libre (nombres, correos…).
+
+**Revise:** colecciones cuyos valores categóricos o rangos no deban salir del servidor (diagnósticos, montos
+confidenciales). Desactívelo por colección con `'stats' => false`, declare `fields` a mano (con `fields` no se
+muestrea nada) u oculte el campo con `hidden`.
+
+```bash
+grep -rn "new TablefIA" --include=*.php .
+```
+
+### Ejemplos de consultas guardadas (`fewshot`)
+
+La IA recibe hasta 5 consultas guardadas del mismo `uso` (favoritas y más ejecutadas, revalidadas con la
+configuración actual) como ejemplo. Con `'shared' => false` solo las del propio usuario. `'fewshot' => 0` lo
+desactiva. Las preguntas de los usuarios llegan así al prompt de otros usuarios del mismo `uso`: el pipeline se
+sigue validando en el servidor, pero si las preguntas pueden contener datos sensibles, use `0`.
+
+### Reutilización: cambiar una colección ya no invalida las consultas de las demás
+
+Las consultas nuevas guardan `colecciones` (base + `$lookup`) y su `confighash` cubre solo esas colecciones, sus
+relaciones e `instructions`. Las consultas guardadas antes se siguen reutilizando con la regla anterior (toda la
+configuración); agregar `notes`, `stats` o `values` no las invalida. No hay migración ni índices nuevos.
+
+### `notes` en lugar de `fields` para dar significado
+
+`notes` (`['importe' => 'total en pesos']`) agrega el significado a los campos inferidos, sin perder la
+inferencia de tipos y valores. `fields` sigue funcionando igual (lista completa a mano, sin muestreo).
+
 ## 2026-11-21 — correcciones del núcleo
 
 Ninguna firma pública cambió: el código que ya funcionaba sigue funcionando. Lo que cambia es que varias
