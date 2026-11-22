@@ -336,7 +336,7 @@ HTML;
                 return true;
                 break;
             default:
-                if ($this->info[$name] != $value) {
+                if (($this->info[$name] ?? null) != $value) {
                     $this->info[$name] = $value;
                     $this->m->{$this->db}->users->updateOne(
                         ['_id' => tomongoid($this->info['_id'])],
@@ -419,19 +419,8 @@ HTML;
      */
     public function offsetSet(mixed $name, mixed $value): void
     {
-        switch ($name) {
-            case 'username':
-            case '_id':
-                break;
-            default:
-                if ($this->info[$name] != $value) {
-                    $this->info[$name] = $value;
-                    $this->m->{$this->db}->users->updateOne(
-                        ['_id' => $this->info['_id']],
-                        ['$set' => [$name => $value]]
-                    );
-                }
-        }
+        // Antes filtraba por el _id en texto y no guardaba nada en MongoDB.
+        $this->__set((string) $name, $value);
     }
 
     /**
@@ -451,17 +440,7 @@ HTML;
      */
     public function offsetUnset(mixed $name): void
     {
-        switch ($name) {
-            case 'username':
-            case '_id':
-                break;
-            default:
-                unset($this->info[$name]);
-                $this->m->{$this->db}->users->updateOne(
-                    ['_id' => $this->info['_id']],
-                    ['$unset' => [$name => '']]
-                );
-        }
+        $this->__unset((string) $name);
     }
 
     /**
@@ -472,28 +451,6 @@ HTML;
      */
     public function offsetGet(mixed $name): mixed
     {
-        $result = null;
-        switch ($name) {
-            case 'fullname':
-                $result = $this->info['nombres'] . ' ' .
-                    $this->info['primerap'] . ' ' .
-                    $this->info['segundoap'];
-                break;
-            case '':
-                $result = false;
-                break;
-            case '_id':
-                $result = (string) $this->info['_id'];
-                break;
-            default:
-                // if ($this->info)) {
-                if (array_key_exists($name, $this->info)) {
-                    //     if (property_exists( $this->info,$name)) {
-                    $result = $this->info[$name];
-                    //   }
-                }
-        }
-
-        return $result;
+        return $this->__get((string) $name);
     }
 }

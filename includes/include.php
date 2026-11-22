@@ -1108,27 +1108,6 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
             if ($errno & E_FATAL) {
                 http_response_code(200);
                 echo 'ocurrio una incidencia en el programa, reportando el problema para su solucion, disculpe las molestias ';
-
-                if (isset($result->upserted)) {
-                    /*$mail = new PHPMailer();
-                    $mail->isSMTP();                                      // Set mailer to use SMTP
-                       $mail->Host=$config['mailhost'];
-                    $mail->Port=$config['mailport'];
-                    $mail->SMTPAuth=$config['mailsmtpauth'];
-                    $mail->Username=$config['mailusername'];
-                    $mail->Password=$config['mailpassword'];
-                    $mail->Subject = 'Incidencia critica '.$result['upserted']  ;
-                    $mail->From = 'contacto@hmail.nlared.com';
-                    $mail->FromName = 'Incidencia critica';
-                    $mail->addAddress($destinatario); // Add a recipient
-                    $mail->WordWrap = 50;                                 // Set word wrap to 50 characters
-                    $mail->IsHTML(true);
-                    $mail->Body    = 'A ocurrido una incidencia critica #'.$result['upserted'];
-                    $mail->AltBody = 'A ocurrido una incidencia critica #'.$result['upserted'];
-                    if(!$mail->send()) {
-                       echo 'Error enviando correo';
-                    }*/
-                }
             }
         }
 
@@ -1285,19 +1264,28 @@ function speak($text)
 }
 // TODO> Other options
 /**
- * Muestra $text como toast() al cargar la página. $title y $options se aceptan por compatibilidad pero
- * hoy no se usan.
+ * Muestra un toast() al cargar la página: $title en negritas (escapado) sobre $text. $text se envía tal cual,
+ * como antes: puede llevar HTML, así que escape lo que venga del usuario.
+ *
+ *   notify('', 'Datos guardados');
+ *   notify('Pedido 25', 'Listo para entrega', ['timeout' => 8000]);
  *
  * @global Javas $javas
- * @param string $title Sin uso actualmente.
+ * @param string $title Título; '' = solo el texto.
  * @param string $text
- * @param array<string, mixed> $options Sin uso actualmente.
+ * @param array{timeout?: int} $options timeout = milisegundos visible.
  * @return void
  */
-function notify($title = 'nlared.com', $text = '', $options = [])
+function notify($title = '', $text = '', $options = [])
 {
     global $javas;
-    $javas->addjs('toast(' . json_encode((string) $text) . ');', 'ready');
+    $title = (string) $title;
+    $message = ($title !== '' ? '<b>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</b><br>' : '') . (string) $text;
+    $args = json_encode($message);
+    if (isset($options['timeout']) && is_numeric($options['timeout'])) {
+        $args .= ', null, ' . (int) $options['timeout'];
+    }
+    $javas->addjs('toast(' . $args . ');', 'ready');
 }
 
 

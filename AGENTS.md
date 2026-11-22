@@ -313,5 +313,7 @@ tests/                  PHPUnit: bootstrap.php simula $config y $m = null
   `docs/components.json` (la página en `sections`, la clase en `components`; `DocsCatalogTest` lo verifica) y
   agregue tests en `tests/Unit` cuando no dependan de MongoDB.
 - Cambios de esquema o índices van en `nframework/test.php` (instalador idempotente).
+- Un cambio que altere el comportamiento visible para los sitios (aunque corrija un error) se anota en
+  `UPGRADING.md`: qué cambió, a quién afecta y cómo buscarlo en el código del sitio.
 - Ignorados por git: `includes/vendor/`, `includes/config.php`, `composer.lock`, `*.log`, `.github/`, `.vscode/`, `.idea/`.
 - No suba ni muestre `includes/config.php` (credenciales).

@@ -296,10 +296,11 @@ class baseInput
                 $this->name = $this->dataset->nameprefix . '[' . $this->name . ']';
             }
 
-            if (!empty($this->dataset->allUppercase) && property_exists($this, 'uppercase')) {
+            // dataset declara allUpper/allLower; allUppercase/allLowercase se siguen aceptando.
+            if ((!empty($this->dataset->allUpper) || !empty($this->dataset->allUppercase)) && property_exists($this, 'uppercase')) {
                 $this->uppercase = true;
             }
-            if (!empty($this->dataset->allLowercase) && property_exists($this, 'lowercase')) {
+            if ((!empty($this->dataset->allLower) || !empty($this->dataset->allLowercase)) && property_exists($this, 'lowercase')) {
                 $this->lowercase = true;
             }
             if (strpos((string) $this->field, '.') !== false) {
@@ -2845,15 +2846,12 @@ class dataset
     public function refresh()
     {
         if ($this->_id != '') {
-            $this->info = $this->collection->findOne([
-                '_id' => ($this->simpleid == true ?
-                    trim($this->_id)
-                    : toMongoId(trim($this->_id))
-                ),
-            ]);
-            if (count($this->info) == 0) {
-                $this->info = ['_id' => $this->_id];
-            }
+            $id = $this->simpleid == true || $this->_id instanceof MongoDB\BSON\ObjectId
+                ? $this->_id
+                : toMongoId(trim((string) $this->_id));
+            // findOne() devuelve null si el documento ya no existe: antes count(null) lanzaba TypeError.
+            $doc = $this->collection->findOne(['_id' => $id]);
+            $this->info = $doc ? (array) $doc : ['_id' => $this->_id];
         }
     }
 
@@ -2884,7 +2882,7 @@ class dataset
                 if (!empty($this->mongo_session)) {
                     $options['session'] = $this->mongo_session;
                 }
-                if ($this->info[$name] != $value) {
+                if (($this->info[$name] ?? null) != $value) {
                     $this->info[$name] = $value;
                     if ($this->_id == '') {
                         if ($this->historic) {
@@ -2934,16 +2932,18 @@ class dataset
             }
             unset($this->info[$name]);
             $operations = [
-                '$unset' => [$name => 1],
+                '$unset' => [$name => ''],
             ];
             if ($this->historic) {
                 $this->createversion();
                 $operations['$set']['nfversions'] = $this->info['nfversions'];
             }
 
+            // Un documento de actualización, no una lista: [$operations] se enviaba como pipeline de
+            // agregación y MongoDB lo rechazaba.
             $this->collection->updateOne(
-                ['_id' => $this->info['_id']],
-                [$operations],
+                ['_id' => $this->_id],
+                $operations,
                 $options
             );
 
@@ -2953,32 +2953,46 @@ class dataset
         return true;
     }
     /**
-     * Intenta registrar los campos de los controles en la definición de nftables de la colección.
+     * Registra los controles ligados como campos (nffields) de la tabla administrable de esta colección en
+     * nftables (Admin → nftables), creándola si no existe. Solo agrega los campos que aún no están: lo que
+     * el administrador ya editó se conserva.
      *
      * @global MongoDB\Client $m
      * @global class_config $config
-     * @param mixed $id
+     * @param mixed $id Sin uso (compatibilidad).
      * @return void
      */
-    public function tonfTables($id): void
+    public function tonfTables($id = null): void
     {
         global $m, $config;
+        $tables = $m->{$config['sitedb']}->nftables;
+        $collection = $this->collection->getCollectionName();
+        $current = $tables->findOne(['nfcollection' => $collection], ['projection' => ['nffields.field' => 1]]);
+        $known = [];
+        foreach ($current['nffields'] ?? [] as $field) {
+            $known[(string) ($field['field'] ?? '')] = true;
+        }
+        $fields = [];
         foreach ($this->elements as $element) {
+            $name = (string) $element->field;
+            if ($name === '' || $name === '_id' || isset($known[$name])) {
+                continue;
+            }
+            $known[$name] = true;
             $fields[] = [
-                'type' =>  get_class($element),
-                'field' => $element->field,
-                'short_description' => $element->caption,
+                'type' => get_class($element),
+                'field' => $name,
+                'short_description' => strip_tags((string) $element->caption),
+                'required' => (bool) $element->required,
             ];
         }
-        $m->{$config['sitedb']}->nftables->updateOne(
-            ['nfcollection' => $this->collection->getCollectionName()],
-            [
-                '$addToSet' => [
-                    'type' =>  get_class($element),
-                    'field' => $element->field,
-                ],
-                ['upsert' => true]
-            ]
+        if ($fields === []) {
+            return;
+        }
+        $tables->updateOne(
+            ['nfcollection' => $collection],
+            ['$push' => ['nffields' => ['$each' => $fields]]],
+            ['upsert' => true]
         );
     }
     /**
@@ -3224,11 +3238,13 @@ class TreeViewItem
      */
     public function __toString()
     {
-        $tmp = (string) $this->icon . $this->caption;
-        if (count($this->children) > 0) {
-            $tmp .= '<ul>' . implode('', $this->children) . '</ul>';
-        }
-        return '<li class="item" ' . $this->addnodetag . ' data-icon="' . $this->icon->data() . '" data-caption="' . $this->caption . '">' . $tmp . '</li>';
+        // Metro dibuja el icono y el texto a partir de data-icon y data-caption; dentro solo van los hijos.
+        // Antes llamaba a $this->icon->data(), que Icon no tiene (error fatal), y repetía icono y texto.
+        $children = !empty($this->children) ? '<ul>' . implode('', (array) $this->children) . '</ul>' : '';
+        return '<li class="item" ' . $this->addnodetag
+            . ' data-icon="' . htmlspecialchars((string) $this->icon, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-caption="' . htmlspecialchars((string) $this->caption, ENT_QUOTES, 'UTF-8') . '">'
+            . $children . '</li>';
     }
 }
 /**
@@ -3237,13 +3253,26 @@ class TreeViewItem
 class TreeView
 {
     /** @var list<TreeViewItem> */
-    public $children;
+    public $children = [];
+    /** @var string Id del <ul>. */
+    public $id = 'tree_add_leaf_example';
+
+    /**
+     * @param array{children?: list<TreeViewItem>, id?: string} $options
+     */
+    public function __construct($options = [])
+    {
+        foreach ($options as $option => $value) {
+            $this->{$option} = $value;
+        }
+    }
+
     /**
      * @return string HTML.
      */
     public function __toString()
     {
-        return '<ul data-role="treeview"
-			     id="tree_add_leaf_example">' . implode('', $this->children) . '</ul>';
+        return '<ul data-role="treeview" id="' . htmlspecialchars((string) $this->id, ENT_QUOTES, 'UTF-8') . '">'
+            . implode('', (array) $this->children) . '</ul>';
     }
 }

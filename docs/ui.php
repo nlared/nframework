@@ -17,6 +17,7 @@ $javas->addjs('window.addEventListener("load", function () { $("#hoyJs").text(da
 	<?= docCode(<<<'PHP'
 // Desde PHP: se ejecutan cuando la página termina de cargar.
 notify('', 'Datos guardados');
+notify('Pedido 25', 'Listo para entrega', ['timeout' => 8000]);   // título en negritas (escapado)
 speak('Su turno es el 25');
 
 // En una respuesta AJAX, use la clave js de $result:

@@ -79,7 +79,7 @@ class TableF
         }
     });
 js,
-            'reaady'
+            'general'
         );
 
         $javas->addjs("

@@ -342,6 +342,11 @@ Machine-readable indexes: [`docs/components.json`](docs/components.json) lists e
 every component (class, source file, category, example page) — `docs/` builds its menu from it — and
 [`llms.txt`](llms.txt) follows the [llms.txt](https://llmstxt.org) format.
 
+## Upgrading
+
+Behavior changes that affect sites built on nframework are listed in [UPGRADING.md](UPGRADING.md) (in Spanish),
+with what to check in each site.
+
 ## Contributing
 
 1. Create a branch from `master`: `git checkout -b feature/my-change`
