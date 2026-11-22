@@ -324,19 +324,28 @@ The tests do not need a MongoDB server. See [tests/README.md](tests/README.md).
 
 Code style: `./includes/vendor/bin/pint`.
 
-## Working with Claude Code
+## Working with AI assistants
 
-[`CLAUDE.md`](CLAUDE.md) describes the framework's conventions for AI assistants. Projects built on
-nframework can import it from their own `CLAUDE.md`:
+[`AGENTS.md`](AGENTS.md) describes the framework's conventions for AI coding agents (Codex, Cursor, Copilot,
+Gemini…); [`CLAUDE.md`](CLAUDE.md) imports it for Claude Code. Projects built on nframework can pull it into
+their own files:
 
 ```markdown
-@/var/www/dev.nlared.local/CLAUDE.md
+<!-- site CLAUDE.md -->
+@/var/www/dev.nlared.local/AGENTS.md
+
+<!-- site AGENTS.md (the standard has no imports) -->
+This site uses nframework: read /var/www/dev.nlared.local/AGENTS.md before working.
 ```
+
+Machine-readable indexes: [`docs/components.json`](docs/components.json) lists every documentation page and
+every component (class, source file, category, example page) — `docs/` builds its menu from it — and
+[`llms.txt`](llms.txt) follows the [llms.txt](https://llmstxt.org) format.
 
 ## Contributing
 
 1. Create a branch from `master`: `git checkout -b feature/my-change`
-2. Add or update the example in `docs/` when you change a component.
+2. Add or update the example in `docs/` when you change a component, and register it in `docs/components.json`.
 3. Run `./run-tests.sh`.
 4. Open a pull request.
 

@@ -1,0 +1,67 @@
+# nframework
+
+> Framework PHP (sin namespaces, variables globales) para aplicaciones web con MongoDB: componentes de formulario Metro UI 5 con databinding, formularios AJAX con CSRF, DataTables, usuarios con 2FA, panel de administración, exportaciones Excel/Word/PDF, colas de trabajo e integración con el SAT (CFDI, e.firma).
+
+La documentación de /docs/ es ejecutable: cada página muestra el resultado junto al código PHP que lo produce. Textos, comentarios y documentación están en español.
+
+## Para agentes
+
+- [AGENTS.md](/AGENTS.md): convenciones, anatomía de una página, contrato AJAX, databinding, seguridad y estructura del framework
+- [components.json](/docs/components.json): catálogo legible por máquina de las páginas de /docs/ y de cada componente (clase, archivo, categoría, página de ejemplo)
+
+## Introducción
+
+- [Inicio](/docs/index.php): Índice de todos los ejemplos.
+- [Instalación](/docs/install.php): Requisitos e install.sh: sitio único o multisitio con ligas simbólicas, nginx y actualización.
+- [Primeros pasos](/docs/intro.php): Anatomía de una página: include, usecommon, peticiones AJAX y $result.
+- [Variables especiales](/docs/vars.php): Variables globales que cambian el comportamiento del framework.
+
+## Formularios
+
+- [Inputs](/docs/inputs.php): Catálogo de controles: texto, números, selects, checkboxes, color, dirección...
+- [Fechas y horas](/docs/datetime.php): inputDate, inputTime e inputDateTime y cómo se guardan en MongoDB.
+- [Select con AJAX](/docs/inputsajax.php): Select que busca opciones en una colección mientras se escribe.
+- [Autocompletar](/docs/autocomplete.php): inputText con sugerencias: lista fija, MongoDB, endpoint propio, campos dependientes.
+- [Validaciones](/docs/validations.php): required, pattern, validate y validación del lado del servidor.
+- [Archivos](/docs/files.php): inputFile e inputFiles: subir, previsualizar, descargar y eliminar.
+- [Geocercas y rutas](/docs/mapshape.php): mapshape: dibujar un polígono o una polilínea, opcionalmente dentro de otra geocerca.
+- [Firma](/docs/signature.php): Signature_pad: capturar una firma y guardarla como imagen.
+- [e.firma y CSD](/docs/efirma.php): Efirma: registrar y seleccionar e.firma o CSD, en el navegador o cifrada en el servidor.
+
+## Datos
+
+- [Databinding](/docs/databinding.php): Formulario ligado a un documento de MongoDB con dataset.
+- [Databinding AJAX](/docs/databindingajax.php): El mismo formulario guardando por AJAX con secureform().
+- [Formatos en MongoDB](/docs/mongoformats.php): Tipo BSON que guarda cada control (int, double, date, ObjectId, bool, GeoJSON) y cómo guardar a mano.
+- [Arreglos embebidos](/docs/arraylist.php): embededArray: editar una lista dentro de un documento.
+- [DataTable](/docs/datatable.php): Tabla con datos generados en PHP.
+- [DataTable AJAX](/docs/datatableajax.php): Tabla paginada en el servidor desde una colección.
+- [TableF: filtros](/docs/tablef.php): Constructor visual de filtros sobre una DataTable AJAX, con exportación a CSV y Excel.
+- [TablefIA: consultas con IA](/docs/tablefia.php): Preguntas en lenguaje natural convertidas en pipelines de MongoDB, guardadas para reutilizarlas.
+- [Databinding SQL (PDO)](/docs/datasetpdo.php): datasetpdo: los mismos controles ligados a un registro de MySQL, PostgreSQL o SQLite.
+- [Caso: domicilio INEGI](/docs/inegi.php): Formulario completo con mapa y catálogos de INEGI.
+
+## Interfaz
+
+- [Diálogos](/docs/dialog.php): Dialog: ventanas modales con formulario.
+- [JavaScript ($javas)](/docs/javas.php): Agregar JavaScript a la página desde PHP.
+- [Notificaciones y utilidades](/docs/ui.php): notify(), speak(), BreadCrumbs, ThemeSwitcher y CSS/JS por página.
+- [Hoja de cálculo](/docs/xspreadsheet.php): xspreadsheet: ver y editar un .xlsx en el navegador.
+
+## Backend
+
+- [Usuarios y permisos](/docs/user.php): $user, grupos, permisos y páginas protegidas.
+- [Seguridad](/docs/security.php): CSRF, redirecciones seguras, consultas Mongo y archivos subidos.
+- [Funciones](/docs/functions.php): Funciones auxiliares de functions.php con su resultado.
+- [Rutas](/docs/routes.php): Rutas propias con crouter.php y las rutas integradas.
+- [Excel, Word y PDF](/docs/exports.php): Descargar hojas de cálculo, documentos y PDF.
+- [Imágenes](/docs/images.php): Miniaturas, AVIF o WebP según el navegador, fotos de perfil y páginas de PDF como imagen.
+- [Procesos en segundo plano](/docs/backgroundps.php): bgprocess: lanzar y vigilar un comando largo.
+- [Colas de trabajo](/docs/jobs.php): Job y job_worker.php: tareas diferidas con reintentos.
+- [Páginas y menús del CMS](/docs/cms.php): nfPage(), nfMetroMenu() y renderEmbeddedFunctions(): contenido editable desde el panel.
+
+## Servicios
+
+- [Correo](/docs/mail.php): nfMailer(): enviar correos con el SMTP del sitio, adjuntos y servidor alterno.
+- [Caché](/docs/cache.php): nfCacheRemember() en el servidor y serveFile()/testcache() en el navegador.
+- [Idiomas](/docs/i18n.php): Detección de idioma, $nframework->language y cómo agregar textos.

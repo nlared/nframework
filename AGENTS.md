@@ -1,11 +1,19 @@
-# CLAUDE.md — nframework
+# AGENTS.md — nframework
 
-Contexto para trabajar en **nframework** y en **sitios construidos sobre él**. Un proyecto basado en
-nframework puede importar este archivo desde su propio `CLAUDE.md`:
+Contexto para agentes de IA que trabajan en **nframework** y en **sitios construidos sobre él**
+([AGENTS.md](https://agents.md): lo leen Codex, Cursor, Copilot, Gemini y otros; `CLAUDE.md` solo lo importa
+para Claude Code). Un proyecto basado en nframework lo incorpora desde sus propios archivos:
 
 ```markdown
-@/var/www/dev.nlared.local/CLAUDE.md
+<!-- CLAUDE.md del sitio (Claude Code resuelve la importación) -->
+@/var/www/dev.nlared.local/AGENTS.md
+
+<!-- AGENTS.md del sitio (el estándar no tiene importaciones: indíquelo en texto) -->
+Este sitio usa nframework: antes de trabajar lea /var/www/dev.nlared.local/AGENTS.md.
 ```
+
+Para consultas automáticas hay dos índices legibles por máquina: `docs/components.json` (todas las páginas de
+`docs/` y cada componente con su clase, archivo, categoría y página de ejemplo) y `llms.txt` en la raíz.
 
 nframework es un framework PHP (sin namespaces, basado en variables globales) para aplicaciones web con
 MongoDB, componentes de formulario Metro UI 5, formularios AJAX, DataTables, usuarios con 2FA, panel de
@@ -285,7 +293,7 @@ includes/class.*.php    User, Table, Dialog, Javas, Job, bgprocess, embededArray
 nframework/             endpoints internos: router, uploadfile, datatable, select_ajax, nfdialog/nftable,
                         OAuth (google/, facebook/, microsoft/), templates/ (Twig: basic, panda), test.php
 admin/                  panel (cada sección en su carpeta; usa admin/common2.php)
-docs/                   documentación ejecutable; menú en $docsMenu de docs/common2.php
+docs/                   documentación ejecutable; catálogo en docs/components.json (de ahí sale $docsMenu)
 sat/                    CFDI, e.firma, XSD (XMLS), catálogos
 tests/                  PHPUnit: bootstrap.php simula $config y $m = null
 ```
@@ -297,7 +305,8 @@ tests/                  PHPUnit: bootstrap.php simula $config y $m = null
 - `includes/` usa 4 espacios; `docs/` y varias páginas usan tabuladores. Respete el del archivo.
 - Mantenga el estilo global (sin namespaces, `global` en funciones); no introduzca contenedores DI ni
   frameworks nuevos.
-- Al cambiar o añadir un componente, actualice/añada su ejemplo en `docs/` (y regístrelo en `$docsMenu`) y
+- Al cambiar o añadir un componente, actualice/añada su ejemplo en `docs/`, regístrelo en
+  `docs/components.json` (la página en `sections`, la clase en `components`; `DocsCatalogTest` lo verifica) y
   agregue tests en `tests/Unit` cuando no dependan de MongoDB.
 - Cambios de esquema o índices van en `nframework/test.php` (instalador idempotente).
 - Ignorados por git: `includes/vendor/`, `includes/config.php`, `composer.lock`, `*.log`, `.github/`, `.vscode/`, `.idea/`.
