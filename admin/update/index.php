@@ -67,6 +67,36 @@ function updComposer(array $args, bool $stderr = true): array
     return $r;
 }
 
+/**
+ * Rama de origin a la que se alinea la copia al forzar: la del upstream actual si existe en origin; si no, la
+ * rama por omisión del remoto (origin/HEAD) o master.
+ */
+function updForceTarget(): ?string
+{
+    $candidates = [];
+    $upstream = updGit(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']);
+    if ($upstream['code'] === 0 && str_starts_with($upstream['output'], 'origin/')) {
+        $candidates[] = substr($upstream['output'], 7);
+    }
+    $current = updGit(['rev-parse', '--abbrev-ref', 'HEAD']);
+    if ($current['code'] === 0) {
+        $candidates[] = $current['output'];
+    }
+    $head = updGit(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
+    if ($head['code'] === 0 && str_starts_with($head['output'], 'origin/')) {
+        $candidates[] = substr($head['output'], 7);
+    }
+    $candidates[] = 'master';
+    $candidates[] = 'main';
+    foreach ($candidates as $branch) {
+        if (preg_match('~^[A-Za-z0-9][A-Za-z0-9._/-]*$~', $branch) && !str_contains($branch, '..')
+            && updGit(['rev-parse', '--verify', '--quiet', 'refs/remotes/origin/' . $branch])['code'] === 0) {
+            return $branch;
+        }
+    }
+    return null;
+}
+
 function updValidPackage($name): bool
 {
     return is_string($name) && preg_match('~^[a-z0-9]([_.-]?[a-z0-9]+)*/[a-z0-9](([_.]|-{1,2})?[a-z0-9]+)*$~', $name) === 1;
@@ -110,7 +140,51 @@ if ($nframework->isAjax()) {
                 'status' => updGit(['status', '--short'])['output'],
                 'log' => updGit(['log', '-15', '--pretty=format:%h  %ad  %an  %s', '--date=short'])['output'],
                 'incoming' => $upstream['code'] === 0 ? updGit(['log', '--pretty=format:%h  %ad  %an  %s', '--date=short', 'HEAD..@{u}'])['output'] : '',
+                // Pull (--ff-only) no puede: sin upstream, o con commits locales que el remoto no tiene.
+                'needsforce' => $upstream['code'] !== 0 || ($ahead > 0 && $behind > 0),
             ];
+            break;
+        case 'git_force':
+            // Deja la copia igual que origin/<rama>. Nada se pierde: los commits locales quedan en una rama
+            // respaldo/... y los cambios sin commit en git stash. Los archivos sin seguimiento (config.php,
+            // vendor/, datos del sitio) no se tocan: no se ejecuta git clean.
+            $log = [];
+            $fetch = updGit(['fetch', '--prune', 'origin']);
+            $log[] = '$ git fetch --prune origin' . ($fetch['output'] !== '' ? "\n" . $fetch['output'] : '');
+            $target = $fetch['code'] === 0 ? updForceTarget() : null;
+            if ($target === null) {
+                $result = ['success' => false, 'output' => implode("\n", $log) . "\n\nNo se encontró la rama de origin a la que actualizar."];
+                break;
+            }
+            $remote = 'origin/' . $target;
+            $head = updGit(['rev-parse', '--verify', '--quiet', 'HEAD']);
+            if ($head['code'] === 0 && updGit(['merge-base', '--is-ancestor', 'HEAD', $remote])['code'] !== 0) {
+                $backup = 'respaldo/' . date('Ymd-His');
+                $r = updGit(['branch', $backup, 'HEAD']);
+                $log[] = $r['code'] === 0
+                    ? "Commits locales respaldados en la rama {$backup} (" . substr($head['output'], 0, 7) . ')'
+                    : 'No se pudo crear el respaldo: ' . $r['output'];
+                if ($r['code'] !== 0) {
+                    $result = ['success' => false, 'output' => implode("\n", $log)];
+                    break;
+                }
+            }
+            if (updGit(['status', '--porcelain', '--untracked-files=no'])['output'] !== '') {
+                $r = updGit(['stash', 'push', '-m', 'Admin → Actualizar ' . date('Y-m-d H:i:s')]);
+                $log[] = $r['code'] === 0 ? 'Cambios locales guardados con git stash (recupérelos con: git stash pop)' : 'No se pudo guardar con git stash: ' . $r['output'];
+                if ($r['code'] !== 0) {
+                    $result = ['success' => false, 'output' => implode("\n", $log)];
+                    break;
+                }
+            }
+            $r = updGit(['checkout', '-f', '-B', $target, $remote]);
+            $log[] = '$ git checkout -f -B ' . $target . ' ' . $remote . "\n" . $r['output'];
+            if ($r['code'] === 0) {
+                updGit(['branch', '--set-upstream-to=' . $remote, $target]);   // por si checkout no lo ligó
+                $log[] = 'Listo: ' . updGit(['log', '-1', '--pretty=format:%h  %ad  %s', '--date=short'])['output'];
+                $log[] = 'Si cambiaron dependencias, ejecute Composer → Install.';
+            }
+            $result = ['success' => $r['code'] === 0, 'output' => implode("\n", array_filter($log, fn($l) => $l !== ''))];
             break;
         case 'git_fetch':
             $r = updGit(['fetch', '--prune']);
@@ -202,6 +276,11 @@ $nframework->usecommon = true;
                     <button class="button" onclick="updGitStatus()"><span class="mif-loop2"></span> Actualizar estado</button>
                     <button class="button" onclick="updRun('git_fetch', {}, updGitStatus)"><span class="mif-download"></span> Fetch</button>
                     <button class="button primary" onclick="updConfirm('¿Actualizar el código con git pull (--ff-only)?', 'git_pull', {}, updGitStatus)"><span class="mif-cloud-download"></span> Pull</button>
+                    <button class="button alert" onclick="updForce()" title="Deja el código igual que GitHub aunque Pull no pueda"><span class="mif-warning"></span> Forzar actualización</button>
+                </div>
+                <div id="upd-force-hint" class="remark warning" style="display:none">
+                    Pull no puede actualizar esta copia (rama sin upstream o con historial distinto al de GitHub).
+                    Use <b>Forzar actualización</b>: deja el código igual que GitHub y respalda lo local.
                 </div>
                 <table class="table compact subcompact upd-info">
                     <tr><th>Rama</th><td id="upd-branch"></td></tr>
@@ -288,6 +367,16 @@ $nframework->usecommon = true;
         if (confirm(question)) updRun(action, data, after);
     }
 
+    function updForce() {
+        var msg = 'Forzar actualización\n\n' +
+            'El código quedará igual que la rama de GitHub (origin), aunque la rama local sea otra o el historial haya cambiado.\n\n' +
+            '- Los commits locales se respaldan en una rama respaldo/<fecha>.\n' +
+            '- Los cambios sin commit se guardan con git stash.\n' +
+            '- No se tocan los archivos sin seguimiento (config.php, vendor/, datos del sitio).\n\n' +
+            '¿Continuar?';
+        if (confirm(msg)) updRun('git_force', {}, updGitStatus);
+    }
+
     function updGitStatus() {
         updPost('git_status').done(function (r) {
             $('#upd-branch').text(r.branch);
@@ -297,6 +386,7 @@ $nframework->usecommon = true;
             $('#upd-status').text(r.status || 'Sin cambios locales.');
             $('#upd-incoming').text(r.incoming || 'Nada pendiente (usa Fetch para consultar el remoto).');
             $('#upd-log').text(r.log);
+            $('#upd-force-hint').toggle(!!r.needsforce);
         });
     }
 
