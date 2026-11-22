@@ -1,0 +1,588 @@
+{
+    "$comment": "Catálogo de la documentación y de los componentes de nframework. docs/common2.php construye $docsMenu a partir de este archivo; edítelo aquí. Las rutas de \"doc\" son relativas a /docs/ y las de \"file\" a la raíz del framework. \"doc\": null = componente sin página de ejemplo todavía; consulte la clase.",
+    "name": "nframework",
+    "docs": "/docs/",
+    "sections": [
+        {
+            "section": "Introducción",
+            "pages": [
+                {
+                    "file": "index.php",
+                    "title": "Inicio",
+                    "icon": "mif-home",
+                    "description": "Índice de todos los ejemplos."
+                },
+                {
+                    "file": "install.php",
+                    "title": "Instalación",
+                    "icon": "mif-download",
+                    "description": "Requisitos e install.sh: sitio único o multisitio con ligas simbólicas, nginx y actualización."
+                },
+                {
+                    "file": "intro.php",
+                    "title": "Primeros pasos",
+                    "icon": "mif-apps",
+                    "description": "Anatomía de una página: include, usecommon, peticiones AJAX y $result."
+                },
+                {
+                    "file": "vars.php",
+                    "title": "Variables especiales",
+                    "icon": "mif-money",
+                    "description": "Variables globales que cambian el comportamiento del framework."
+                }
+            ]
+        },
+        {
+            "section": "Formularios",
+            "pages": [
+                {
+                    "file": "inputs.php",
+                    "title": "Inputs",
+                    "icon": "mif-widgets",
+                    "description": "Catálogo de controles: texto, números, selects, checkboxes, color, dirección..."
+                },
+                {
+                    "file": "datetime.php",
+                    "title": "Fechas y horas",
+                    "icon": "mif-calendar",
+                    "description": "inputDate, inputTime e inputDateTime y cómo se guardan en MongoDB."
+                },
+                {
+                    "file": "inputsajax.php",
+                    "title": "Select con AJAX",
+                    "icon": "mif-search",
+                    "description": "Select que busca opciones en una colección mientras se escribe."
+                },
+                {
+                    "file": "autocomplete.php",
+                    "title": "Autocompletar",
+                    "icon": "mif-keyboard",
+                    "description": "inputText con sugerencias: lista fija, MongoDB, endpoint propio, campos dependientes."
+                },
+                {
+                    "file": "validations.php",
+                    "title": "Validaciones",
+                    "icon": "mif-checkmark",
+                    "description": "required, pattern, validate y validación del lado del servidor."
+                },
+                {
+                    "file": "files.php",
+                    "title": "Archivos",
+                    "icon": "mif-upload",
+                    "description": "inputFile e inputFiles: subir, previsualizar, descargar y eliminar."
+                },
+                {
+                    "file": "mapshape.php",
+                    "title": "Geocercas y rutas",
+                    "icon": "mif-location",
+                    "description": "mapshape: dibujar un polígono o una polilínea, opcionalmente dentro de otra geocerca."
+                },
+                {
+                    "file": "signature.php",
+                    "title": "Firma",
+                    "icon": "mif-pencil",
+                    "description": "Signature_pad: capturar una firma y guardarla como imagen."
+                },
+                {
+                    "file": "efirma.php",
+                    "title": "e.firma y CSD",
+                    "icon": "mif-key",
+                    "description": "Efirma: registrar y seleccionar e.firma o CSD, en el navegador o cifrada en el servidor."
+                }
+            ]
+        },
+        {
+            "section": "Datos",
+            "pages": [
+                {
+                    "file": "databinding.php",
+                    "title": "Databinding",
+                    "icon": "mif-database",
+                    "description": "Formulario ligado a un documento de MongoDB con dataset."
+                },
+                {
+                    "file": "databindingajax.php",
+                    "title": "Databinding AJAX",
+                    "icon": "mif-database",
+                    "description": "El mismo formulario guardando por AJAX con secureform()."
+                },
+                {
+                    "file": "mongoformats.php",
+                    "title": "Formatos en MongoDB",
+                    "icon": "mif-database",
+                    "description": "Tipo BSON que guarda cada control (int, double, date, ObjectId, bool, GeoJSON) y cómo guardar a mano."
+                },
+                {
+                    "file": "arraylist.php",
+                    "title": "Arreglos embebidos",
+                    "icon": "mif-list",
+                    "description": "embededArray: editar una lista dentro de un documento."
+                },
+                {
+                    "file": "datatable.php",
+                    "title": "DataTable",
+                    "icon": "mif-table",
+                    "description": "Tabla con datos generados en PHP."
+                },
+                {
+                    "file": "datatableajax.php",
+                    "title": "DataTable AJAX",
+                    "icon": "mif-table",
+                    "description": "Tabla paginada en el servidor desde una colección."
+                },
+                {
+                    "file": "tablef.php",
+                    "title": "TableF: filtros",
+                    "icon": "mif-filter-list",
+                    "description": "Constructor visual de filtros sobre una DataTable AJAX, con exportación a CSV y Excel."
+                },
+                {
+                    "file": "tablefia.php",
+                    "title": "TablefIA: consultas con IA",
+                    "icon": "mif-search",
+                    "description": "Preguntas en lenguaje natural convertidas en pipelines de MongoDB, guardadas para reutilizarlas."
+                },
+                {
+                    "file": "datasetpdo.php",
+                    "title": "Databinding SQL (PDO)",
+                    "icon": "mif-database",
+                    "description": "datasetpdo: los mismos controles ligados a un registro de MySQL, PostgreSQL o SQLite."
+                },
+                {
+                    "file": "inegi.php",
+                    "title": "Caso: domicilio INEGI",
+                    "icon": "mif-location",
+                    "description": "Formulario completo con mapa y catálogos de INEGI."
+                }
+            ]
+        },
+        {
+            "section": "Interfaz",
+            "pages": [
+                {
+                    "file": "dialog.php",
+                    "title": "Diálogos",
+                    "icon": "mif-open-book",
+                    "description": "Dialog: ventanas modales con formulario."
+                },
+                {
+                    "file": "javas.php",
+                    "title": "JavaScript ($javas)",
+                    "icon": "mif-file-code",
+                    "description": "Agregar JavaScript a la página desde PHP."
+                },
+                {
+                    "file": "ui.php",
+                    "title": "Notificaciones y utilidades",
+                    "icon": "mif-bell",
+                    "description": "notify(), speak(), BreadCrumbs, ThemeSwitcher y CSS/JS por página."
+                },
+                {
+                    "file": "xspreadsheet.php",
+                    "title": "Hoja de cálculo",
+                    "icon": "mif-table",
+                    "description": "xspreadsheet: ver y editar un .xlsx en el navegador."
+                }
+            ]
+        },
+        {
+            "section": "Backend",
+            "pages": [
+                {
+                    "file": "user.php",
+                    "title": "Usuarios y permisos",
+                    "icon": "mif-user",
+                    "description": "$user, grupos, permisos y páginas protegidas."
+                },
+                {
+                    "file": "security.php",
+                    "title": "Seguridad",
+                    "icon": "mif-lock",
+                    "description": "CSRF, redirecciones seguras, consultas Mongo y archivos subidos."
+                },
+                {
+                    "file": "functions.php",
+                    "title": "Funciones",
+                    "icon": "mif-code",
+                    "description": "Funciones auxiliares de functions.php con su resultado."
+                },
+                {
+                    "file": "routes.php",
+                    "title": "Rutas",
+                    "icon": "mif-flow-tree",
+                    "description": "Rutas propias con crouter.php y las rutas integradas."
+                },
+                {
+                    "file": "exports.php",
+                    "title": "Excel, Word y PDF",
+                    "icon": "mif-file-pdf",
+                    "description": "Descargar hojas de cálculo, documentos y PDF."
+                },
+                {
+                    "file": "images.php",
+                    "title": "Imágenes",
+                    "icon": "mif-image",
+                    "description": "Miniaturas, AVIF o WebP según el navegador, fotos de perfil y páginas de PDF como imagen."
+                },
+                {
+                    "file": "backgroundps.php",
+                    "title": "Procesos en segundo plano",
+                    "icon": "mif-cogs",
+                    "description": "bgprocess: lanzar y vigilar un comando largo."
+                },
+                {
+                    "file": "jobs.php",
+                    "title": "Colas de trabajo",
+                    "icon": "mif-timer",
+                    "description": "Job y job_worker.php: tareas diferidas con reintentos."
+                },
+                {
+                    "file": "cms.php",
+                    "title": "Páginas y menús del CMS",
+                    "icon": "mif-files-empty",
+                    "description": "nfPage(), nfMetroMenu() y renderEmbeddedFunctions(): contenido editable desde el panel."
+                }
+            ]
+        },
+        {
+            "section": "Servicios",
+            "pages": [
+                {
+                    "file": "mail.php",
+                    "title": "Correo",
+                    "icon": "mif-mail",
+                    "description": "nfMailer(): enviar correos con el SMTP del sitio, adjuntos y servidor alterno."
+                },
+                {
+                    "file": "cache.php",
+                    "title": "Caché",
+                    "icon": "mif-history",
+                    "description": "nfCacheRemember() en el servidor y serveFile()/testcache() en el navegador."
+                },
+                {
+                    "file": "i18n.php",
+                    "title": "Idiomas",
+                    "icon": "mif-language",
+                    "description": "Detección de idioma, $nframework->language y cómo agregar textos."
+                }
+            ]
+        }
+    ],
+    "components": [
+        {
+            "class": "inputText",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Texto de una línea; opción 'suggest' para autocompletar (lista fija, URL o colección)."
+        },
+        {
+            "class": "inputNumber",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Número entero o decimal; se guarda como int/double."
+        },
+        {
+            "class": "inputSpinner",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Número con botones de incremento y decremento."
+        },
+        {
+            "class": "inputRating",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Calificación con estrellas."
+        },
+        {
+            "class": "inputColor",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Selector de color."
+        },
+        {
+            "class": "textArea",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Texto de varias líneas."
+        },
+        {
+            "class": "inputMCE",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Editor HTML enriquecido (TinyMCE)."
+        },
+        {
+            "class": "inputHidden",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Campo oculto."
+        },
+        {
+            "class": "label",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Valor de solo lectura con el aspecto de un campo."
+        },
+        {
+            "class": "inputDate",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "datetime.php",
+            "summary": "Fecha; se guarda como UTCDateTime."
+        },
+        {
+            "class": "inputTime",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "datetime.php",
+            "summary": "Hora; se guarda como UTCDateTime."
+        },
+        {
+            "class": "inputDateTime",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "datetime.php",
+            "summary": "Fecha y hora; se guarda como UTCDateTime."
+        },
+        {
+            "class": "Select",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputsajax.php",
+            "summary": "Lista de opciones ('options') o búsqueda en servidor con Tom Select ('ajax')."
+        },
+        {
+            "class": "SelectAjaxOptions",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputsajax.php",
+            "summary": "Opciones tipadas para 'ajax' de Select: db, collection, columns, label, value, pipeline, limit."
+        },
+        {
+            "class": "SelectIcon",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Select de iconos de Metro UI."
+        },
+        {
+            "class": "inputCheckBox",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Casilla booleana."
+        },
+        {
+            "class": "inputCheckBoxs",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Grupo de casillas; guarda un arreglo."
+        },
+        {
+            "class": "inputRadios",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Grupo de botones de opción."
+        },
+        {
+            "class": "inputFile",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "files.php",
+            "summary": "Un archivo: subir, previsualizar, descargar y eliminar."
+        },
+        {
+            "class": "inputFiles",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "files.php",
+            "summary": "Varios archivos con countlimit, sizelimit, accept y eventos onupload/ondelete."
+        },
+        {
+            "class": "Efirma",
+            "file": "includes/class.Efirma.php",
+            "category": "formulario",
+            "doc": "efirma.php",
+            "summary": "e.firma o CSD del SAT, guardada en el navegador o cifrada en el servidor."
+        },
+        {
+            "class": "Signature_pad",
+            "file": "includes/class.Signature_pad.php",
+            "category": "formulario",
+            "doc": "signature.php",
+            "summary": "Captura de firma autógrafa como imagen."
+        },
+        {
+            "class": "inputaddress",
+            "file": "includes/class.address.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Domicilio con mapa Leaflet y sugerencias del DENUE de INEGI."
+        },
+        {
+            "class": "mapshape",
+            "file": "includes/class.mapshape.php",
+            "category": "formulario",
+            "doc": "mapshape.php",
+            "summary": "Geocerca (Polygon) o ruta (LineString) en GeoJSON, opcionalmente dentro de otra geocerca."
+        },
+        {
+            "class": "mapmarker",
+            "file": "includes/class.Base.php",
+            "category": "formulario",
+            "doc": "inputs.php",
+            "summary": "Punto en un mapa."
+        },
+        {
+            "class": "dataset",
+            "file": "includes/class.Base.php",
+            "category": "datos",
+            "doc": "databinding.php",
+            "summary": "Documento de MongoDB ligado a controles; save() valida y convierte tipos."
+        },
+        {
+            "class": "datasetArray",
+            "file": "includes/class.Base.php",
+            "category": "datos",
+            "doc": null,
+            "summary": "dataset sobre un arreglo en memoria."
+        },
+        {
+            "class": "datasetpdo",
+            "file": "includes/class.Base.php",
+            "category": "datos",
+            "doc": "datasetpdo.php",
+            "summary": "dataset sobre un registro SQL (MySQL, PostgreSQL, SQLite) vía PDO."
+        },
+        {
+            "class": "embededArray",
+            "file": "includes/class.embededArray.php",
+            "category": "datos",
+            "doc": "arraylist.php",
+            "summary": "Lista editable de subdocumentos dentro de un documento."
+        },
+        {
+            "class": "Table",
+            "file": "includes/class.Table.php",
+            "category": "datos",
+            "doc": "datatable.php",
+            "summary": "DataTable con datos de PHP o paginada en MongoDB con Ajax()."
+        },
+        {
+            "class": "TableF",
+            "file": "includes/class.Tablef.php",
+            "category": "datos",
+            "doc": "tablef.php",
+            "summary": "DataTable AJAX con constructor visual de filtros y exportación CSV/Excel."
+        },
+        {
+            "class": "TablefIA",
+            "file": "includes/class.TablefIA.php",
+            "category": "datos",
+            "doc": "tablefia.php",
+            "summary": "Consultas en lenguaje natural convertidas en pipelines de MongoDB por Claude."
+        },
+        {
+            "class": "Dialog",
+            "file": "includes/class.Dialog.php",
+            "category": "interfaz",
+            "doc": "dialog.php",
+            "summary": "Ventana modal; el contenido es HTML crudo."
+        },
+        {
+            "class": "BreadCrumbs",
+            "file": "includes/class.BreadCrumbs.php",
+            "category": "interfaz",
+            "doc": null,
+            "summary": "Migas de pan."
+        },
+        {
+            "class": "Sidebar",
+            "file": "includes/class.Sidebar.php",
+            "category": "interfaz",
+            "doc": null,
+            "summary": "Menú lateral."
+        },
+        {
+            "class": "TreeView",
+            "file": "includes/class.Base.php",
+            "category": "interfaz",
+            "doc": null,
+            "summary": "Árbol de elementos."
+        },
+        {
+            "class": "Icon",
+            "file": "includes/class.Base.php",
+            "category": "interfaz",
+            "doc": "ui.php",
+            "summary": "Icono de Metro UI."
+        },
+        {
+            "class": "ThemeSwitcher",
+            "file": "includes/class.ThemeSwitcher.php",
+            "category": "interfaz",
+            "doc": "ui.php",
+            "summary": "Cambio entre tema claro y oscuro."
+        },
+        {
+            "class": "QRReader",
+            "file": "includes/class.QRReader.php",
+            "category": "interfaz",
+            "doc": null,
+            "summary": "Lector de códigos QR con la cámara."
+        },
+        {
+            "class": "xspreadsheet",
+            "file": "includes/class.xspreadsheet.php",
+            "category": "interfaz",
+            "doc": "xspreadsheet.php",
+            "summary": "Hoja de cálculo para ver y editar un .xlsx."
+        },
+        {
+            "class": "Javas",
+            "file": "includes/class.Javas.php",
+            "category": "backend",
+            "doc": "javas.php",
+            "summary": "Acumulador de JavaScript ($javas->addjs) para el final de la página."
+        },
+        {
+            "class": "User",
+            "file": "includes/class.User.php",
+            "category": "backend",
+            "doc": "user.php",
+            "summary": "Usuario actual ($user): sesión, grupos, permisos y 2FA."
+        },
+        {
+            "class": "Job",
+            "file": "includes/class.Job.php",
+            "category": "backend",
+            "doc": "jobs.php",
+            "summary": "Base de trabajos en cola con reintentos (job_worker.php)."
+        },
+        {
+            "class": "bgprocess",
+            "file": "includes/class.bgprocess.php",
+            "category": "backend",
+            "doc": "backgroundps.php",
+            "summary": "Comando largo en segundo plano con estado y log."
+        },
+        {
+            "class": "Denue",
+            "file": "includes/class.Denue.php",
+            "category": "backend",
+            "doc": "inputs.php",
+            "summary": "Consulta al DENUE de INEGI para sugerir domicilios."
+        }
+    ]
+}

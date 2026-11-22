@@ -4,7 +4,7 @@
  * para mostrar ejemplos (docHeader, docExamples, docCode, docSource).
  *
  * Para agregar una página: créela en /docs, empiece con `require 'common.php';` y agréguela
- * a $docsMenu. index.php construye la portada a partir del mismo arreglo.
+ * a docs/components.json. index.php construye la portada a partir del mismo catálogo.
  */
 $developermode = true;
 if (empty($nframework)) {
@@ -13,60 +13,21 @@ if (empty($nframework)) {
 
 /**
  * Menú de la documentación: sección => [archivo => [título, icono, descripción]].
+ * La fuente es docs/components.json (legible por máquinas, junto con el catálogo de componentes).
  */
-$docsMenu = [
-	'Introducción' => [
-		'index.php' => ['Inicio', 'mif-home', 'Índice de todos los ejemplos.'],
-		'install.php' => ['Instalación', 'mif-download', 'Requisitos e install.sh: sitio único o multisitio con ligas simbólicas, nginx y actualización.'],
-		'intro.php' => ['Primeros pasos', 'mif-apps', 'Anatomía de una página: include, usecommon, peticiones AJAX y $result.'],
-		'vars.php' => ['Variables especiales', 'mif-money', 'Variables globales que cambian el comportamiento del framework.'],
-	],
-	'Formularios' => [
-		'inputs.php' => ['Inputs', 'mif-widgets', 'Catálogo de controles: texto, números, selects, checkboxes, color, dirección...'],
-		'datetime.php' => ['Fechas y horas', 'mif-calendar', 'inputDate, inputTime e inputDateTime y cómo se guardan en MongoDB.'],
-		'inputsajax.php' => ['Select con AJAX', 'mif-search', 'Select que busca opciones en una colección mientras se escribe.'],
-		'autocomplete.php' => ['Autocompletar', 'mif-keyboard', 'inputText con sugerencias: lista fija, MongoDB, endpoint propio, campos dependientes.'],
-		'validations.php' => ['Validaciones', 'mif-checkmark', 'required, pattern, validate y validación del lado del servidor.'],
-		'files.php' => ['Archivos', 'mif-upload', 'inputFile e inputFiles: subir, previsualizar, descargar y eliminar.'],
-		'mapshape.php' => ['Geocercas y rutas', 'mif-location', 'mapshape: dibujar un polígono o una polilínea, opcionalmente dentro de otra geocerca.'],
-		'signature.php' => ['Firma', 'mif-pencil', 'Signature_pad: capturar una firma y guardarla como imagen.'],
-		'efirma.php' => ['e.firma y CSD', 'mif-key', 'Efirma: registrar y seleccionar e.firma o CSD, en el navegador o cifrada en el servidor.'],
-	],
-	'Datos' => [
-		'databinding.php' => ['Databinding', 'mif-database', 'Formulario ligado a un documento de MongoDB con dataset.'],
-		'databindingajax.php' => ['Databinding AJAX', 'mif-database', 'El mismo formulario guardando por AJAX con secureform().'],
-		'mongoformats.php' => ['Formatos en MongoDB', 'mif-database', 'Tipo BSON que guarda cada control (int, double, date, ObjectId, bool, GeoJSON) y cómo guardar a mano.'],
-		'arraylist.php' => ['Arreglos embebidos', 'mif-list', 'embededArray: editar una lista dentro de un documento.'],
-		'datatable.php' => ['DataTable', 'mif-table', 'Tabla con datos generados en PHP.'],
-		'datatableajax.php' => ['DataTable AJAX', 'mif-table', 'Tabla paginada en el servidor desde una colección.'],
-		'tablef.php' => ['TableF: filtros', 'mif-filter-list', 'Constructor visual de filtros sobre una DataTable AJAX, con exportación a CSV y Excel.'],
-		'tablefia.php' => ['TablefIA: consultas con IA', 'mif-search', 'Preguntas en lenguaje natural convertidas en pipelines de MongoDB, guardadas para reutilizarlas.'],
-		'datasetpdo.php' => ['Databinding SQL (PDO)', 'mif-database', 'datasetpdo: los mismos controles ligados a un registro de MySQL, PostgreSQL o SQLite.'],
-		'inegi.php' => ['Caso: domicilio INEGI', 'mif-location', 'Formulario completo con mapa y catálogos de INEGI.'],
-	],
-	'Interfaz' => [
-		'dialog.php' => ['Diálogos', 'mif-open-book', 'Dialog: ventanas modales con formulario.'],
-		'javas.php' => ['JavaScript ($javas)', 'mif-file-code', 'Agregar JavaScript a la página desde PHP.'],
-		'ui.php' => ['Notificaciones y utilidades', 'mif-bell', 'notify(), speak(), BreadCrumbs, ThemeSwitcher y CSS/JS por página.'],
-		'xspreadsheet.php' => ['Hoja de cálculo', 'mif-table', 'xspreadsheet: ver y editar un .xlsx en el navegador.'],
-	],
-	'Backend' => [
-		'user.php' => ['Usuarios y permisos', 'mif-user', '$user, grupos, permisos y páginas protegidas.'],
-		'security.php' => ['Seguridad', 'mif-lock', 'CSRF, redirecciones seguras, consultas Mongo y archivos subidos.'],
-		'functions.php' => ['Funciones', 'mif-code', 'Funciones auxiliares de functions.php con su resultado.'],
-		'routes.php' => ['Rutas', 'mif-flow-tree', 'Rutas propias con crouter.php y las rutas integradas.'],
-		'exports.php' => ['Excel, Word y PDF', 'mif-file-pdf', 'Descargar hojas de cálculo, documentos y PDF.'],
-		'images.php' => ['Imágenes', 'mif-image', 'Miniaturas, AVIF o WebP según el navegador, fotos de perfil y páginas de PDF como imagen.'],
-		'backgroundps.php' => ['Procesos en segundo plano', 'mif-cogs', 'bgprocess: lanzar y vigilar un comando largo.'],
-		'jobs.php' => ['Colas de trabajo', 'mif-timer', 'Job y job_worker.php: tareas diferidas con reintentos.'],
-		'cms.php' => ['Páginas y menús del CMS', 'mif-files-empty', 'nfPage(), nfMetroMenu() y renderEmbeddedFunctions(): contenido editable desde el panel.'],
-	],
-	'Servicios' => [
-		'mail.php' => ['Correo', 'mif-mail', 'nfMailer(): enviar correos con el SMTP del sitio, adjuntos y servidor alterno.'],
-		'cache.php' => ['Caché', 'mif-history', 'nfCacheRemember() en el servidor y serveFile()/testcache() en el navegador.'],
-		'i18n.php' => ['Idiomas', 'mif-language', 'Detección de idioma, $nframework->language y cómo agregar textos.'],
-	],
-];
+function docCatalog(): array
+{
+	static $catalog = null;
+	return $catalog ??= json_decode(file_get_contents(__DIR__ . '/components.json'), true, 512, JSON_THROW_ON_ERROR);
+}
+
+$docsMenu = [];
+foreach (docCatalog()['sections'] as $docsSection) {
+	foreach ($docsSection['pages'] as $docsPage) {
+		$docsMenu[$docsSection['section']][$docsPage['file']] = [$docsPage['title'], $docsPage['icon'], $docsPage['description']];
+	}
+}
+unset($docsSection, $docsPage);
 
 /**
  * Código fuente de $filetocode hasta el marcador <pre class="stay-on"><code (o completo con $all).
