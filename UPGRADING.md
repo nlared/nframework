@@ -9,8 +9,11 @@ Antes, el editor subía las imágenes pegadas o arrastradas aunque el campo no t
 faltaba o era inválido, terminaban en la carpeta del framework (`nframework/mceclip0.jpg`, `mceu_….jpg`). Además,
 cada imagen pegada se llama igual (`mceclip0.jpg`) y sobrescribía a la anterior. Ahora:
 
-- **Sin `upload`, o con un `mediadir` inválido:** el editor no sube ni incrusta imágenes. Con `upload` y un
-  `mediadir` inválido se anota en el log `inputMCE …: mediadir inválido`.
+- **Sin `upload`, o con `mediadir`/`baseurl` faltantes o inválidos:** el editor no sube ni incrusta imágenes. Si
+  alguien pega o arrastra una imagen, el editor muestra un aviso en lugar de descartarla en silencio.
+- **Con `upload` pero mal configurado:** aparece un aviso bajo el editor y se anota el motivo en el log
+  (`inputMCE::uploadProblem()`). Con `developermode`, el aviso de pantalla incluye el motivo y la ruta.
+  `baseurl` ahora es obligatorio para subir imágenes.
 - **`mediadir` válido:** debe ser una ruta absoluta que no sea la raíz del framework ni esté dentro de
   `includes/`, `nframework/`, `admin/` o `sat/`. Se revisa también siguiendo ligas simbólicas; la validación está en
   `inputMCE::uploadDir()`.

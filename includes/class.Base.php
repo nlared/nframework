@@ -1311,6 +1311,35 @@ class inputMCE extends baseInput
     }
 
     /**
+     * Qué falta para poder subir imágenes, o null si upload está apagado o todo es válido. Se muestra bajo el editor
+     * y en el log.
+     *
+     * @param mixed $upload
+     * @param mixed $mediadir
+     * @param mixed $baseurl
+     * @param string|null $frameworkRoot
+     * @return string|null
+     */
+    public static function uploadProblem($upload, $mediadir, $baseurl, ?string $frameworkRoot = null): ?string
+    {
+        if (!$upload) {
+            return null;
+        }
+        if (!is_string($mediadir) || trim($mediadir) === '') {
+            return 'Falta mediadir: la carpeta absoluta donde se guardan las imágenes (p. ej. $_SERVER[\'DOCUMENT_ROOT\'] . \'/media/\').';
+        }
+        if (self::uploadDir($mediadir, $frameworkRoot) === null) {
+            return $mediadir[0] !== '/' || str_contains($mediadir, '..')
+                ? 'mediadir debe ser una ruta absoluta y sin "..": ' . $mediadir
+                : 'mediadir no puede ser la carpeta del framework ni estar dentro de includes/, nframework/, admin/ o sat/: ' . $mediadir;
+        }
+        if (!is_string($baseurl) || trim($baseurl) === '') {
+            return 'Falta baseurl: la URL pública de mediadir (p. ej. \'/media/\').';
+        }
+        return null;
+    }
+
+    /**
      * Nombre libre en $dir para $name: si ya existe agrega -1, -2... (TinyMCE nombra igual, mceclip0.jpg, cada
      * imagen pegada y antes se sobrescribían entre sí).
      *
@@ -1332,15 +1361,20 @@ class inputMCE extends baseInput
     /**
      * @global class_nframework $nframework
      * @global Javas $javas
+     * @global bool $developermode Con true el aviso de configuración incluye el motivo y la ruta.
      * @return string HTML.
      */
     public function __toString()
     {
-        global $nframework, $javas;
-        $uploadDir = $this->upload ? self::uploadDir($this->mediadir) : null;
-        if ($this->upload && $uploadDir === null) {
-            error_log('inputMCE ' . $this->id . ': mediadir inválido (' . var_export($this->mediadir, true) . '); se desactiva la subida de imágenes.');
+        global $nframework, $javas, $developermode;
+        $problem = self::uploadProblem($this->upload, $this->mediadir, $this->baseurl);
+        $uploadDir = $this->upload && $problem === null ? self::uploadDir($this->mediadir) : null;
+        if ($problem !== null) {
+            error_log('inputMCE ' . $this->id . ': ' . $problem . ' Se desactiva la subida de imágenes.');
         }
+        $lng = (array) ($nframework->language ?? []);
+        // Al pegar o arrastrar una imagen sin subida configurada, el editor avisa en lugar de descartarla en silencio.
+        $noImages = $lng['mce_no_images'] ?? 'Este editor no acepta imágenes pegadas ni arrastradas. Use Insertar → Imagen con la URL de una imagen publicada.';
         /*
         'a11ychecker','advcode', 'editimage', 'powerpaste', 'tinymcespellchecker', 'tinydrive'
         */
@@ -1404,7 +1438,19 @@ hugerte.PluginManager.add('myPlugin', function(editor, url) {
 	paste_data_images: false,") . "
 	extended_valid_elements: '" . $this->extended_valid_elements . "',
 setup: function(editor) {
-  editor.on('PreInit', function() {
+  " . ($uploadDir === null ? "var nfNoImages = function (e) {
+    var dt = e.clipboardData || e.dataTransfer, has = false, i;
+    if (!dt) { return; }
+    for (i = 0; dt.files && i < dt.files.length; i++) { if (/^image\\//.test(dt.files[i].type)) { has = true; } }
+    for (i = 0; dt.items && i < dt.items.length; i++) { if (dt.items[i].kind === 'file' && /^image\\//.test(dt.items[i].type)) { has = true; } }
+    if (has) {
+      e.preventDefault();
+      editor.notificationManager.open({ text: " . json_encode($noImages, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) . ", type: 'warning', timeout: 7000 });
+    }
+  };
+  editor.on('paste', nfNoImages);
+  editor.on('drop', nfNoImages);
+  " : '') . "editor.on('PreInit', function() {
     editor.parser.addNodeFilter('iframe', function(nodes) {
       nodes.forEach(function(node) {
         node.attr('sandbox', 'allow-scripts allow-same-origin');
@@ -1445,7 +1491,12 @@ setup: function(editor) {
             ($this->disabled ? ' disabled' : '') .
             ($this->placeholder ? ' placeholder="' . $this->placeholder . '"' : '') .
             $this->addtags . ' data-role="tinyMCE">' . $this->value .
-            '</textarea>';
+            '</textarea>' .
+            ($problem !== null
+                ? '<div class="remark warning mt-1"><small>' . htmlspecialchars(!empty($developermode)
+                    ? 'Subida de imágenes desactivada. ' . $problem
+                    : ($lng['mce_upload_config'] ?? 'La subida de imágenes de este editor no está configurada; avise al administrador del sitio.')) . '</small></div>'
+                : '');
     }
 }
 /**
