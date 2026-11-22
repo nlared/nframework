@@ -28,24 +28,38 @@ class Efirma
 
     public const ENDPOINT = '/nframework/efirma.php';
 
+    /** @var string Id del componente; en JS nfEfirma[id]. Por omisión se deriva de name. */
     public $id = '';
 
+    /** @var string Nombre del input; su valor es 'client:<nocert>' o 'server:<_id>'. */
     public $name = '';
 
+    /** @var string */
     public $caption = '';
 
+    /** @var 'fiel'|'csd'|'any' */
     public $tipo = 'any';       // 'fiel' | 'csd' | 'any'
 
+    /** @var 'client'|'server' client = la llave se queda en el navegador; server = cifrada en la colección efirmas. */
     public $storage = 'client'; // 'client' | 'server'
 
+    /** @var string Si no está vacío, solo se aceptan certificados de este RFC. */
     public $rfc = '';           // si no está vacío, solo se aceptan certificados de este RFC
 
+    /** @var string JS con la variable info ({value, source, nocert, rfc, tipo, nombre, vence}). */
     public $onSelect = '';      // JS con la variable `info` ({value, source, nocert, rfc, tipo, nombre, vence})
 
+    /** @var string Texto que el usuario acepta al guardar en el servidor. */
     public $consent = '';       // texto que el usuario acepta al guardar en el servidor
 
+    /** @var string Selección inicial: 'client:<nocert>' o 'server:<_id>'. */
     public $value = '';         // selección inicial: "client:<nocert>" o "server:<_id>"
 
+    /**
+     * @global class_nframework $nframework
+     * @param array{id?: string, name?: string, caption?: string, tipo?: 'fiel'|'csd'|'any', storage?: 'client'|'server', rfc?: string, onSelect?: string, consent?: string, value?: string} $options
+     * @throws InvalidArgumentException Si tipo o storage no son válidos.
+     */
     public function __construct($options = [])
     {
         global $nframework;
@@ -77,23 +91,46 @@ class Efirma
      * Utilidades puras (sin MongoDB): se prueban en tests/Unit/EfirmaTest.php
      * ---------------------------------------------------------------------------------------- */
 
+    /**
+     * Nombre para mostrar: 'e.firma', 'CSD' o 'e.firma o CSD'.
+     *
+     * @param string $tipo
+     * @return string
+     */
     public static function tipoLabel(string $tipo): string
     {
         return ['fiel' => 'e.firma', 'csd' => 'CSD', 'any' => 'e.firma o CSD'][$tipo] ?? $tipo;
     }
 
-    /** 'fiel' o 'csd'. Igual que phpcfdi: solo los CSD tienen OU (sucursal). */
+    /**
+     * 'fiel' o 'csd'. Igual que phpcfdi: solo los CSD tienen OU (sucursal).
+     *
+     * @param Certificate $certificate
+     * @return 'fiel'|'csd'
+     */
     public static function tipoOf(Certificate $certificate): string
     {
         return $certificate->satType()->isFiel() ? 'fiel' : 'csd';
     }
 
+    /**
+     * true si un certificado de tipo $actual sirve donde se pide $required.
+     *
+     * @param 'fiel'|'csd'|'any' $required
+     * @param 'fiel'|'csd' $actual
+     * @return bool
+     */
     public static function tipoAllowed(string $required, string $actual): bool
     {
         return $required === 'any' || $required === $actual;
     }
 
-    /** Número de certificado del SAT (20 dígitos) a partir del serial. */
+    /**
+     * Número de certificado del SAT (20 dígitos) a partir del serial.
+     *
+     * @param Certificate $certificate
+     * @return string
+     */
     public static function noCertificado(Certificate $certificate): string
     {
         return $certificate->serialNumber()->bytes();
@@ -102,6 +139,12 @@ class Efirma
     /**
      * Revisa que el certificado sirva para el componente. Devuelve el mensaje de error o null.
      * La validación de la cadena del SAT se hace aparte (satIssued) porque depende de la configuración.
+     *
+     * @param Certificate $certificate
+     * @param 'fiel'|'csd'|'any' $tipo
+     * @param string $rfc '' = cualquier RFC.
+     * @param DateTimeImmutable|null $now Fecha para revisar la vigencia (pruebas); null = ahora.
+     * @return string|null
      */
     public static function checkCertificate(Certificate $certificate, string $tipo, string $rfc = '', ?DateTimeImmutable $now = null): ?string
     {
@@ -119,7 +162,12 @@ class Efirma
         return null;
     }
 
-    /** Datos públicos del certificado que se envían al navegador. */
+    /**
+     * Datos públicos del certificado que se envían al navegador.
+     *
+     * @param Certificate $certificate
+     * @return array{nocert: string, rfc: string, nombre: string, sucursal: string, tipo: string, vence: string}
+     */
     public static function certificateInfo(Certificate $certificate): array
     {
         return [
@@ -132,7 +180,14 @@ class Efirma
         ];
     }
 
-    /** AES-256-GCM: base64('g' . IV(12) . TAG(16) . datos). */
+    /**
+     * AES-256-GCM: base64('g' . IV(12) . TAG(16) . datos).
+     *
+     * @param string $plain
+     * @param string $key 32 bytes (ver secretKey()).
+     * @return string
+     * @throws RuntimeException Si no se pudo cifrar.
+     */
     public static function encrypt(string $plain, string $key): string
     {
         $iv = random_bytes(12);
@@ -145,6 +200,14 @@ class Efirma
         return base64_encode('g'.$iv.$tag.$data);
     }
 
+    /**
+     * Descifra lo que produjo encrypt().
+     *
+     * @param string $blob
+     * @param string $key
+     * @return string
+     * @throws RuntimeException Si el dato está dañado o la llave no corresponde.
+     */
     public static function decrypt(string $blob, string $key): string
     {
         $raw = base64_decode($blob, true);
@@ -163,7 +226,13 @@ class Efirma
      * Dependen de $config / MongoDB
      * ---------------------------------------------------------------------------------------- */
 
-    /** Llave de cifrado de $config['efirma_key'] (32 bytes en base64). Solo en config.php, nunca en MongoDB. */
+    /**
+     * Llave de cifrado de $config['efirma_key'] (32 bytes en base64). Solo en config.php, nunca en MongoDB.
+     *
+     * @global class_config $config
+     * @return string 32 bytes.
+     * @throws RuntimeException Si efirma_key no está configurada o no mide 32 bytes.
+     */
     public static function secretKey(): string
     {
         global $config;
@@ -177,7 +246,13 @@ class Efirma
         return $key;
     }
 
-    /** true si el certificado fue emitido por el SAT según $config['sat_ca_bundle']. */
+    /**
+     * true si el certificado fue emitido por el SAT según $config['sat_ca_bundle'].
+     *
+     * @global class_config $config
+     * @param Certificate $certificate
+     * @return bool
+     */
     public static function satIssued(Certificate $certificate): bool
     {
         global $config;
@@ -187,6 +262,11 @@ class Efirma
             && openssl_x509_checkpurpose($certificate->pem(), X509_PURPOSE_ANY, [$cabundle]) === true;
     }
 
+    /**
+     * @global MongoDB\Client $m
+     * @global class_config $config
+     * @return MongoDB\Collection
+     */
     private static function collection()
     {
         global $m, $config;
@@ -194,6 +274,13 @@ class Efirma
         return $m->{$config['sitedb']}->{self::COLLECTION};
     }
 
+    /**
+     * Filtro por _id (y owner si se indica); null si el id no es válido.
+     *
+     * @param mixed $id
+     * @param mixed $owner ObjectId del usuario, o null.
+     * @return array<string, mixed>|null
+     */
     private static function filter($id, $owner): ?array
     {
         if (! isValidObjectId($id)) {
@@ -207,7 +294,14 @@ class Efirma
         return $filter;
     }
 
-    /** e.firmas del servidor de un usuario (solo datos públicos). */
+    /**
+     * e.firmas del servidor de un usuario (solo datos públicos).
+     *
+     * @param mixed $owner ObjectId del usuario.
+     * @param 'fiel'|'csd'|'any' $tipo
+     * @param string $rfc
+     * @return list<array{value: string, source: string, id: string, nocert: string, rfc: string, nombre: string, sucursal: string, tipo: string, vence: string}>
+     */
     public static function listFor($owner, string $tipo = 'any', string $rfc = ''): array
     {
         $filter = ['owner' => $owner];
@@ -225,6 +319,12 @@ class Efirma
         return $items;
     }
 
+    /**
+     * Datos públicos de un documento de efirmas (sin la llave ni la contraseña).
+     *
+     * @param array<string, mixed>|object $doc
+     * @return array{value: string, source: string, id: string, nocert: string, rfc: string, nombre: string, sucursal: string, tipo: string, vence: string}
+     */
     public static function publicDoc($doc): array
     {
         return [
@@ -240,7 +340,13 @@ class Efirma
         ];
     }
 
-    /** Datos públicos de una e.firma del servidor, o null. $owner = null solo en procesos sin usuario (CLI). */
+    /**
+     * Datos públicos de una e.firma del servidor, o null. $owner = null solo en procesos sin usuario (CLI).
+     *
+     * @param mixed $id _id en texto o ObjectId.
+     * @param mixed $owner ObjectId del usuario; null solo en CLI.
+     * @return array{value: string, source: string, id: string, nocert: string, rfc: string, nombre: string, sucursal: string, tipo: string, vence: string}|null
+     */
     public static function find($id, $owner = null): ?array
     {
         $filter = self::filter($id, $owner);
@@ -249,7 +355,14 @@ class Efirma
         return $doc ? self::publicDoc($doc) : null;
     }
 
-    /** Credential de phpcfdi lista para firmar (p. ej. new Fiel(Efirma::credential($id)) en descarga masiva). */
+    /**
+     * Credential de phpcfdi lista para firmar (p. ej. new Fiel(Efirma::credential($id)) en descarga masiva).
+     *
+     * @param mixed $id
+     * @param mixed $owner
+     * @return Credential
+     * @throws RuntimeException Si no existe o no se puede descifrar.
+     */
     public static function credential($id, $owner = null): Credential
     {
         $filter = self::filter($id, $owner);
@@ -263,13 +376,27 @@ class Efirma
         return Credential::create(base64_decode((string) $doc['cer']), base64_decode((string) $secret['key']), (string) $secret['pass']);
     }
 
-    /** Firma binaria de $data con una e.firma del servidor. */
+    /**
+     * Firma binaria de $data con una e.firma del servidor.
+     *
+     * @param mixed $id
+     * @param string $data Cadena a firmar.
+     * @param int $algorithm Constante OPENSSL_ALGO_*.
+     * @param mixed $owner
+     * @return string Firma binaria (aplique base64_encode() para el SAT).
+     * @throws RuntimeException Si no existe o no se puede descifrar.
+     */
     public static function sign($id, string $data, int $algorithm = OPENSSL_ALGO_SHA256, $owner = null): string
     {
         return self::credential($id, $owner)->sign($data, $algorithm);
     }
 
-    /** Separa "client:<nocert>" / "server:<_id>" del input. Devuelve [source, ref] o null. */
+    /**
+     * Separa "client:<nocert>" / "server:<_id>" del input. Devuelve [source, ref] o null.
+     *
+     * @param mixed $value
+     * @return array{0: 'client'|'server', 1: string}|null
+     */
     public static function parseValue($value): ?array
     {
         if (! is_string($value) || ! preg_match('/^(client|server):([0-9A-Za-z]{1,64})$/', $value, $match)) {
@@ -283,6 +410,11 @@ class Efirma
      * Componente
      * ---------------------------------------------------------------------------------------- */
 
+    /**
+     * @global class_nframework $nframework
+     * @global Javas $javas
+     * @return string HTML.
+     */
     public function __toString(): string
     {
         global $nframework, $javas;
@@ -355,7 +487,11 @@ class Efirma
 </div>';
     }
 
-    /** JS común a todos los selectores de la página. */
+    /**
+     * JS común a todos los selectores de la página.
+     *
+     * @return string
+     */
     private static function sharedJs(): string
     {
         return <<<'JS'

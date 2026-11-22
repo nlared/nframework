@@ -1,8 +1,21 @@
 <?php
+/**
+ * Hoja de cálculo en el navegador (x-data-spreadsheet) para ver y editar un .xlsx del servidor. La ruta del
+ * archivo se guarda en la sesión ($_SESSION['nfxspreadsheet'][id]); el navegador nunca la ve. Ver
+ * docs/xspreadsheet.php.
+ *
+ *   echo new xspreadsheet(['filename' => __DIR__ . '/datos/precios.xlsx']);
+ */
 class xspreadsheet
 {
+    /** @var string Id del contenedor; por omisión xspreadsheet_<hash>_<n>. */
     public $id;
+    /** @var string Ruta en disco del .xlsx. */
     public $filename;
+    /**
+     * @global class_nframework $nframework
+     * @param array{id?: string, filename?: string} $options
+     */
     public function __construct($options = [])
     {
         global $nframework;
@@ -17,6 +30,10 @@ class xspreadsheet
         $nframework->jss['900'] = 'https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.9/dist/xspreadsheet.min.js';
         //	$nframework->jss['901']=' https://unpkg.com/x-data-spreadsheet@1.1.5/dist/locale/zh-cn.js';
     }
+    /**
+     * @global Javas $javas
+     * @return string HTML del contenedor.
+     */
     public function __toString()
     {
         global $javas;

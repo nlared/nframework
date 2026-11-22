@@ -58,16 +58,23 @@ class TablefIA
     /** Validez del token del componente en la sesión; se renueva con cada uso. */
     public const TOKEN_TTL = 28800;
 
+    /** @var string */
     public $id = 'tablefia';
+    /** @var string Dónde se usa el componente; agrupa las consultas guardadas. Por omisión ruta#id. */
     public $uso = '';
+    /** @var string|null */
     public $db;
     /** ['coleccion' => ['description', 'fields' => ['campo' => 'descripción'], 'match' => [...], 'hidden' => [...]]] o lista de nombres. */
     public $collections = [];
     /** [['from', 'localField', 'to', 'foreignField', 'as', 'description'], ...] */
     public $relations = [];
+    /** @var string Indicaciones extra para la IA. */
     public $instructions = '';
+    /** @var int */
     public $limit = 1000;
+    /** @var int */
     public $exportlimit = 50000;
+    /** @var int */
     public $sample = 20;
     /** Documentos de muestra para inferir los campos cuando no se declaran en 'fields'. */
     public $fieldsample = 200;
@@ -75,16 +82,25 @@ class TablefIA
     public $attempts = 3;
     /** Tiempo máximo de ejecución del pipeline en MongoDB (ms). */
     public $maxtime = 30000;
+    /** @var string */
     public $model = 'claude-opus-5-5';
+    /** @var string */
     public $effort = 'medium';
+    /** @var bool */
     public $requireauth = true;
     /** Llamadas a la IA permitidas por usuario: [cantidad, segundos]. */
     public $ratelimit = [30, 3600];
     /** true: el listado muestra las consultas de todos los usuarios para este uso; false: solo las propias. */
     public $shared = true;
+    /** @var string */
     public $caption = 'Pregunte en lenguaje natural';
+    /** @var string */
     public $placeholder = 'Ej. Total vendido por cliente en el último mes, de mayor a menor';
 
+    /**
+     * @global class_config $config
+     * @param array<string, mixed> $options Propiedades públicas: id, uso, collections, relations, instructions, limit, model...
+     */
     public function __construct(array $options = [])
     {
         global $config;
@@ -100,6 +116,9 @@ class TablefIA
 
     /**
      * Acepta ['pedidos', 'clientes'] o ['pedidos' => [...]] y devuelve siempre la forma con opciones.
+     *
+     * @param array<int|string, mixed> $collections
+     * @return array<string, array{description: string, fields: array<string, string>|null, match: array<string, mixed>, hidden: list<string>}>
      */
     public static function normalizeCollections(array $collections): array
     {
@@ -116,6 +135,8 @@ class TablefIA
 
     /**
      * Configuración que se guarda en la sesión para /nframework/tablefia.php (el navegador no la puede cambiar).
+     *
+     * @return array<string, mixed>
      */
     public function sessionConfig(): array
     {
@@ -142,6 +163,9 @@ class TablefIA
     /**
      * Huella de colecciones y relaciones: una consulta guardada con otra configuración se vuelve a validar
      * y no se reutiliza automáticamente para el mismo prompt.
+     *
+     * @param array<string, mixed> $cfg Resultado de sessionConfig().
+     * @return string
      */
     public static function configHash(array $cfg): string
     {
@@ -151,6 +175,12 @@ class TablefIA
     /**
      * Configuración del componente $id guardada en la sesión, si el token coincide, no caducó y pertenece al
      * usuario actual. Renueva la caducidad. Lanza RuntimeException si no es válida.
+     *
+     * @global User $user
+     * @param string $id
+     * @param string $token
+     * @return array<string, mixed>
+     * @throws RuntimeException
      */
     public static function sessionCfg(string $id, string $token): array
     {
@@ -171,6 +201,9 @@ class TablefIA
     /**
      * Clave para reutilizar consultas: minúsculas, sin acentos (la ñ se conserva), sin signos de puntuación
      * y con los espacios colapsados. Los operadores (<, >, =, %) se conservan porque cambian el significado.
+     *
+     * @param string $prompt
+     * @return string
      */
     public static function normalizePrompt(string $prompt): string
     {
@@ -186,6 +219,11 @@ class TablefIA
      * Campos de una colección: los declarados en 'fields' o los inferidos de los documentos que cumplen su
      * 'match': una muestra aleatoria de $sample documentos (campos anidados y tipos) más un $group de las claves
      * de primer nivel de los 5000 más recientes, para que aparezcan los campos poco frecuentes.
+     *
+     * @param MongoDB\Collection $collection
+     * @param array{fields?: array<string, string>|null, match?: array<string, mixed>, hidden?: list<string>} $options
+     * @param int $sample
+     * @return array<string, string> Campo => tipo o descripción.
      */
     public static function describeFields(MongoDB\Collection $collection, array $options, int $sample = 200): array
     {
@@ -235,6 +273,10 @@ class TablefIA
     /**
      * Agrega a $found las claves de primer nivel ([['_id' => 'campo', 'tipos' => ['string', ...]]]) que la
      * muestra no encontró. Un subdocumento ya descrito por sus campos anidados no se repite.
+     *
+     * @param array<string, string> $found
+     * @param list<array{_id: string, tipos: list<string>}> $keys
+     * @return void
      */
     public static function mergeKeys(array &$found, array $keys): void
     {
@@ -255,6 +297,15 @@ class TablefIA
         }
     }
 
+    /**
+     * Recorre un documento de muestra y anota en $found cada campo (con punto) y sus tipos BSON.
+     *
+     * @param array<string, mixed> $doc
+     * @param string $prefix
+     * @param array<string, string> $found
+     * @param int $depth
+     * @return void
+     */
     private static function collectFields(array $doc, string $prefix, array &$found, int $depth): void
     {
         foreach ($doc as $key => $value) {
@@ -272,6 +323,12 @@ class TablefIA
         }
     }
 
+    /**
+     * Nombre del tipo BSON de un valor: null, bool, int, double, string, date, objectId, array, object...
+     *
+     * @param mixed $value
+     * @return string
+     */
     public static function bsonTypeName($value): string
     {
         return match (true) {
@@ -291,6 +348,10 @@ class TablefIA
     /**
      * Prompt de sistema: colecciones con sus campos, relaciones y reglas del pipeline.
      * $fields: ['coleccion' => ['campo' => 'tipo o descripción']].
+     *
+     * @param array<string, mixed> $cfg
+     * @param array<string, array<string, string>> $fields
+     * @return string
      */
     public static function systemPrompt(array $cfg, array $fields): string
     {
@@ -333,6 +394,15 @@ class TablefIA
      * Pide a Claude el pipeline. Devuelve ['coleccion', 'pipeline' (string JSON), 'columnas', 'explicacion', 'usage'].
      * $previous: intentos rechazados [['coleccion', 'pipeline', 'error'], ...] (o uno solo), para que los corrija.
      * $base: consulta guardada ['prompt', 'coleccion', 'pipeline', 'columnas'] que la pregunta pide ajustar.
+     *
+     * @global class_config $config
+     * @param array<string, mixed> $cfg
+     * @param string $systemPrompt
+     * @param string $question
+     * @param array<mixed>|null $previous
+     * @param array<string, mixed>|null $base
+     * @return array{coleccion: string, pipeline: string, columnas: list<string>, explicacion: string, usage: array{input: int, output: int, cache: int}, modelo: string}
+     * @throws RuntimeException Sin anthropic_api_key o si el API falla.
      */
     public static function askClaude(array $cfg, string $systemPrompt, string $question, ?array $previous = null, ?array $base = null): array
     {
@@ -409,7 +479,14 @@ class TablefIA
         throw new RuntimeException('La IA devolvió una respuesta vacía.');
     }
 
-    /** Mensaje del usuario para la IA: fecha, consulta a ajustar, pregunta e intentos rechazados. */
+    /**
+     * Mensaje del usuario para la IA: fecha, consulta a ajustar, pregunta e intentos rechazados.
+     *
+     * @param string $question
+     * @param array<mixed>|null $previous
+     * @param array<string, mixed>|null $base
+     * @return string
+     */
     public static function userContent(string $question, ?array $previous = null, ?array $base = null): string
     {
         $content = 'Fecha actual: ' . date('Y-m-d') . ' (zona horaria ' . date_default_timezone_get() . ").\n\n";
@@ -436,6 +513,10 @@ class TablefIA
 
     /**
      * Convierte el JSON de la IA (Extended JSON) en etapas PHP. Lanza InvalidArgumentException si no es válido.
+     *
+     * @param string $json
+     * @return list<array<string, mixed>>
+     * @throws InvalidArgumentException
      */
     public static function parsePipeline(string $json): array
     {
@@ -454,6 +535,13 @@ class TablefIA
     /**
      * Valida las etapas de la IA y devuelve el pipeline completo que se ejecuta sobre $base:
      * restricciones de la colección + etapas (con $lookup restringidos) + $limit.
+     *
+     * @param array<string, mixed> $cfg
+     * @param string $base Colección base.
+     * @param list<array<string, mixed>> $stages Etapas de la IA (parsePipeline()).
+     * @param int $limit
+     * @return list<array<string, mixed>>
+     * @throws InvalidArgumentException Si alguna etapa no está permitida.
      */
     public static function buildPipeline(array $cfg, string $base, array $stages, int $limit): array
     {
@@ -490,7 +578,12 @@ class TablefIA
         return $pipeline;
     }
 
-    /** $match obligatorio y $unset de campos ocultos de una colección. */
+    /**
+     * $match obligatorio y $unset de campos ocultos de una colección.
+     *
+     * @param array{match?: array<string, mixed>, hidden?: list<string>} $options
+     * @return list<array<string, mixed>>
+     */
     private static function restrictions(array $options): array
     {
         $stages = [];
@@ -506,6 +599,12 @@ class TablefIA
     /**
      * Revisa claves y valores: operadores prohibidos, profundidad y tamaño del árbol, expresiones regulares
      * costosas ($regex, $regexMatch/Find/FindAll, /…/ de Extended JSON) y $range con rangos grandes.
+     *
+     * @param mixed $value
+     * @param int $depth
+     * @param int $nodes Contador acumulado (por referencia).
+     * @return void
+     * @throws InvalidArgumentException
      */
     private static function assertNoForbidden($value, int $depth = 0, int &$nodes = 0): void
     {
@@ -540,7 +639,13 @@ class TablefIA
         }
     }
 
-    /** Rechaza patrones largos, con referencias hacia atrás o cuantificadores anidados ((a+)+): retroceso exponencial. */
+    /**
+     * Rechaza patrones largos, con referencias hacia atrás o cuantificadores anidados ((a+)+): retroceso exponencial.
+     *
+     * @param string $pattern
+     * @return void
+     * @throws InvalidArgumentException
+     */
     public static function assertSafeRegex(string $pattern): void
     {
         if (strlen($pattern) > self::MAX_REGEX) {
@@ -554,6 +659,12 @@ class TablefIA
     /**
      * Un $lookup solo es válido si corresponde a una relación declarada, en cualquier sentido, partiendo de la
      * colección base. Se le agregan las restricciones de la colección destino.
+     *
+     * @param array<string, mixed> $cfg
+     * @param string $base
+     * @param mixed $body Cuerpo del $lookup.
+     * @return array<string, mixed>
+     * @throws InvalidArgumentException
      */
     private static function restrictLookup(array $cfg, string $base, $body): array
     {
@@ -594,6 +705,13 @@ class TablefIA
      * Ejecuta el pipeline y devuelve las filas en el orden de $columns con tipos nativos (ver cellValue()).
      * Sin allowDiskUse: un $sort/$group que exceda la memoria de MongoDB falla en lugar de escribir a disco.
      * $seen recibe las columnas que aparecieron en al menos un documento.
+     *
+     * @param MongoDB\Collection $collection
+     * @param list<array<string, mixed>> $pipeline
+     * @param list<string> $columns
+     * @param int $maxTimeMS
+     * @param array<string, true>|null $seen
+     * @return list<list<mixed>>
      */
     public static function run(MongoDB\Collection $collection, array $pipeline, array $columns, int $maxTimeMS = 30000, ?array &$seen = null): array
     {
@@ -621,6 +739,9 @@ class TablefIA
     /**
      * Valor de una celda conservando el tipo: null, int, float, string o DateTimeImmutable (fechas, en la zona
      * del sitio). Así la tabla ordena números y fechas correctamente y Excel recibe valores nativos.
+     *
+     * @param mixed $value
+     * @return int|float|string|DateTimeImmutable|null
      */
     public static function cellValue($value)
     {
@@ -635,7 +756,12 @@ class TablefIA
         };
     }
 
-    /** Filas para JSON: las fechas como 'Y-m-d H:i:s' (se ordenan bien como texto); números y null tal cual. */
+    /**
+     * Filas para JSON: las fechas como 'Y-m-d H:i:s' (se ordenan bien como texto); números y null tal cual.
+     *
+     * @param list<list<mixed>> $rows
+     * @return list<list<int|float|string|null>>
+     */
     public static function jsonRows(array $rows): array
     {
         foreach ($rows as &$row) {
@@ -648,6 +774,13 @@ class TablefIA
         return $rows;
     }
 
+    /**
+     * Texto para mostrar un valor de celda: '' para null, Sí/No para booleanos, fechas 'Y-m-d H:i:s' en la zona del
+     * sitio, arreglos como Extended JSON.
+     *
+     * @param mixed $value
+     * @return string
+     */
     public static function formatValue($value): string
     {
         return match (true) {
@@ -664,6 +797,12 @@ class TablefIA
 
     // -------------------------------------------------------------------------------------------- vista
 
+    /**
+     * @global Javas $javas
+     * @global class_nframework $nframework
+     * @global User $user
+     * @return string HTML.
+     */
     public function __toString()
     {
         global $javas, $nframework, $user;
@@ -748,7 +887,11 @@ class TablefIA
         HTML;
     }
 
-    /** JS del componente: function(o) con o = {id, token, placeholder, canfav}. */
+    /**
+     * JS del componente: function(o) con o = {id, token, placeholder, canfav}.
+     *
+     * @return string
+     */
     private static function script(): string
     {
         return <<<'JS'

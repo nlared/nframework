@@ -1,18 +1,48 @@
 <?php
 
+/**
+ * Atributo HTML con valor 'true'/'false': booltotag('data-x', 1) → ' data-x="true"'.
+ *
+ * @param string $tag
+ * @param mixed $val
+ * @return string
+ */
 function booltotag($tag, $val)
 {
     return ' ' . $tag . '="' . ($val ? 'true' : 'false') . '"';
 }
+/**
+ * Atributo HTML si $val no está vacío (sin escapar: pase valores de confianza).
+ *
+ * @param string $tag
+ * @param mixed $val
+ * @return string
+ */
 function strtotag($tag, $val)
 {
     return !empty($val) ? ' ' . $tag . '="' . $val . '"' : '';
 }
+/**
+ * Atributo HTML con las comillas dobles de $val cambiadas por simples (para HTML de iconos).
+ *
+ * @param string $tag
+ * @param string $val
+ * @return string
+ */
 function icontotag($tag, $val)
 {
     return $tag != '' ? ' ' . $tag . '="' . str_replace('"', '\'', $val) . '"' : '';
 }
 
+/**
+ * Siguiente valor de un contador (colección counters, documento {_id: $campo, seq}): folios consecutivos
+ * atómicos.
+ *
+ * @global MongoDB\Client $m
+ * @global class_config $config
+ * @param string $campo Nombre del contador.
+ * @return int
+ */
 function mongo_auto_increment($campo)
 {
     global $m, $config;
@@ -32,6 +62,10 @@ function mongo_auto_increment($campo)
  * Convierte el texto de un campo numérico al tipo que se guarda en Mongo.
  * $rules son las reglas de validación ("integer", "digits", "float"...): con integer/digits se guarda int, si no float.
  * Acepta separador de miles ("1,234.5"), igual que la validación con FILTER_FLAG_ALLOW_THOUSAND.
+ *
+ * @param mixed $val
+ * @param string ...$rules
+ * @return int|float|null null si está vacío o no es número.
  */
 function nfnumbertomongo($val, ...$rules)
 {
@@ -47,11 +81,18 @@ function nfnumbertomongo($val, ...$rules)
     return array_intersect(['integer', 'digits'], $rules) ? (int) $number : $number;
 }
 
+/**
+ * Base mínima: asigna cada opción del constructor como propiedad.
+ */
 #[\AllowDynamicProperties]
 class Base
 {
+    /** @var array<string, mixed> */
     public $tags;
 
+    /**
+     * @param array<string, mixed> $options
+     */
     public function __construct($options = [])
     {
         $this->tags = [];
@@ -60,47 +101,103 @@ class Base
         }
     }
 }
+/**
+ * Base de los controles de formulario. El constructor recibe un arreglo de opciones: las que coinciden con una
+ * propiedad se asignan y las demás se vuelven atributos HTML ($tags). Con dataset + field el control toma su
+ * valor del documento (notación con punto para subcampos), se registra en el dataset y su name queda como
+ * <nameprefix>[<field>]. Se imprime con echo (__toString()). Las subclases redefinen __toMongo() (tipo que se
+ * guarda), __toPHP() (valor para mostrar) e is_valid() (validación en el servidor).
+ *
+ *   $nombre = new inputText(['dataset' => &$dataset, 'field' => 'nombre', 'caption' => 'Nombre', 'required' =>
+ * true]);
+ *   echo $nombre;
+ */
 #[\AllowDynamicProperties]
 class baseInput
 {
+    /** @var bool */
     public $required = false;
+    /** @var string Clases CSS del input. */
     public $addclass = '';
+    /** @var string Nombre del tipo de control (lo fija cada subclase). */
     public $class = '';
+    /** @var string|null type del <input> o variante del control. */
     public $type = '';
+    /** @var string|null data-role de Metro UI. */
     public $role = '';
+    /** @var string */
     public $infobox = '';
+    /** @var string Por omisión se deriva de name (o field). */
     public $id = '';
+    /** @var string Por omisión field, con el nameprefix del dataset: data[campo]. */
     public $name = '';
+    /** @var string */
     public $nameprefix = '';
+    /** @var dataset|datasetpdo|null Documento al que se liga el control (pásela por referencia: &$dataset). */
     public $dataset;
+    /** @var embededArray|null Lista embebida a la que pertenece el control. */
     public $nfembeded;
+    /** @var string Campo del documento; notación con punto para subcampos (direccion.calle). */
     public $field = '';
+    /** @var bool Deshabilitado: no se valida ni se acepta desde el navegador. */
     public $disabled = false;
+    /** @var string */
     public $placeholder = '';
+    /** @var string Etiqueta (HTML). */
     public $caption = '';
+    /** @var string */
     public $prependicon = '';
+    /** @var bool */
     public $readonly = false;
+    /** @var mixed Valor si el documento no tiene el campo. */
     public $default;
+    /** @var string Reglas de validación de Metro separadas por espacios (email, integer, minlength=3...); también se revisan en el servidor. */
     public $validate = '';
+    /** @var string Texto o HTML antes del input (data-prepend). */
     public $prepend = '';
+    /** @var string Texto o HTML después del input (data-append). */
     public $append = '';
+    /** @var string */
     public $prepend_options = '';
+    /** @var string */
     public $append_options = '';
+    /** @var string */
     public $autocomplete = '';
+    /** @var string */
     public $title = '';
+    /** @var string Expresión regular (sin delimitadores) que debe cumplir el valor. */
     public $pattern = '';
+    /** @var string JS al cambiar el valor. */
     public $onChange = '';
+    /** @var array<string, mixed> Atributos HTML adicionales (opciones que no son propiedades). */
     public $tags = [];
+    /** @var mixed */
     public $value = null;
+    /** @var string */
     public $datasize = '';
+    /** @var bool Se muestra editable pero el servidor ignora lo que llegue. */
     public $backreadonly = false;
+    /** @var string Mensaje cuando la validación falla. */
     public $invalid_feedback = '';
 
+    /**
+     * Valor que se guarda en MongoDB a partir de lo que envió el navegador. La base lo devuelve igual.
+     *
+     * @param mixed $val
+     * @return mixed
+     */
     public function __toMongo($val)
     {
         return $val;
     }
 
+    /**
+     * Asigna una opción después de construir: propiedad si existe, atributo HTML si no.
+     *
+     * @param string $option
+     * @param mixed $value
+     * @return void
+     */
     public function __lset($option, $value)
     {
         $ovars = array_keys(get_object_vars($this));
@@ -113,6 +210,10 @@ class baseInput
         }
     }
 
+    /**
+     * @param string $name
+     * @return mixed
+     */
     public function __get($name)
     {
         if ($name === 'value') {
@@ -130,6 +231,10 @@ class baseInput
         return null;
     }
 
+    /**
+     * @param string $option
+     * @return bool
+     */
     public function __isset($option)
     {
         $ovars = array_keys(get_object_vars($this));
@@ -140,6 +245,9 @@ class baseInput
         return isset($this->tags[$option]);
     }
 
+    /**
+     * @param array<string, mixed> $options Propiedades del control; las demás se imprimen como atributos HTML.
+     */
     public function __construct($options = [])
     {
         $this->tags = [];
@@ -230,6 +338,13 @@ class baseInput
         }
     }
 
+    /**
+     * Validación en el servidor: required, pattern y las reglas email, number/numeric, integer/digits y
+     * float/double de validate. Un arreglo (controles compuestos) solo se revisa contra required.
+     *
+     * @param mixed $newval Valor recibido del navegador.
+     * @return bool
+     */
     public function is_valid($newval)
     {
         if ($newval === null || (is_string($newval) && trim($newval) === '')) {
@@ -277,6 +392,9 @@ class baseInput
         return true;
     }
 
+    /**
+     * @return string Atributos de $tags, escapados.
+     */
     protected function writetags(): string
     {
         $result = '';
@@ -287,6 +405,11 @@ class baseInput
         return $result;
     }
 
+    /**
+     * Atributo data-validate con validate, required y pattern.
+     *
+     * @return string
+     */
     public function data_validate()
     {
         $rules = !empty($this->validate) ? preg_split('/\s+/', trim((string) $this->validate)) : [];
@@ -314,6 +437,12 @@ class baseInput
         return $rulesstr !== '' ? ' data-validate="' . $rulesstr . '"' : '';
     }
 
+    /**
+     * Atributos comunes del input (data-label, class, required, readonly, disabled, prepend/append, placeholder...)
+     * más data-validate, escapados.
+     *
+     * @return string
+     */
     public function inputtags()
     {
         $attributes = [];
@@ -403,21 +532,37 @@ class baseInput
     {
         return $this->addclass ? ' class="' . $this->addclass . '"' : '';
     }
+    /**
+     * Igual que (string) $control.
+     */
     public function render(): string
     {
         return $this->__toString();
     }
+    /**
+     * @return mixed
+     */
     public function getValue()
     {
         return $this->value;
     }
 }
+/**
+ * Base de los controles con lista de opciones ['valor' => 'Texto'].
+ */
 class baseOptions extends baseInput
 {
+    /** @var array<int|string, string|array<int|string, string>> valor => texto; un arreglo como texto forma un <optgroup>. */
     public $options = [];
 }
+/**
+ * Valor de solo lectura con el aspecto de un campo (no se envía).
+ */
 class label extends baseInput
 {
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         if ($this->value === null) {
@@ -432,13 +577,22 @@ class label extends baseInput
             '<label class="input" ' . $this->writetags() . ' id="' . $this->id . '"' . '>' . htmlspecialchars($this->value) . '</label>';
     }
 }
+/**
+ * Campo oculto.
+ */
 class inputHidden extends baseInput
 {
+    /**
+     * @param array<string, mixed> $options
+     */
     public function __construct($options = [])
     {
         parent::__construct($options);
     }
 
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         return '<input type="hidden"' . ' id="' . $this->id . '" name="' . $this->name . '"' . $this->writetags() .
@@ -446,23 +600,48 @@ class inputHidden extends baseInput
     }
 }
 
+/**
+ * Texto de una línea. type 'email' agrega la validación email. 'ajax' lo vuelve un buscador Tom Select sobre
+ * una colección (ver nfTomSelectAjax()); 'suggest' muestra sugerencias manteniendo texto libre (ver
+ * docs/autocomplete.php).
+ *
+ *   new inputText(['dataset' => &$dataset, 'field' => 'rfc', 'caption' => 'RFC', 'pattern' =>
+ * '^[A-Z&Ñ]{3,4}\\d{6}[A-Z0-9]{3}$', 'uppercase' => true]);
+ */
 class inputText extends baseInput
 {
+    /** @var mixed */
     public $value;
+    /** @var bool|null */
     public $search;
+    /** @var string|null Máscara de Metro (input-mask). */
     public $mask;
+    /** @var string|null */
     public $mask_pattern;
+    /** @var string */
     public $pattern;
+    /** @var string|null */
     public $inputtype;
+    /** @var string */
     public $addclass = 'form-control';
+    /** @var string type del <input>: text (omisión), email, password, tel... */
     public $type;
+    /** @var bool|null Convierte a mayúsculas al escribir. */
     public $uppercase;
+    /** @var bool|null */
     public $lowercase;
+    /** @var bool|null */
     public $autotrim;
+    /** @var string */
     public $autocomplete = 'off';
+    /** @var array<string, mixed>|SelectAjaxOptions|null Búsqueda en servidor con Tom Select. */
     public $ajax;
+    /** @var list<string>|array<string, mixed>|null Sugerencias: lista fija, ['url' => ...] o consulta a una colección. */
     public $suggest;
 
+    /**
+     * @param array<string, mixed> $options Además de las de baseInput: type, mask, uppercase, lowercase, autotrim, ajax, suggest.
+     */
     public function __construct($options = [])
     {
         $options['class'] = 'inputText';
@@ -503,6 +682,9 @@ class inputText extends baseInput
         HTML;
     }
 
+    /**
+     * @param mixed $newval
+     */
     public function is_valid($newval): bool
     {
         return parent::is_valid($newval);
@@ -519,6 +701,10 @@ class inputText extends baseInput
      * Comunes: minlength (1), delay (250 ms), limit (20), depends (['param' => '#selector']: valor de otro
      * campo; en MongoDB es filtro exacto y se omite si está vacío), clearondepends (true) y onselect
      * (cuerpo de una función JS que recibe item e input).
+     *
+     * @global Javas $javas
+     * @global class_config $config
+     * @return void
      */
     private function renderSuggest(): void
     {
@@ -601,13 +787,24 @@ class inputText extends baseInput
     }
 }
 
+/**
+ * Número. Se guarda como int si data_validate o validate incluyen integer/digits, si no como float (ver
+ * nfnumbertomongo()); acepta separador de miles.
+ */
 class inputNumber extends baseInput
 {
+    /** @var int|float|null */
     public $max;
+    /** @var int|float|null */
     public $min;
+    /** @var int|float|string|null */
     public $step;
+    /** @var string|null 'integer', 'digits' o 'float'. */
     public $data_validate; // integer,digits,float
 
+    /**
+     * @param array<string, mixed> $options Además de las de baseInput: min, max, step, data_validate.
+     */
     public function __construct($options = [])
     {
         $options['class'] = 'inputNumber';
@@ -617,11 +814,19 @@ class inputNumber extends baseInput
         parent::__construct($options);
     }
 
+    /**
+     * @param mixed $val
+     * @return int|float|null
+     */
     public function __toMongo($val)
     {
         return nfnumbertomongo($val, $this->data_validate, $this->validate);
     }
 
+    /**
+     * @global class_config $config
+     * @return string HTML.
+     */
     public function __toString()
     {
         global $config;
@@ -638,6 +843,10 @@ class inputNumber extends baseInput
             '></div>';
     }
 
+    /**
+     * @param mixed $newval
+     * @return bool
+     */
     public function is_valid($newval)
     {
         if ($newval === null || (is_string($newval) && trim($newval) === '')) {
@@ -660,15 +869,26 @@ class inputNumber extends baseInput
     }
 }
 
+/**
+ * Número con botones + y −; el tipo guardado sale de validate (integer → int, si no float).
+ */
 class inputSpinner extends baseInput
 {
+    /** @var string|null */
     public $addclass;
+    /**
+     * @param mixed $val
+     * @return int|float|null
+     */
     public function __toMongo($val)
     {
         // inputSpinner no tiene propiedad $data_validate: el tipo sale de validate (integer, float...).
         return nfnumbertomongo($val, $this->validate);
     }
 
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         if ($this->validate == '') {
@@ -703,6 +923,10 @@ class inputSpinner extends baseInput
             ($this->addclass ? ' class="' . $this->addclass . '"' : '') .
             ' autocomplete="off">';
     }
+    /**
+     * @param mixed $newval
+     * @return bool
+     */
     public function is_valid($newval)
     {
         if ($newval === null || (is_string($newval) && trim($newval) === '')) {
@@ -725,10 +949,18 @@ class inputSpinner extends baseInput
     }
 }
 
+/**
+ * Calificación con estrellas (data-role rating).
+ */
 class inputRating extends baseInput
 {
+    /** @var list<string>|array<string, mixed> */
     public $tags = ['data-values', 'onchange'];
+    /** @var string|null */
     public $onchange;
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         return ($this->caption != '' ? '<label for="' . $this->id . '">' . $this->caption . '</label>' : '') .
@@ -738,12 +970,20 @@ class inputRating extends baseInput
     }
 }
 
+/**
+ * Selector de color (<input type="color">).
+ */
 class inputColor extends baseInput
 {
+    /** @var list<string>|array<string, mixed> */
     public $tags = ['data-values', 'onchange'];
 
+    /** @var string|null */
     public $onchange;
 
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         return '<input type="color" data-role="input" id="' . $this->id .
@@ -752,13 +992,23 @@ class inputColor extends baseInput
     }
 } // */
 
+/**
+ * Fecha (Y-m-d). Por omisión se guarda como UTCDateTime a medianoche en $timezone (UTC si no se indica);
+ * storagetype ST_STRING la guarda como texto.
+ */
 class inputDate extends baseInput
 {
+    /** @var string */
     private $format = 'Y-m-d';
+    /** @var DateTimeZone|null */
     public $timezone;
+    /** @var self::ST_* */
     public $storagetype = self::ST_MONGODATE;
     const ST_MONGODATE = 'st_mongodate';
     const ST_STRING = 'st_string';
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         if ($this->type == '') {
@@ -773,12 +1023,20 @@ class inputDate extends baseInput
             '></div>';
     }
 
+    /**
+     * @param mixed $date
+     * @return bool
+     */
     public function is_valid($date)
     {
         $d = DateTime::createFromFormat($this->format, $date);
         return (empty($date) && !$this->required) || ($d && $d->format($this->format) == $date);
     }
 
+    /**
+     * @param mixed $val Texto Y-m-d.
+     * @return MongoDB\BSON\UTCDateTime|string|null
+     */
     public function __toMongo($val)
     {
         if ($this->timezone == null) {
@@ -803,6 +1061,12 @@ class inputDate extends baseInput
         }
     }
 
+    /**
+     * Texto Y-m-d para mostrar a partir de lo guardado.
+     *
+     * @param mixed $val
+     * @return mixed
+     */
     public function __toPHP($val)
     {
         if ($this->storagetype == self::ST_STRING) {
@@ -819,10 +1083,17 @@ class inputDate extends baseInput
         }
     }
 }
+/**
+ * Hora (H:i). Se guarda como UTCDateTime del 1 de enero de 1970 a esa hora en UTC.
+ */
 class inputTime extends baseInput
 {
+    /** @var string|null */
     public $type;
 
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         if ($this->type == '') {
@@ -836,6 +1107,10 @@ class inputTime extends baseInput
             '></div>';
     }
 
+    /**
+     * @param mixed $val
+     * @return mixed Texto H:i si era UTCDateTime.
+     */
     public function __toPHP($val)
     {
         // If stored as MongoDB UTCDateTime convert to H:i, otherwise return as-is
@@ -846,6 +1121,10 @@ class inputTime extends baseInput
             return $val;
         }
     }
+    /**
+     * @param mixed $val Texto H:i.
+     * @return MongoDB\BSON\UTCDateTime|null
+     */
     public function __toMongo($val)
     {
         if (empty($val)) {
@@ -860,6 +1139,10 @@ class inputTime extends baseInput
         $orig_date = $orig_date->getTimestamp();
         return new MongoDB\BSON\UTCDateTime($orig_date * 1000);
     }
+    /**
+     * @param mixed $date
+     * @return bool
+     */
     public function is_valid($date)
     {
         if ($date === null || $date === '') {
@@ -869,13 +1152,23 @@ class inputTime extends baseInput
         return preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', (string) $date) === 1;
     }
 }
+/**
+ * Fecha y hora (datetime-local, Y-m-d\TH:i). Se guarda como UTCDateTime en $timezone (UTC si no se indica), o
+ * como texto con ST_STRING.
+ */
 class inputDateTime extends baseInput
 {
+    /** @var DateTimeZone|null */
     public $timezone = null;
     public const ST_MONGODATE = 'st_mongodate';
     public const ST_STRING = 'st_string';
+    /** @var self::ST_* */
     public $storagetype = self::ST_MONGODATE;
 
+    /**
+     * @global class_nframework $nframework
+     * @return string HTML.
+     */
     public function __toString()
     {
         global $nframework;
@@ -892,6 +1185,10 @@ class inputDateTime extends baseInput
             . '" data-clear-button="false"  autocomplete="off"/>';
     }
 
+    /**
+     * @param mixed $val
+     * @return MongoDB\BSON\UTCDateTime|string|null
+     */
     public function __toMongo($val)
     {
         if ($this->timezone == null) {
@@ -915,6 +1212,10 @@ class inputDateTime extends baseInput
         }
     }
 
+    /**
+     * @param mixed $val
+     * @return mixed
+     */
     public function __toPHP($val)
     {
         if ($this->storagetype == self::ST_STRING) {
@@ -932,14 +1233,28 @@ class inputDateTime extends baseInput
     }
 }
 
+/**
+ * Editor HTML enriquecido (TinyMCE). Con upload sube imágenes a mediadir. El contenido es HTML: no lo muestre a
+ * otros usuarios sin sanearlo.
+ */
 class inputMCE extends baseInput
 {
+    /** @var bool */
     public $upload = false;
+    /** @var string|null Carpeta en disco para las imágenes subidas. */
     public $mediadir;
+    /** @var string|null URL pública de mediadir. */
     public $baseurl;
     // public $id;
+    /** @var string|null */
     public $extended_valid_elements;
+    /** @var string|null */
     public $content_css;
+    /**
+     * @global class_nframework $nframework
+     * @global Javas $javas
+     * @return string HTML.
+     */
     public function __toString()
     {
         global $nframework, $javas;
@@ -1041,12 +1356,22 @@ setup: function(editor) {
             '</textarea>';
     }
 }
+/**
+ * Texto de varias líneas, con contador de caracteres opcional.
+ */
 class textArea extends baseInput
 {
+    /** @var bool|null */
     public $uppercase;
+    /** @var bool|string|null */
     public $charscounter;
+    /** @var bool */
     public $spellcheck = true;
+    /** @var string|null */
     public $charscountertemplate;
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         if ($this->value === null) {
@@ -1066,19 +1391,33 @@ class textArea extends baseInput
             '>' . htmlentities($this->value) . '</textarea>';
     }
 }
+/**
+ * Sin implementación propia (heredado).
+ */
 class AutoformList extends baseInput
 {
+    /** @var array<int|string, string> */
     public $options = [];
 }
+/**
+ * Casilla. storeagetype define lo que se guarda: ST_MONGOBOOLEAN (bool, omisión), ST_INTEGER (1/0), ST_STRING
+ * ('true'/'false') o ST_CUSTOM (customtrue/customfalse).
+ */
 class inputCheckBox extends baseOptions
 {
+    /** @var self::ST_* */
     public $storeagetype = self::ST_MONGOBOOLEAN;
     const ST_MONGOBOOLEAN = 'st_mongoboolean';
     const ST_INTEGER = 'st_integer';
     const ST_CUSTOM = 'st_custom';
     const ST_STRING = 'st_string';
+    /** @var mixed */
     public $customtrue;
+    /** @var mixed */
     public $customfalse;
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         return '<input type="checkbox" name="' . $this->name . '" id="' . $this->id . '" value="1"' .
@@ -1088,11 +1427,19 @@ class inputCheckBox extends baseOptions
             ($this->onchange ? ' data-on-change="' . $this->onchange . '"' : '') .
             ($this->value ? ' checked ' : ' ') . '/>';
     }
+    /**
+     * @param mixed $newval
+     * @return bool
+     */
     public function is_valid($newval)
     {
         // checkedvalue puede ser cualquier valor escalar; una casilla sin marcar no se envía (null).
         return $newval === null || is_scalar($newval);
     }
+    /**
+     * @param mixed $val
+     * @return mixed
+     */
     public function __toMongo($val)
     {
         if ($this->storeagetype == self::ST_MONGOBOOLEAN) {
@@ -1111,6 +1458,10 @@ class inputCheckBox extends baseOptions
             return $val;
         }
     }
+    /**
+     * @param mixed $val
+     * @return mixed
+     */
     public function __toPHP($val)
     {
         if ($this->storeagetype == self::ST_MONGOBOOLEAN) {
@@ -1128,10 +1479,17 @@ class inputCheckBox extends baseOptions
 }
 
 
+/**
+ * Grupo de botones de opción a partir de options.
+ */
 class inputRadios extends baseOptions
 {
+    /** @var mixed Sin uso (errata histórica de required). */
     public $rquired;
 
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         $contas = 0;
@@ -1149,6 +1507,13 @@ class inputRadios extends baseOptions
     }
 }
 
+/**
+ * <option> (y <optgroup> para arreglos anidados) de una lista valor => texto. No escapa: los textos son HTML.
+ *
+ * @param array<int|string, string|array<int|string, string>> $options
+ * @param mixed $selected Valor o lista de valores seleccionados.
+ * @return string
+ */
 function nflistoptions($options, $selected = []): string
 {
     $result = '';
@@ -1173,17 +1538,30 @@ enum DataformatSelectType: string
     case MongoID = 'mongoid';
 }
 
+/**
+ * Opciones tipadas para la opción 'ajax' de Select e inputText (equivalen al arreglo).
+ */
 class SelectAjaxOptions
 {
+    /** @var string|null */
     public $db;
+    /** @var string|null */
     public $collection;
+    /** @var list<array<string, mixed>> */
     public $pipeline = [];
+    /** @var list<string> Campos donde se busca el texto. */
     public $columns = [];
+    /** @var list<string> */
     public $fields = [];
+    /** @var string|null Campo que se muestra. */
     public $label;
+    /** @var string|null Campo que se guarda. */
     public $value;
+    /** @var mixed */
     public $args;
+    /** @var string|null */
     public $adduri;
+    /** @var int|null */
     public $limit;
     public String $load;
 }
@@ -1192,6 +1570,11 @@ class SelectAjaxOptions
  * Convierte un Select o inputText con 'ajax' en un buscador Tom Select que consulta
  * /nframework/select_ajax.php. Acepta 'ajax' como arreglo o como SelectAjaxOptions.
  * La consulta se guarda en la sesión: el navegador solo envía el texto buscado.
+ *
+ * @global class_nframework $nframework
+ * @global Javas $javas
+ * @param baseInput $input Select o inputText con la propiedad ajax.
+ * @return void
  */
 function nfTomSelectAjax(baseInput $input): void
 {
@@ -1256,6 +1639,9 @@ js,
  * bajo un input (texto libre). Usa el estilo .autocomplete-list de Metro, escapa el texto de cada
  * sugerencia, se maneja con teclado (flechas, Enter, Esc) y cancela peticiones viejas.
  * También queda disponible como window.nfSuggest para usarla con inputs propios.
+ *
+ * @global class_nframework $nframework
+ * @return void
  */
 function nfSuggestScript(): void
 {
@@ -1382,21 +1768,42 @@ window.nfSuggest = function (input, cfg, onselect) {
 JS;
 }
 
+/**
+ * Lista de opciones (Metro select) o, con 'ajax', buscador Tom Select en una colección. format 'mongoid' guarda
+ * los valores como ObjectId; multiple guarda un arreglo.
+ *
+ *   new Select(['dataset' => &$dataset, 'field' => 'estado', 'options' => ['a' => 'Activo', 'b' => 'Baja']]);
+ *   new Select(['dataset' => &$dataset, 'field' => 'cliente', 'format' => Select::formatMongoID,
+ *       'ajax' => ['collection' => 'clientes', 'columns' => ['nombre'], 'label' => 'nombre', 'value' =>
+ * '_id']]);
+ */
 class Select extends baseOptions
 {
     const formatMongoID = 'mongoid';
     const formatString = 'string';
+    /** @var bool|null */
     public $combobox;
+    /** @var bool|null */
     public $multiple;
+    /** @var string|null */
     public $invalid_feedback;
+    /** @var array<int|string, string|array<int|string, string>> */
     public $options = [];
+    /** @var bool|null Permite escribir valores que no están en la lista (Tom Select). */
     public $canadd;
+    /** @var string|null */
     public $role;
+    /** @var bool Campo de filtro en la lista de Metro. */
     public $datafilter = true;
+    /** @var self::formatMongoID|self::formatString|DataformatSelectType|null */
     public $format; // mongoid or string
 
+    /** @var array<string, mixed>|SelectAjaxOptions|null */
     public $ajax;
 
+    /**
+     * @param array<string, mixed> $options Además de las de baseInput: options, multiple, format, ajax, canadd, combobox.
+     */
     public function __construct($options = [])
     {
         $options['class'] = 'select';
@@ -1408,6 +1815,12 @@ class Select extends baseOptions
         return $this->format === self::formatMongoID || $this->format === DataformatSelectType::MongoID;
     }
 
+    /**
+     * ObjectId si $val es un id hexadecimal de 24 caracteres; si no, el valor igual.
+     *
+     * @param mixed $val
+     * @return mixed
+     */
     private static function toObjectID($val)
     {
         if ($val instanceof MongoDB\BSON\ObjectId) {
@@ -1419,6 +1832,10 @@ class Select extends baseOptions
         return $val;
     }
 
+    /**
+     * @param mixed $val
+     * @return mixed
+     */
     public function __toPHP($val)
     {
         if ($this->multiple) {
@@ -1434,6 +1851,10 @@ class Select extends baseOptions
         return $val;
     }
 
+    /**
+     * @param mixed $val
+     * @return mixed
+     */
     public function __toMongo($val)
     {
         if ($this->multiple) {
@@ -1448,6 +1869,10 @@ class Select extends baseOptions
         }
         return $val;
     }
+    /**
+     * @global class_nframework $nframework
+     * @global Javas $javas
+     */
     public function __toString(): string
     {
         global $nframework, $javas;
@@ -1498,6 +1923,12 @@ class Select extends baseOptions
             'autocomplete="off" data-filter="true" data-filter-placeholder="' . $this->placeholder . '">' . $result . '</select>';
     }
 
+    /**
+     * Hoy siempre acepta el valor: no se comprueba que esté entre las opciones. Valídelo en la página si importa.
+     *
+     * @param mixed $newval
+     * @return bool
+     */
     public function is_valid($newval)
     {
         // falta validar array
@@ -1508,6 +1939,13 @@ class Select extends baseOptions
 }
 // ############################################ S T A R T ##################################################
 // ######################## AGREGUE PARA PONER ICONOS EN LAS OPCIONES DE LOS SELECT########################
+/**
+ * Como nflistoptions() pero con el icono de Metro de cada valor (para SelectIcon).
+ *
+ * @param array<int|string, string> $options
+ * @param mixed $selected
+ * @return string
+ */
 function nflistoptionsIcons($options, $selected = [])
 {
     if (!is_array($selected)) {
@@ -1540,13 +1978,24 @@ function nflistoptionsIcons($options, $selected = [])
     return $result;
 }
 
+/**
+ * Select cuyas opciones son iconos de Metro UI (mif-*).
+ */
 class SelectIcon extends baseOptions
 {
+    /** @var bool|null */
     public $combobox;
+    /** @var bool|null */
     public $multiple;
+    /** @var array<int|string, string> */
     public $options = [];
+    /** @var bool|null */
     public $canadd;
+    /** @var bool */
     public $datafilter = true;
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         if ($this->combobox && $this->value != '' && !array_search($this->value, $this->options)) {
@@ -1590,6 +2039,10 @@ class SelectIcon extends baseOptions
             ($this->invalid_feedback != '' ? '<span class="invalid_feedback">' . $this->invalid_feedback . '</span>' : '');
     }
 
+    /**
+     * @param mixed $newval
+     * @return bool
+     */
     public function is_valid($newval)
     {
         // falta validar array
@@ -1598,12 +2051,22 @@ class SelectIcon extends baseOptions
         return true;
     }
 }
+/**
+ * Grupo de casillas a partir de options; se guarda como ['valor' => bool, ...] con las marcadas.
+ */
 class inputCheckBoxs extends Select
 {
+    /** @var 'left'|'right' */
     public $captionposition = 'right';
+    /** @var bool */
     public $horizontal = false;
+    /** @var bool */
     public $nometro = false;
+    /** @var string|null */
     public $type;
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         $result = '';
@@ -1625,6 +2088,10 @@ class inputCheckBoxs extends Select
         return ($this->caption != '' ? '<label id="' . $this->id . '">' . $this->caption . '</label>' : '') . $result;
     }
 
+    /**
+     * @param mixed $vals
+     * @return array<string, bool>
+     */
     public function __toMongo($vals)
     {
         $tomongo = [];
@@ -1637,37 +2104,71 @@ class inputCheckBoxs extends Select
     }
 }
 
+/**
+ * Base de inputFile e inputFiles. Los archivos se suben por /nframework/uploadfile.php con la configuración
+ * guardada en la sesión (carpeta, permisos, eventos): el navegador nunca elige la carpeta destino.
+ */
 abstract class BaseFileInput extends baseInput
 {
+    /** @var string|null Carpeta destino en el servidor. */
     public $dir;
+    /** @var bool */
     public $download = true;
+    /** @var bool */
     public $preview = true;
+    /** @var bool */
     public $delete = true;
+    /** @var bool|null */
     public $disabled;
+    /** @var bool|null Crear dir si no existe. */
     public $create_dir;
+    /** @var string|null accept del <input type="file"> (image/*, .pdf...). */
     public $accept;
+    /** @var list<string> */
     public $allowext = []; // extensiones protegidas que se aceptan (p. ej. ['py', 'sh']); ver nfValidUploadFilename()
+    /** @var string|null capture del input (user, environment) en móviles. */
     public $capture;
+    /** @var 'input'|'drop'|'button' */
     public $mode = 'input'; // input,drop,button
+    /** @var int|string Inicio de la ventana para subir (timestamp); '' = ahora. */
     public $limit_time_start = '';
+    /** @var int|string Fin de la ventana para subir; '' = 30 minutos. */
     public $limit_time_end = '';
+    /** @var string|null Archivo PHP con las funciones onupload/ondelete/onlist/oncountcheck. */
     public $extension;
+    /** @var array<string, mixed> Datos que reciben esas funciones. */
     public $extensioninfo = [];
+    /** @var string|null */
     public $onupload;
+    /** @var string|null */
     public $ondelete;
+    /** @var string|null */
     public $oncountcheck;
+    /** @var string|null */
     public $onlist;
+    /** @var string */
     public $dropIcon = '<span class=\'mif-cloud-upload\'></span>';
+    /** @var string */
     public $clearButtonIcon = '<span class=\'mif-cross\'></span>';
+    /** @var string|null */
     public $caption;
 
 
+    /**
+     * @param mixed $newval
+     * @return bool
+     */
     public function is_valid($newval)
     {
         // Los archivos se suben por /nframework/uploadfile.php, no llegan en el POST del formulario.
         return true;
     }
 
+    /**
+     * Agrega jQuery UI y jQuery File Upload a la página.
+     *
+     * @global class_nframework $nframework
+     */
     protected function initializeFileUpload(): void
     {
         global $nframework;
@@ -1680,6 +2181,12 @@ abstract class BaseFileInput extends baseInput
         $nframework->addfileupload();
     }
 
+    /**
+     * Configuración que se guarda en $_SESSION para /nframework/uploadfile.php.
+     *
+     * @global class_nframework $nframework
+     * @return array<string, mixed>
+     */
     protected function getSessionConfig(): array
     {
         global $nframework;
@@ -1703,6 +2210,9 @@ abstract class BaseFileInput extends baseInput
         ];
     }
 
+    /**
+     * @global Javas $javas
+     */
     protected function addBaseJavaScript(): void
     {
         global $javas;
@@ -1776,10 +2286,20 @@ abstract class BaseFileInput extends baseInput
     }
 }
 
+/**
+ * Un archivo con nombre fijo (path): subir, previsualizar, descargar y eliminar. Ver docs/files.php.
+ */
 class inputFile extends BaseFileInput
 {
+    /** @var string|null Nombre del archivo dentro de dir. */
     public $path;
+    /** @var string|null JS al terminar la subida. */
     public $onDone;
+    /**
+     * @global Javas $javas
+     * @global class_nframework $nframework
+     * @return string HTML.
+     */
     public function __toString()
     {
         global $javas, $nframework;
@@ -1855,11 +2375,20 @@ class inputFile extends BaseFileInput
     }
 }
 
+/**
+ * Varios archivos en dir, con límites de cantidad (countlimit) y tamaño (sizelimit). Ver docs/files.php.
+ *
+ *   new inputFiles(['id' => 'docs', 'dir' => '/var/data/expedientes/' . $id, 'create_dir' => true, 'accept' =>
+ * '.pdf', 'countlimit' => 5]);
+ */
 class inputFiles extends BaseFileInput
 {
+    /** @var int Tamaño máximo por archivo en bytes; 0 = sin límite. */
     public $sizelimit = 0;
+    /** @var int|null */
     public $countlimit;
     // Use nowdoc for better performance and readability
+    /** @var string JS que dibuja la lista al terminar (variable html). */
     public $onDone = <<<'JS'
         html += '<div style="overflow-x:auto;overflow-y: auto;height: 250px;">';
         html += '<table class="table"><thead><tr><th>Nombre</th><th>Descargar</th><th>Ver</th><th>Eliminar</th></tr></thead><tbody>';
@@ -1875,6 +2404,11 @@ class inputFiles extends BaseFileInput
         $("#" + id + "_list").html(html);
     JS;
 
+    /**
+     * @global Javas $javas
+     * @global class_nframework $nframework
+     * @return string HTML.
+     */
     public function __toString()
     {
         global $javas, $nframework;
@@ -1925,6 +2459,9 @@ class inputFiles extends BaseFileInput
         HTML;
     }
 
+    /**
+     * @return string
+     */
     private function getDropAttr(): string
     {
         return $this->drop ? ' data-mode="drop" data-files-title="archivo(s) seleccionado(s)" data-drop-title="<strong>Selecciona archivo(s)</strong>"' : '';
@@ -1932,23 +2469,38 @@ class inputFiles extends BaseFileInput
 }
 
 
+/**
+ * Punto en un mapa (Leaflet). Se guarda como ['lat', 'lng'] o, con type = mapmarker::GeoJSON, como GeoJSON Point
+ * (para índices 2dsphere).
+ */
 class mapmarker extends baseInput
 {
     public const GeoJSON = 0x02;
 
     //	public $latitude;
     //	public $longitude;
+    /** @var string|null */
     public $onchange;
+    /** @var int|null mapmarker::GeoJSON para guardar como Point. */
     public $type;
+    /** @var int */
     public $height = 500;
+    /** @var mixed */
     public $value;
+    /** @var mixed */
     public $hiddedata;
+    /** @var array{lng: float, lat: float} */
     public $startpoint = [
         'lng' => -100.96047970,
         'lat' => 25.43328030,
 
     ];
 
+    /**
+     * @global class_nframework $nframework
+     * @global Javas $javas
+     * @return string HTML.
+     */
     public function __toString()
     {
         global $nframework, $javas;
@@ -2012,45 +2564,87 @@ class mapmarker extends baseInput
 		';
     }
 
+    /**
+     * @param array{lat: mixed, lng: mixed}|mixed $val
+     * @return mixed
+     */
     public function __toMongo($val)
     {
         return $this->type == self::GeoJSON ? ['type' => 'Point', 'coordinates' => [floatval($val['lng']), floatval($val['lat'])]] : $val;
     }
 }
 
+/**
+ * Recuadro de ejemplo de Metro (div.example).
+ */
 class example extends Base
 {
+    /** @var string */
     public $content;
 
+    /** @var string */
     public $title;
 
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         return '<div class="example" data-text="' . $this->title . '">' . $this->content . '</div>';
     }
 }
 
+/**
+ * Como dataset pero sobre un registro SQL vía PDO (MySQL, PostgreSQL, SQLite). Los controles se ligan igual
+ * (dataset + field); save() inserta o actualiza con consultas preparadas. Tabla y columnas se validan como
+ * identificadores. Ver docs/datasetpdo.php.
+ *
+ *   $ds = new datasetpdo(['pdo' => $pdo, 'table' => 'clientes', 'key' => 'id', '_id' => $id, 'nameprefix' =>
+ * 'data']);
+ */
 class datasetpdo
 {
+    /** @var list<baseInput>|null */
     public $elements;
+    /** @var PDO */
     public $pdo;   // conexión PDO
+    /** @var string */
     public $table; // tabla
+    /** @var string Columna llave primaria. */
     public $key;   // columna llave primaria
+    /** @var mixed */
     private $collection;
+    /** @var mixed Valor de la llave del registro. */
     private $_id;
+    /** @var array<string, mixed> Registro actual. */
     public $info = [];
+    /** @var string|null */
     public $nameprefix;
+    /** @var bool|null */
     public $simpleid;
+    /** @var mixed */
     public $autosave;
+    /** @var mixed */
     public $position;
+    /** @var mixed */
     public $fieldprefix;
+    /** @var bool */
     private $exists = false;
 
+    /**
+     * @param baseInput $element
+     * @return void
+     */
     public function addElement(&$element)
     {
         $this->elements[] = $element;
     }
 
+    /**
+     * @param array{pdo: PDO, table: string, key: string, _id?: mixed, nameprefix?: string} $options
+     * @param array<string, mixed> $query Sin uso.
+     * @throws InvalidArgumentException Si table o key no son identificadores válidos.
+     */
     public function __construct($options, $query = [])
     {
         foreach ($options as $option => $value) {
@@ -2072,6 +2666,9 @@ class datasetpdo
 
     /**
      * Valida un nombre de tabla/columna; los identificadores no pueden ir como parámetros.
+     *
+     * @param mixed $name
+     * @throws InvalidArgumentException
      */
     private static function identifier($name): string
     {
@@ -2081,6 +2678,11 @@ class datasetpdo
         return '`' . $name . '`';
     }
 
+    /**
+     * Valida los controles con lo recibido en $_POST[nameprefix] y hace INSERT (registro nuevo) o UPDATE.
+     *
+     * @return string|false false si se guardó; texto HTML con los campos inválidos si no.
+     */
     public function save()
     {
         $errores = '';
@@ -2117,6 +2719,10 @@ class datasetpdo
         return false;
     }
 
+    /**
+     * @param string $name
+     * @return mixed false si no existe.
+     */
     public function &__get($name)
     {
         $result = false;
@@ -2137,34 +2743,73 @@ class datasetpdo
         return $result;
     }
 
+    /**
+     * @param string $name
+     * @return bool
+     */
     public function __isset($name)
     {
         return isset($this->info[$name]);
     }
 }
 
+/**
+ * Documento de MongoDB ligado a controles de formulario. Carga el documento por _id (o genera uno nuevo), expone
+ * sus campos como propiedades y guarda con save() lo que llega en $_POST[nameprefix], validando y convirtiendo
+ * tipos con cada control (__toMongo). Asignar una propiedad que no es del objeto hace updateOne con upsert al
+ * momento. Ver docs/databinding.php.
+ *
+ *   $dataset = new dataset(['collection' => $m->{$config['sitedb']}->productos, '_id' => $_GET['_id'],
+ * 'nameprefix' => 'data']);
+ *   $nombre = new inputText(['dataset' => &$dataset, 'field' => 'nombre', 'required' => true]);
+ *   $errores = $dataset->save();   // false = guardado
+ *   $dataset->estado = 'ok';       // updateOne inmediato
+ */
 #[\AllowDynamicProperties]
 class dataset
 {
+    /** @var list<baseInput> Controles ligados (se registran solos). */
     public $elements = [];
+    /** @var MongoDB\Collection */
     public $collection;
+    /** @var MongoDB\BSON\ObjectId|string Se lee como texto con $dataset->_id. */
     private $_id;
+    /** @var array<string, mixed> Documento actual. */
     public $info = [];
+    /** @var string|null Prefijo de los nombres: data → data[campo] y $_POST['data']. */
     public $nameprefix;
+    /** @var bool|null true = _id de texto libre (RFC, folio) en lugar de ObjectId. */
     public $simpleid;
+    /** @var mixed Sin uso. */
     public $autosave; // pensar
+    /** @var MongoDB\Driver\Session|null Sesión para transacciones. */
     public $mongo_session;
+    /** @var string|int Reemplaza '$' en los campos (arreglos posicionales). */
     public $position = ''; // se va
+    /** @var string|null Prefijo que se antepone a cada campo al guardar. */
     public $fieldprefix; // se va
+    /** @var bool true = guarda las versiones previas en nfversions. */
     public $historic = false;
+    /** @var bool */
     public $allUpper = false;
+    /** @var bool */
     public $allLower = false;
+    /** @var list<string> Campos que no se pueden asignar como propiedad. */
     private $nfprotected;
+    /**
+     * @param baseInput $element
+     * @return void
+     */
     public function addElement(&$element)
     {
         $this->elements[] = $element;
     }
 
+    /**
+     * @param array{collection: MongoDB\Collection, _id?: string|MongoDB\BSON\ObjectId, nameprefix?: string, simpleid?: bool, historic?: bool, mongo_session?: MongoDB\Driver\Session, position?: string|int, fieldprefix?: string} $options
+     * @param array<string, mixed> $query Sin uso.
+     * @throws MongoDB\Driver\Exception\InvalidArgumentException Si _id no es un ObjectId válido y simpleid no está activo.
+     */
     public function __construct($options, $query = [])
     {
         $this->nfprotected = [
@@ -2192,6 +2837,11 @@ class dataset
         unset($this->info['']);
     }
 
+    /**
+     * Vuelve a leer el documento de la base.
+     *
+     * @return void
+     */
     public function refresh()
     {
         if ($this->_id != '') {
@@ -2207,11 +2857,23 @@ class dataset
         }
     }
 
+    /**
+     * @param string $name
+     * @return bool
+     */
     public function __isset($name)
     {
         return isset($this->info[$name]);
     }
 
+    /**
+     * Propiedades del objeto se asignan normal; cualquier otro nombre es un campo del documento y se guarda de
+     * inmediato con $set (upsert) si cambió. _id y nfversions están protegidos.
+     *
+     * @param string $name
+     * @param mixed $value
+     * @return void
+     */
     public function __set($name, $value)
     {
         if (!in_array($name, $this->nfprotected)) {
@@ -2257,6 +2919,12 @@ class dataset
         return true;
     }
 
+    /**
+     * Quita el campo del documento con $unset.
+     *
+     * @param string $name
+     * @return void
+     */
     public function __unset($name)
     {
         if ($name != '_id') {
@@ -2284,6 +2952,14 @@ class dataset
 
         return true;
     }
+    /**
+     * Intenta registrar los campos de los controles en la definición de nftables de la colección.
+     *
+     * @global MongoDB\Client $m
+     * @global class_config $config
+     * @param mixed $id
+     * @return void
+     */
     public function tonfTables($id): void
     {
         global $m, $config;
@@ -2305,6 +2981,12 @@ class dataset
             ]
         );
     }
+    /**
+     * Campo del documento (arreglos/BSON como arreglo de PHP); '_id' en texto; null si no existe.
+     *
+     * @param string $name
+     * @return mixed
+     */
     public function __get($name)
     {
         $result = null;
@@ -2325,6 +3007,12 @@ class dataset
         return $result;
     }
 
+    /**
+     * Agrega a nfversions una copia del documento actual con usuario y fecha.
+     *
+     * @global User $user
+     * @return void
+     */
     private function createversion()
     {
         global $user;
@@ -2342,6 +3030,16 @@ class dataset
         }
     }
 
+    /**
+     * Valida cada control con lo recibido en $_POST[nameprefix]. Si todo es válido guarda: los campos vacíos se
+     * quitan ($unset) y los demás se convierten con __toMongo(); con subcampos (punto) usa $set/$unset por campo,
+     * si no reemplaza los campos del documento con $set. Los controles disabled o backreadonly no se toman del
+     * navegador.
+     *
+     * @global mixed $result
+     * @return string|false false si se guardó; texto HTML con los campos inválidos si no.
+     * @throws Exception Si un control ligado no tiene field.
+     */
     public function save()
     {
         global $result;
@@ -2467,15 +3165,25 @@ class datasetArray
         return true; // TODO check
     }
 }*/
+/**
+ * Icono: nombre de Metro ('home' → mif-home) o URL de imagen si contiene un punto.
+ */
 class Icon
 {
+    /** @var string */
     public $src;
 
+    /**
+     * @param string $src
+     */
     public function __construct($src)
     {
         $this->src = $src;
     }
 
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         return strpos($this->src, '.') === false ?
@@ -2484,12 +3192,24 @@ class Icon
     }
 }
 
+/**
+ * Nodo de TreeView.
+ */
 class TreeViewItem
 {
+    /** @var list<TreeViewItem>|null */
     public $children;
+    /** @var Icon */
     public $icon;
+    /** @var string */
     public $caption;
+    /** @var string|null Atributos extra del <li>. */
     public $addnodetag;
+    /**
+     * @param string $caption
+     * @param Icon $icon
+     * @param array<string, mixed> $options children, addnodetag.
+     */
     public function __construct($caption, $icon, $options = [])
     {
         $this->caption = $caption;
@@ -2499,6 +3219,9 @@ class TreeViewItem
         }
     }
 
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         $tmp = (string) $this->icon . $this->caption;
@@ -2508,9 +3231,16 @@ class TreeViewItem
         return '<li class="item" ' . $this->addnodetag . ' data-icon="' . $this->icon->data() . '" data-caption="' . $this->caption . '">' . $tmp . '</li>';
     }
 }
+/**
+ * Árbol de Metro UI (data-role treeview) con nodos TreeViewItem.
+ */
 class TreeView
 {
+    /** @var list<TreeViewItem> */
     public $children;
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         return '<ul data-role="treeview"

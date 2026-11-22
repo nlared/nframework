@@ -3,6 +3,9 @@
  * Las cabeceras X-Forwarded-* solo se aceptan si la petición llega desde un proxy de confianza
  * (red privada/loopback o una IP listada en $config['trusted_proxies']); de lo contrario
  * cualquier cliente podría falsificar su IP y evadir las listas negras y el límite de intentos.
+ *
+ * @param string[] $trustedProxies IPs o rangos CIDR adicionales a las redes privadas.
+ * @return bool
  */
 function isTrustedProxy(array $trustedProxies = []): bool
 {
@@ -18,6 +21,13 @@ function isTrustedProxy(array $trustedProxies = []): bool
     return !filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
 }
 
+/**
+ * Detrás de un proxy de confianza que termina TLS (X-Forwarded-Proto: https) ajusta REQUEST_SCHEME,
+ * SERVER_PROTOCOL y HTTPS en $_SERVER para que la petición se trate como https.
+ *
+ * @param bool $trustedProxy Resultado de isTrustedProxy().
+ * @return void
+ */
 function normalizeRequestScheme(bool $trustedProxy): void
 {
     if ($trustedProxy && !empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
@@ -27,6 +37,13 @@ function normalizeRequestScheme(bool $trustedProxy): void
     }
 }
 
+/**
+ * IP real del cliente: REMOTE_ADDR o, si la petición viene de un proxy de confianza, la primera IP válida
+ * de X-Forwarded-For o X-Real-IP. '127.0.0.1' si ninguna es válida. include.php la guarda en $ip.
+ *
+ * @param bool $trustedProxy Resultado de isTrustedProxy().
+ * @return string
+ */
 function resolveClientIp(bool $trustedProxy): string
 {
     $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
@@ -78,8 +95,16 @@ use PhpOffice\PhpWord\Settings;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
+/**
+ * Excepción propia del framework (p. ej. downloadfrom() con un archivo inexistente).
+ */
 class nFrameworkException extends Exception
 {
+    /**
+     * Mensaje con código, texto, archivo y línea.
+     *
+     * @return string
+     */
     public function errorMessage()
     {
         // Error message
@@ -88,6 +113,17 @@ class nFrameworkException extends Exception
 }
 
 
+/**
+ * Configuración del sitio, disponible como $config. Une el bloque de includes/config.php que corresponde
+ * al HTTP_HOST con el documento {_id: 'site'} de la colección configs (gana MongoDB; trusted_proxies y
+ * allowed_redirect_hosts se suman). Se usa como arreglo; una llave inexistente devuelve null sin aviso.
+ *
+ *   $db = $m->{$config['sitedb']};
+ *   $host = $config['smtp']['host'] ?? '';
+ *   $url = $config->fileValue('url');   // solo lo de config.php
+ *
+ * @implements ArrayAccess<string, mixed>
+ */
 class class_config implements ArrayAccess
 {
     private array $contenedor;
@@ -113,6 +149,14 @@ class class_config implements ArrayAccess
         }
     }
 
+    /**
+     * Mezcla la configuración de MongoDB (configs/site y configs/theme, con caché local) sobre la de
+     * config.php. Genera session_key la primera vez y fija valores por omisión del manifest.
+     * include.php la llama tras conectar.
+     *
+     * @global MongoDB\Client $m
+     * @return void
+     */
     public function loadfromdb(): void
     {
         global $m;
@@ -159,12 +203,22 @@ class class_config implements ArrayAccess
 
     /**
      * Valor tal como está en config.php (sin lo que venga de la base de datos).
+     *
+     * @param string $key
+     * @return mixed null si config.php no la define.
      */
     public function fileValue(string $key): mixed
     {
         return $this->fileConfig[$key] ?? null;
     }
 
+    /**
+     * Cambia un valor solo en memoria (no se guarda en MongoDB).
+     *
+     * @param string|null $offset
+     * @param mixed $valor
+     * @return void
+     */
     public function offsetSet(mixed $offset, mixed $valor): void
     {
 
@@ -175,16 +229,28 @@ class class_config implements ArrayAccess
         }
     }
 
+    /**
+     * @param string $offset
+     * @return bool
+     */
     public function offsetExists($offset): bool
     {
         return isset($this->contenedor[$offset]);
     }
 
+    /**
+     * @param string $offset
+     * @return void
+     */
     public function offsetUnset($offset): void
     {
         unset($this->contenedor[$offset]);
     }
 
+    /**
+     * @param string $offset
+     * @return mixed null si no existe.
+     */
     public function offsetGet($offset): mixed
     {
         return isset($this->contenedor[$offset]) ? $this->contenedor[$offset] : null;
@@ -193,49 +259,90 @@ class class_config implements ArrayAccess
 
 $config = new class_config;
 
+/**
+ * Estado de la respuesta, disponible como $nframework: plantilla (usecommon), CSS y JS de la página
+ * (csss/jss ordenados por clave '001'…'200'), metas, idioma, caché HTTP y salidas Excel/Word/PDF.
+ * nfshutdown() lo lee al final de la petición para armar la respuesta.
+ *
+ *   $nframework->usecommon = true;
+ *   $nframework->metas['title'] = 'Productos';
+ *   $nframework->jss['150'] = '/js/productos.js';
+ *   if ($nframework->isAjax()) { ... }
+ */
 class class_nframework
 {
+    /** Título del sitio ($config['title']). */
     public string $title;
+    /** Imagen para metas Open Graph. */
     public string $image;
+    /** @var array<string, string> Textos del idioma actual (includes/i18n/<lang>.php). */
     public array $language;
+    /** true si llegó X-Requested-With: XMLHttpRequest; use isAjax(). */
     public bool $isAjax = false;
     public bool $https = false;
+    /** Idioma actual: 'es-MX' o 'en-US'. */
     public string $lang;
+    /** Idioma con guion bajo (es_MX). */
     public string $lang_;
+    /** Idioma corto (es, en). */
     public string $langshort;
+    /** @var array<string, mixed> */
     public array $languages;
+    /** @var bool */
     public $shutdown;
 
 
 
     // public String $language;
     private array $config;
+    /** @var array<string, int> */
     private array $counters = [];
+    /** @var list<array{type: int, file: string, number: int, desc: string, trace?: string}> Errores capturados en modo desarrollador. */
     public array $errores = [];
+    /** @var array<string, string> Hojas de estilo por clave de orden ('050' Metro, '090' nframework.css, '101'+ el sitio). */
     public array $csss = [];
+    /** @var array<string, string> Scripts por clave de orden ('001' jQuery, '050' Metro, '150'+ el sitio). */
     public array $jss = [];
+    /** @var list<string> Código de los <script> inline extraídos del buffer. */
     public array $javas = [];
+    /** @var array<string, mixed> */
     public array $javasonce = [];
+    /** @var array<string, string> HTML que se agrega al final del <body>. */
     public array $docend = [];
+    /** true = envolver la salida en la plantilla HTML completa. */
     public bool $usecommon = false;
+    /** Carpeta includes/ del framework. */
     public string $include_path;
+    /** Carpeta /nframework del document root. */
     public string $api_path;
+    /** Atributos extra para <body>. */
     public string $body_addtag = '';
+    /** Atributos extra para <html>. */
     public string $html_addtag = '';
+    /** @var array<string, bool> */
     public array $onces = [];
     public UIManager $ui;
 
     // Explicitly declare optional runtime properties to avoid "Undefined property" errors
+    /** ETag de la respuesta (ver testcache()). */
     public ?string $etag = null;
+    /** Marca de tiempo Unix de la última modificación (ver testcache()). */
     public ?int $lastmodified = null;
+    /** Marca de tiempo Unix hasta la que el navegador reutiliza la respuesta. */
     public ?int $expiretime = null;
     /** Cache-Control public (CDN y proxies pueden guardar la respuesta) en lugar de private. */
     public bool $cachepublic = false;
     /** La respuesta ya se envió directamente (serveFile/serveContent/304): nfshutdown no la procesa. */
     public bool $streamed = false;
     public int $streamedBytes = 0;
+    /** @var array<string, string> Metas de la página: 'title', 'description', 'image'... */
     public array $metas = [];
 
+    /**
+     * Detecta HTTPS y AJAX y registra el CSS/JS base (Metro UI, jQuery, SweetAlert2, nframework.css).
+     *
+     * @global class_config $config
+     */
     public function __construct()
     {
         global $config;
@@ -299,18 +406,33 @@ class class_nframework
         }
     }
 
+    /**
+     * Agrega a la página jQuery File Upload (JS y CSS).
+     *
+     * @return void
+     */
     public function addfileupload()
     {
         $this->jss['049'] = 'https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/10.32.0/js/jquery.fileupload.min.js';
         $this->csss['049'] = 'https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/10.32.0/css/jquery.fileupload.min.css';
     }
 
+    /**
+     * Agrega a la página jQuery UI (JS y tema smoothness).
+     *
+     * @return void
+     */
     public function addjqueryui()
     {
         $this->jss['002'] = 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.0/jquery-ui.min.js';
         $this->csss['000'] = 'https://ajax.googleapis.com/ajax/libs/jqueryui/1.14.0/themes/smoothness/jquery-ui.min.css';
     }
 
+    /**
+     * Valor de la cabecera Authorization (busca en $_SERVER y en apache_request_headers()); '' si no llegó.
+     *
+     * @return string
+     */
     public function getAuthorizationHeader(): string
     {
         $headers = '';
@@ -331,6 +453,13 @@ class class_nframework
         return $headers;
     }
 
+    /**
+     * Contador por nombre que empieza en 0 y aumenta con cada llamada; sirve para generar ids únicos en la
+     * página (secureform0, secureform1...).
+     *
+     * @param string $v Nombre del contador.
+     * @return int
+     */
     public function counters(string $v): int
     {
         if (!array_key_exists($v, $this->counters)) {
@@ -342,16 +471,31 @@ class class_nframework
         return $this->counters[$v];
     }
 
+    /**
+     * @return ThemeSwitcher
+     */
     public function themeSwitcher(): ThemeSwitcher
     {
         return new ThemeSwitcher();
     }
 
+    /**
+     * true si la petición es AJAX (X-Requested-With: XMLHttpRequest). La misma página sirve el HTML y
+     * responde el AJAX asignando $result.
+     *
+     * @return bool
+     */
     public function isAjax(): bool
     {
         return $this->isAjax;
     }
 
+    /**
+     * Detecta navegador, versión, plataforma, si es móvil e idioma preferido, los guarda en
+     * $_SESSION['nf']['browser'] y genera la llave Anti-CSRF de la sesión.
+     *
+     * @return void
+     */
     public function loadBrowserInfo(): void
     {
         require 'Browser.php'; // TODO: composer
@@ -377,6 +521,13 @@ class class_nframework
         $_SESSION['nf']['Anti-CSRF'] = bin2hex(random_bytes(16));
     }
 
+    /**
+     * Envía una hoja de cálculo como descarga .xlsx. Úsela con $nfshutdowndisable = true (sin plantilla ni buffer).
+     *
+     * @param \PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet
+     * @param string $filename Nombre sin extensión (se limpia con clean_filename()).
+     * @return void
+     */
     public function excelOut($spreadsheet, $filename)
     {
         $filename = clean_filename($filename);
@@ -386,6 +537,15 @@ class class_nframework
         $writer->save('php://output');
     }
 
+    /**
+     * Envía una hoja de cálculo como PDF, convertida con Dompdf o con unoconv (LibreOffice en el servidor).
+     *
+     * @param \PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet
+     * @param string $filename Nombre sin extensión.
+     * @param 'Dompdf'|'unoconv' $converter
+     * @param 'inline'|'attachment' $disposition
+     * @return void
+     */
     public function excelOutPdf($spreadsheet, $filename, $converter = 'Dompdf', $disposition = 'inline') // attachment
     {
         $filename = clean_filename($filename);
@@ -409,6 +569,13 @@ class class_nframework
         }
     }
 
+    /**
+     * Envía un documento de PhpWord como .docx.
+     *
+     * @param \PhpOffice\PhpWord\PhpWord $word
+     * @param string $filename Nombre sin extensión.
+     * @return void
+     */
     public function wordOut($word, $filename)
     {
         $filename = clean_filename($filename);
@@ -417,6 +584,15 @@ class class_nframework
         $word->save('php://output');
     }
 
+    /**
+     * Envía un documento de PhpWord como PDF. $config['word_pdf_converter']: 'Dompdf' (por omisión),
+     * 'unoconv', o cualquier otro valor = unoconv contra un LibreOffice escuchando en 127.0.0.1:2002.
+     *
+     * @global class_config $config
+     * @param \PhpOffice\PhpWord\PhpWord $word
+     * @param string $filename Nombre sin extensión.
+     * @return void
+     */
     public function wordOutPdf($word, $filename)
     {
         global $config;
@@ -457,6 +633,15 @@ class class_nframework
         }
         @unlink($tmpfname);
     }
+    /**
+     * Envía una plantilla de PhpWord ya llenada como PDF. Por omisión convierte con unoconv (conserva mejor
+     * el formato); con $config['word_pdf_converter'] = 'Dompdf' usa wordOutPdf().
+     *
+     * @global class_config $config
+     * @param \PhpOffice\PhpWord\TemplateProcessor $template
+     * @param string $filename Nombre sin extensión.
+     * @return void
+     */
     public function wordTemplateOutPdf(PhpOffice\PhpWord\TemplateProcessor $template, $filename)
     {
         global $config;
@@ -492,6 +677,8 @@ class class_nframework
     /**
      * Si el navegador ya tiene esta versión (If-None-Match con el ETag, o If-Modified-Since sin
      * ETag) responde 304 sin cuerpo y termina. Asigne antes etag y/o lastmodified.
+     *
+     * @return void
      */
     public function testcache(): void
     {
@@ -525,6 +712,8 @@ class class_nframework
      *  - expiretime: el navegador reutiliza la respuesta sin preguntar hasta esa hora.
      *  - solo etag/lastmodified: la guarda pero la revalida siempre (304 si no cambió).
      *  - nada: no se guarda (no-store).
+     *
+     * @return void
      */
     public function sendCacheHeaders(): void
     {
@@ -555,6 +744,12 @@ class class_nframework
      * el navegador ya lo tiene, y el contenido directo al cliente (sin cargarlo en memoria ni pasar
      * por el buffer del framework).
      * $maxAge: segundos que el navegador lo usa sin preguntar; 0 = revalida siempre; null = sin caché.
+     *
+     * @param string $path Ruta en disco (con datos de la petición use basename() y un directorio fijo).
+     * @param string $mime Content-Type.
+     * @param int|null $maxAge
+     * @param bool $public Cache-Control public en lugar de private.
+     * @return void
      */
     public function serveFile(string $path, string $mime, ?int $maxAge = 0, bool $public = false): void
     {
@@ -577,6 +772,12 @@ class class_nframework
 
     /**
      * Igual que serveFile() para contenido generado (JS, JSON, XML): el ETag es el hash del contenido.
+     *
+     * @param string $content
+     * @param string $mime Content-Type.
+     * @param int|null $maxAge Igual que en serveFile().
+     * @param bool $public
+     * @return void
      */
     public function serveContent(string $content, string $mime, ?int $maxAge = 0, bool $public = false): void
     {
@@ -596,6 +797,8 @@ class class_nframework
 
     /**
      * Descarta el buffer del framework: lo que siga se envía tal cual y nfshutdown no lo procesa.
+     *
+     * @return void
      */
     private function startStream(): void
     {
@@ -606,6 +809,13 @@ class class_nframework
         $this->streamed = true;
     }
 
+    /**
+     * Envía un archivo como descarga (attachment, sin caché) y termina la petición.
+     *
+     * @param string $filename Ruta en disco; con datos de la petición use basename() y un directorio fijo.
+     * @return void
+     * @throws nFrameworkException Si el archivo no existe.
+     */
     public function downloadfrom($filename): void
     {
         header("Expires: Tue, 03 Jul 2001 06:00:00 GMT");
@@ -625,6 +835,11 @@ class class_nframework
         }
     }
 
+    /**
+     * Datos del idioma actual ($this->languages[$this->lang]).
+     *
+     * @return mixed
+     */
     public function language()
     {
         return $this->languages[$this->lang];
@@ -720,12 +935,24 @@ if (!empty($config['timezone'])) {
 /**
  * Las estadísticas (nfuristats) se escriben sin esperar confirmación de MongoDB (w=0):
  * así no suman una ida y vuelta al servidor en cada petición. El _id se genera aquí.
+ *
+ * @return array{writeConcern: MongoDB\Driver\WriteConcern}
  */
 function nfStatOptions(): array
 {
     static $options = null;
     return $options ??= ['writeConcern' => new MongoDB\Driver\WriteConcern(0)];
 }
+/**
+ * Actualiza el registro de esta petición en nfuristats (tiempo de respuesta, código, bloqueo...).
+ * Los errores solo se anotan en el log.
+ *
+ * @global MongoDB\Client $m
+ * @global class_config $config
+ * @global MongoDB\BSON\ObjectId $nfStatId
+ * @param array<string, mixed> $set Campos para $set.
+ * @return void
+ */
 function nfStatUpdate(array $set): void
 {
     global $m, $config, $nfStatId;
@@ -817,10 +1044,24 @@ if (php_sapi_name() != 'cli' && !nfIsTrustedRequestOrigin()) {
 $nframework->title = (!empty($config['title']) ? $config['title'] : 'nframework 5');
 $nframework->image = (!empty($config['image']) ? $config['image'] : '/images/config/1200/630/logo.png');
 
+/**
+ * Convierte un id en texto a ObjectId. Valide antes con isValidObjectId() los ids que llegan de la petición.
+ *
+ * @param string|MongoDB\BSON\ObjectId|null $item null genera un ObjectId nuevo.
+ * @return MongoDB\BSON\ObjectId
+ * @throws MongoDB\Driver\Exception\InvalidArgumentException Si el texto no es un ObjectId válido.
+ */
 function toMongoId($item): ObjectId
 {
     return new ObjectId($item);
 }
+/**
+ * toMongoId() sobre cada elemento (para filtros $in).
+ *
+ * @param array<string|MongoDB\BSON\ObjectId> $items
+ * @return list<MongoDB\BSON\ObjectId>
+ * @throws MongoDB\Driver\Exception\InvalidArgumentException Si algún elemento no es válido.
+ */
 function toMongoIds(array $items): array
 {
     $r = [];
@@ -835,6 +1076,22 @@ function toMongoIds(array $items): array
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_WARNING);
 define('E_FATAL', E_ERROR | E_USER_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR);
 
+/**
+ * Manejador de errores de PHP. En producción guarda los errores (salvo avisos) en la colección errorlog,
+ * agrupados por mensaje; con $developermode los acumula en $nframework->errores para mostrarlos en
+ * pantalla. Registra el resultado en nfuristats.
+ *
+ * @global bool $developermode
+ * @global MongoDB\Client $m
+ * @global class_nframework $nframework
+ * @global class_config $config
+ * @param int $errno
+ * @param string $errstr
+ * @param string $errfile
+ * @param int $errline
+ * @param array<string, mixed> $errcontext
+ * @return bool Siempre false: PHP continúa con su manejo normal.
+ */
 function nferrorhandler(int $errno, string $errstr, string $errfile, int $errline, array $errcontext = []): bool
 {
     global $developermode, $m, $nframework, $config;
@@ -900,6 +1157,13 @@ function nferrorhandler(int $errno, string $errstr, string $errfile, int $errlin
     return false;
 }
 $original = set_error_handler('nferrorhandler');
+/**
+ * Autoload: carga class.<Clase>.php desde includes/ o cualquier carpeta del include_path (así los sitios
+ * agregan sus clases y Jobs). inputaddress vive en class.address.php.
+ *
+ * @param string $class_name
+ * @return bool
+ */
 function nframework_autoload($class_name): bool
 {
     // Clases cuyo archivo no sigue la convención class.<Clase>.php
@@ -1007,12 +1271,29 @@ if (!empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^[
 $javas = new Javas;
 $themeswitcher = new ThemeSwitcher();
 
+/**
+ * Lee $text en voz alta en el navegador (Web Speech) cuando la página termina de cargar.
+ *
+ * @global Javas $javas
+ * @param string $text
+ * @return void
+ */
 function speak($text)
 {
     global $javas;
     $javas->addjs('speak(' . json_encode((string) $text) . ');', 'ready');
 }
 // TODO> Other options
+/**
+ * Muestra $text como toast() al cargar la página. $title y $options se aceptan por compatibilidad pero
+ * hoy no se usan.
+ *
+ * @global Javas $javas
+ * @param string $title Sin uso actualmente.
+ * @param string $text
+ * @param array<string, mixed> $options Sin uso actualmente.
+ * @return void
+ */
 function notify($title = 'nlared.com', $text = '', $options = [])
 {
     global $javas;
@@ -1020,6 +1301,21 @@ function notify($title = 'nlared.com', $text = '', $options = [])
 }
 
 
+/**
+ * Función de cierre (register_shutdown_function): arma la respuesta. Con usecommon envuelve el buffer en
+ * la plantilla; en AJAX envía json_encode($result); empaqueta el JS de $javas, envía cabeceras de
+ * seguridad y caché, y guarda estadísticas. No se registra con $nfshutdowndisable.
+ *
+ * @global class_nframework $nframework
+ * @global bool $noobfuscate
+ * @global string $buffer
+ * @global bool $developermode
+ * @global Javas $javas
+ * @global mixed $result
+ * @global class_config $config
+ * @global MongoDB\Client $m
+ * @return mixed
+ */
 function nfshutdown()
 {
     global $nframework, $noobfuscate, $buffer, $developermode, $javas, $result, $config, $m;
@@ -1194,6 +1490,15 @@ function nfshutdown()
 if (php_sapi_name() != 'cli' && empty($nfshutdowndisable)) {
     register_shutdown_function('nfshutdown');
 }
+/**
+ * Callback de ob_start(): extrae los <script> inline del HTML a $nframework->javas (se emiten al final de
+ * la página) y acumula el resto en $buffer. Devuelve '' porque nfshutdown() envía la salida.
+ *
+ * @global class_nframework $nframework
+ * @global string $buffer
+ * @param string $mbuffer
+ * @return string
+ */
 function nfjavaobfuscate($mbuffer): string
 {
     global $nframework, $buffer;
@@ -1214,6 +1519,13 @@ if (php_sapi_name() != 'cli' && empty($nfjavaobfuscatedisable)) {
     ob_start('nfjavaobfuscate');
 }
 
+/**
+ * Convierte un documento de MongoDB (BSONDocument) en arreglo; los BSONArray anidados en el primer
+ * nivel también se convierten.
+ *
+ * @param array<mixed>|object $obj
+ * @return array<mixed>
+ */
 function mongoToArray($obj)
 {
     $m = (array) $obj;
@@ -1229,6 +1541,8 @@ function mongoToArray($obj)
 /**
  * Valida el CSRFToken de un formulario generado con secureform(). El token se calcula con la
  * acción del formulario: la URL actual o, para formularios AJAX (acción vacía), la acción interna.
+ *
+ * @return bool
  */
 function csrfValidate(): bool
 {
@@ -1243,11 +1557,31 @@ function csrfValidate(): bool
     }
     return false;
 }
+/**
+ * Token CSRF para la acción $action, ligado a la sesión (Anti-CSRF) y al User-Agent.
+ *
+ * @param string $action
+ * @return string
+ */
 function csrfToken($action): string
 {
     return hash('sha256', ($_SESSION['nf']['Anti-CSRF'] ?? '') . ($_SERVER['HTTP_USER_AGENT'] ?? '') . $action);
 }
 const NF_AJAX_FORM_ACTION = 'javascript:" data-on-submit="nAjaxOnSubmit';
+/**
+ * Abre un <form> con validación de Metro y token CSRF; ciérrelo con </form>. Sin $action envía por AJAX a
+ * la misma página (un botón con clase secureop y value="op" llena $_POST['op']); con $action hace un POST
+ * normal. En el servidor valide con csrfValidate().
+ *
+ * @global class_nframework $nframework
+ * @param string $action URL destino; '' = AJAX a la misma página.
+ * @param bool $files true = multipart/form-data.
+ * @param string $id Id del form; '' = secureform<n>.
+ * @param string $onvalidateform Función JS para data-on-validate-form.
+ * @param string $onbeforesubmit Función JS para data-on-before-submit.
+ * @param string $class Clases CSS del form.
+ * @return string HTML de apertura del form con los campos ocultos op y CSRFToken.
+ */
 function secureform(
     string $action = '',
     bool $files = false,
@@ -1276,6 +1610,15 @@ function secureform(
     // $nframework['secureformcounter']++;
 }
 
+/**
+ * Guarda una notificación en la colección registros para cada usuario de $users.
+ *
+ * @global MongoDB\Client $m
+ * @global class_config $config
+ * @param array<string> $users Usuarios destino.
+ * @param mixed $content Contenido de la notificación.
+ * @return void
+ */
 function _setNotification(array $users, $content)
 {
     global $m, $config;

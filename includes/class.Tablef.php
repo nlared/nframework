@@ -1,14 +1,34 @@
 <?php
 
+/**
+ * Constructor visual de filtros (jQuery QueryBuilder) sobre una tabla Table::Ajax(): las reglas se traducen a un
+ * $match que se agrega al pipeline guardado en sesión; incluye exportación a CSV y Excel. Ver docs/tablef.php.
+ *
+ *   $t = new Table();
+ *   $t->Ajax([...]);
+ *   echo new TableF(['table' => $t, 'filters' => [['id' => 'nombre', 'label' => 'Nombre', 'type' =>
+ * 'string']]]);
+ *   echo $t;
+ */
 class TableF
 {
+    /** @var list<array<string, mixed>> Filtros de QueryBuilder: id (campo), label, type, operators, input, values... */
     public $filters = [];
+    /** @var Table Tabla AJAX ya configurada con Ajax(). */
     public $table;
+    /** @var mixed Celda inicial para la exportación a una plantilla de Excel. */
     public $excelCell;
+    /** @var string|null Plantilla .xlsx para la exportación. */
     public $excelFile;
+    /** @var array<mixed>|null */
     private $originalPipeline;
+    /** @var string|null Id de un input donde se copia el pipeline generado (JSON). */
     public $codeid;
+    /** @var string|null Consulta Mongo inicial en JSON para precargar las reglas. */
     public $query;
+    /**
+     * @param array{table: Table, filters?: list<array<string, mixed>>, excelCell?: mixed, excelFile?: string, codeid?: string, query?: string} $options
+     */
     public function __construct($options)
     {
         foreach ($options as $op => $v) {
@@ -18,6 +38,11 @@ class TableF
         $_SESSION['datatable'][$this->table->id]['filters'] = $this->filters;
     }
 
+    /**
+     * @global Javas $javas
+     * @global class_nframework $nframework
+     * @return string HTML del constructor de filtros.
+     */
     public function __toString()
     {
         global $javas, $nframework;

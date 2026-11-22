@@ -1,28 +1,61 @@
 <?php
 
+/**
+ * Lista editable de subdocumentos dentro de un campo arreglo de un documento (dataset). Muestra los elementos
+ * con una plantilla Twig (variable items) y los agrega/edita/borra con un Dialog cuyos controles se registran
+ * con addElement(); los cambios se guardan en MongoDB por AJAX. Ver docs/arraylist.php.
+ *
+ *   $lista = new embededArray(['dataset' => &$dataset, 'field' => 'telefonos', 'containerid' => 'lista',
+ *       'dialogid' => $dialog->id, 'template' => '{% for key,item in items %}...{% endfor %}']);
+ *   $lista->addElement($numero);   // control con 'field' => 'numero' dentro del diálogo
+ *   echo $lista;
+ */
 class embededArray
 {
+	/** @var string|null URL que procesa los cambios; por omisión la página actual. */
 	public $action;
+	/** @var string Prefijo de las funciones JS (<id>_show(), ...). */
 	public $id;
+	/** @var string Id del elemento donde se dibuja la lista. */
 	public $containerid;
+	/** @var string Id del Dialog con los controles de un elemento. */
 	public $dialogid;
+	/** @var dataset Documento que contiene el arreglo (pásela por referencia). */
 	public $dataset;
+	/** @var mixed */
 	public $embededArray;
+	/** @var string */
 	private $database;
+	/** @var string */
 	private $collection;
+	/** @var string */
 	public $nameprefix;
+	/** @var string Campo arreglo del documento (notación con punto). */
 	public $field;
+	/** @var bool */
 	private $historic;
+	/** @var mixed */
 	private $_id;
+	/** @var bool */
 	private $simpleid;
+	/** @var list<baseInput> Controles del diálogo (addElement()). */
 	public $elements = [];
+	/** @var embededArray|null Lista padre para arreglos anidados. */
 	public $nfparent;
+	/** @var mixed */
 	public $target;
+	/** @var string Plantilla Twig de la lista; recibe items (arreglo con llaves = posición). */
 	public $template;
+	/** @var list<embededArray> */
 	public $nfchilds = [];
+	/** @var string JS al cambiar la lista. */
 	public $onchange = '';
+	/** @var string */
 	private $documentKey;
 
+	/**
+	 * @return array<string, mixed> Reglas de validación de los controles para el servidor.
+	 */
 	private function buildFieldRules(): array
 	{
 		$fieldRules = [];
@@ -43,6 +76,10 @@ class embededArray
 		return $fieldRules;
 	}
 
+	/**
+	 * @param string $prefix
+	 * @param string|null $base Id explícito; null = se genera uno estable por documento y campo.
+	 */
 	private function buildScopedIdentifier(string $prefix, ?string $base = null): string
 	{
 		$base = trim((string) ($base ?? ''));
@@ -53,11 +90,20 @@ class embededArray
 		return $base;
 	}
 
+	/**
+	 * Registra un control del diálogo como campo de cada elemento (su 'field' es relativo al elemento).
+	 *
+	 * @param baseInput $object
+	 * @return void
+	 */
 	public function addElement(&$object)
 	{
 		$this->elements[] = $object;
 	}
 
+	/**
+	 * Clave estable del documento y la página (base, colección, _id y script) para las entradas de sesión.
+	 */
 	private function buildDocumentKey(): string
 	{
 		if (!isset($this->dataset)) {
@@ -73,6 +119,9 @@ class embededArray
 		return hash('sha256', $database . '.' . $collectionName . '.' . $documentId . '.' . $page);
 	}
 
+	/**
+	 * Limpia $_SESSION['nfembeded']: borra las entradas de otros documentos y las de otros ids del mismo documento.
+	 */
 	private function cleanupSessionEntries(): void
 	{
 		if (empty($_SESSION['nfembeded']) || empty($this->documentKey)) {
@@ -96,6 +145,11 @@ class embededArray
 		}
 	}
 
+	/**
+	 * @global class_nframework $nframework
+	 * @param array{dataset: dataset, field: string, containerid?: string, dialogid?: string, template?: string, action?: string, onchange?: string, id?: string, nfparent?: embededArray} $options
+	 * @throws InvalidArgumentException Si falta dataset.
+	 */
 	public function __construct($options = [])
 	{
 		global $nframework;
@@ -122,11 +176,21 @@ class embededArray
 		$this->cleanupSessionEntries();
 	}
 
+	/**
+	 * Llamada JS que abre el diálogo para un elemento nuevo (para un onclick).
+	 *
+	 * @return string
+	 */
 	public function function_new()
 	{
 		return $this->id . '_show()';
 	}
 
+	/**
+	 * @global class_nframework $nframework
+	 * @global Javas $javas
+	 * @return string Siempre '': registra en $javas el JS de la lista y su sesión.
+	 */
 	public function __toString()
 	{
 		global $nframework, $javas;

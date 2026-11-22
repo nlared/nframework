@@ -22,18 +22,33 @@ class mapshape extends baseInput
     public const POLYGON = 'polygon';
     public const POLYLINE = 'polyline';
 
+    /** @var 'polygon'|'polyline' */
     public $shape = self::POLYGON;
+    /** @var array<string, mixed>|object|string|null Geocerca límite (Polygon, MultiPolygon o Feature; arreglo, BSON o JSON). */
     public $limit;                 // geocerca límite (GeoJSON) o null
+    /** @var int */
     public $height = 500;
+    /** @var int */
     public $zoom = 14;
+    /** @var array{lat: float, lng: float} */
     public $startpoint = ['lat' => 25.43328030, 'lng' => -100.96047970];
+    /** @var string */
     public $color = '#1e88e5';
+    /** @var string */
     public $limitcolor = '#e53935';
+    /** @var int */
     public $maxpoints = 500;
+    /** @var string */
     public $onchange = '';         // JS; recibe `geometry` (GeoJSON o null)
+    /** @var bool */
     public $toolbar = true;        // botones Deshacer / Limpiar / Ajustar e información de la figura
+    /** @var string */
     public $error = '';            // motivo del último is_valid() fallido
 
+    /**
+     * @param array<string, mixed> $options Propiedades públicas y las de baseInput.
+     * @throws InvalidArgumentException Si shape no es polygon ni polyline.
+     */
     public function __construct($options = [])
     {
         parent::__construct($options);
@@ -47,6 +62,9 @@ class mapshape extends baseInput
     /**
      * Puntos [lng, lat] de un valor (JSON, GeoJSON en arreglo/BSON, Feature); el anillo del polígono
      * se devuelve abierto. null si el valor está vacío o no es una figura válida del tipo de este control.
+     *
+     * @param mixed $val
+     * @return list<array{0: float, 1: float}>|null
      */
     public function points($val): ?array
     {
@@ -77,7 +95,12 @@ class mapshape extends baseInput
         return $points;
     }
 
-    /** GeoJSON que se guarda en MongoDB, o null si no hay figura. */
+    /**
+     * GeoJSON que se guarda en MongoDB, o null si no hay figura.
+     *
+     * @param list<array{0: float, 1: float}>|null $points
+     * @return array{type: 'Polygon'|'LineString', coordinates: list<mixed>}|null
+     */
     public function geometry(?array $points): ?array
     {
         if (empty($points)) {
@@ -92,11 +115,23 @@ class mapshape extends baseInput
         return ['type' => 'LineString', 'coordinates' => $points];
     }
 
+    /**
+     * GeoJSON (Polygon o LineString) que se guarda, o null.
+     *
+     * @param mixed $val
+     * @return array{type: string, coordinates: list<mixed>}|null
+     */
     public function __toMongo($val)
     {
         return $this->geometry($this->points($val));
     }
 
+    /**
+     * Valida la figura con check(); el motivo queda en $this->error.
+     *
+     * @param mixed $newval
+     * @return bool
+     */
     public function is_valid($newval)
     {
         $this->error = '';
@@ -116,7 +151,12 @@ class mapshape extends baseInput
         return $this->error === '';
     }
 
-    /** Valida los puntos [lng, lat]; devuelve el motivo o '' si la figura es correcta. */
+    /**
+     * Valida los puntos [lng, lat]; devuelve el motivo o '' si la figura es correcta.
+     *
+     * @param list<array{0: float, 1: float}> $points
+     * @return string
+     */
     public function check(array $points): string
     {
         $min = $this->shape === self::POLYGON ? 3 : 2;
@@ -140,7 +180,12 @@ class mapshape extends baseInput
 
     // ------------------------------------------------------------------ geometría
 
-    /** Convierte JSON/BSON/Feature a un arreglo GeoJSON de geometría, o null. */
+    /**
+     * Convierte JSON/BSON/Feature a un arreglo GeoJSON de geometría, o null.
+     *
+     * @param mixed $val
+     * @return array<string, mixed>|null
+     */
     public static function toGeometry($val): ?array
     {
         if (is_string($val)) {
@@ -165,6 +210,9 @@ class mapshape extends baseInput
      * Polígonos de una geocerca: lista de polígonos, cada uno lista de anillos (el primero exterior, los
      * demás huecos), cada anillo lista de [lng, lat] abierta. Acepta Polygon, MultiPolygon, Feature y
      * FeatureCollection.
+     *
+     * @param mixed $geo
+     * @return list<list<list<array{0: float, 1: float}>>>
      */
     public static function polygons($geo): array
     {
@@ -217,13 +265,25 @@ class mapshape extends baseInput
         return $out;
     }
 
-    /** ¿El punto está dentro de la geocerca (Polygon, MultiPolygon, Feature...)? Respeta los huecos. */
+    /**
+     * ¿El punto está dentro de la geocerca (Polygon, MultiPolygon, Feature...)? Respeta los huecos.
+     *
+     * @param mixed $geofence
+     * @param float $lat
+     * @param float $lng
+     * @return bool
+     */
     public static function contains($geofence, float $lat, float $lng): bool
     {
         return self::inPolygons([$lng, $lat], self::polygons($geofence));
     }
 
-    /** [lng, lat] en double, o null si la coordenada no es válida. */
+    /**
+     * [lng, lat] en double, o null si la coordenada no es válida.
+     *
+     * @param mixed $c
+     * @return array{0: float, 1: float}|null
+     */
     private static function point($c): ?array
     {
         if (!is_array($c) || !isset($c[0], $c[1]) || !is_numeric($c[0]) || !is_numeric($c[1])) {
@@ -238,7 +298,12 @@ class mapshape extends baseInput
         return [$lng, $lat];
     }
 
-    /** BSONDocument/BSONArray/objetos → arreglos de PHP. */
+    /**
+     * BSONDocument/BSONArray/objetos → arreglos de PHP.
+     *
+     * @param mixed $val
+     * @return mixed
+     */
     private static function plain($val)
     {
         if ($val instanceof \MongoDB\Model\BSONDocument || $val instanceof \MongoDB\Model\BSONArray) {
@@ -257,6 +322,13 @@ class mapshape extends baseInput
         return $val;
     }
 
+    /**
+     * Punto dentro de un anillo (ray casting).
+     *
+     * @param array{0: float, 1: float} $p
+     * @param list<array{0: float, 1: float}> $ring
+     * @return bool
+     */
     private static function inRing(array $p, array $ring): bool
     {
         $inside = false;
@@ -272,6 +344,13 @@ class mapshape extends baseInput
         return $inside;
     }
 
+    /**
+     * Punto dentro de algún polígono y fuera de sus huecos.
+     *
+     * @param array{0: float, 1: float} $p
+     * @param list<list<list<array{0: float, 1: float}>>> $polygons
+     * @return bool
+     */
     private static function inPolygons(array $p, array $polygons): bool
     {
         foreach ($polygons as $rings) {
@@ -293,12 +372,28 @@ class mapshape extends baseInput
         return false;
     }
 
+    /**
+     * Producto cruz de ab × ac: > 0 a la izquierda, < 0 a la derecha, 0 colineales.
+     *
+     * @param array{0: float, 1: float} $a
+     * @param array{0: float, 1: float} $b
+     * @param array{0: float, 1: float} $c
+     * @return float
+     */
     private static function orient(array $a, array $b, array $c): float
     {
         return ($b[0] - $a[0]) * ($c[1] - $a[1]) - ($b[1] - $a[1]) * ($c[0] - $a[0]);
     }
 
-    /** Cruce propio de los segmentos ab y cd (tocarse en un extremo no cuenta). */
+    /**
+     * Cruce propio de los segmentos ab y cd (tocarse en un extremo no cuenta).
+     *
+     * @param array{0: float, 1: float} $a
+     * @param array{0: float, 1: float} $b
+     * @param array{0: float, 1: float} $c
+     * @param array{0: float, 1: float} $d
+     * @return bool
+     */
     private static function crosses(array $a, array $b, array $c, array $d): bool
     {
         $d1 = self::orient($c, $d, $a);
@@ -309,6 +404,12 @@ class mapshape extends baseInput
         return (($d1 > 0 && $d2 < 0) || ($d1 < 0 && $d2 > 0)) && (($d3 > 0 && $d4 < 0) || ($d3 < 0 && $d4 > 0));
     }
 
+    /**
+     * true si dos lados no contiguos del polígono se cruzan.
+     *
+     * @param list<array{0: float, 1: float}> $pts
+     * @return bool
+     */
     private static function selfIntersects(array $pts): bool
     {
         $n = count($pts);
@@ -331,6 +432,11 @@ class mapshape extends baseInput
     /**
      * Todos los vértices dentro, ningún lado cruza un borde del límite y, si la figura es un polígono,
      * no encierra ninguno de sus huecos.
+     *
+     * @param list<array{0: float, 1: float}> $pts
+     * @param list<list<list<array{0: float, 1: float}>>> $polygons
+     * @param bool $closed true = polígono (se revisa también el lado de cierre).
+     * @return bool
      */
     private static function insidePolygons(array $pts, array $polygons, bool $closed): bool
     {
@@ -364,6 +470,11 @@ class mapshape extends baseInput
 
     // ------------------------------------------------------------------ HTML
 
+    /**
+     * @global class_nframework $nframework
+     * @global Javas $javas
+     * @return string HTML.
+     */
     public function __toString()
     {
         global $nframework, $javas;
@@ -415,7 +526,11 @@ class mapshape extends baseInput
             . '</div>';
     }
 
-    /** Editor en el navegador (una vez por página). Repite las mismas reglas que check(). */
+    /**
+     * Editor en el navegador (una vez por página). Repite las mismas reglas que check().
+     *
+     * @return string
+     */
     private static function script(): string
     {
         return <<<'JS'

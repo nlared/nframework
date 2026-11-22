@@ -47,18 +47,32 @@ class inputaddress extends baseInput
     ];
     private const COORDS = ['lat', 'lng'];
 
+    /** @var bool */
     public $showfields = true;
+    /** @var bool */
     public $showmap = true;
+    /** @var list<key-of<self::FIELDS>> */
     public $fields = [];
+    /** @var array<string, string|float> Valores por campo, incluidos lat y lng. */
     public $defaults = [];
+    /** @var list<string>|bool Campos de solo lectura; 'location' congela el mapa; true = todo. */
     public $frozen = [];
+    /** @var list<string> */
     public $requiredfields = [];
+    /** @var array<string, string> */
     public $labels = [];
+    /** @var int */
     public $map_height = 400;
+    /** @var 'nominatim'|'google' */
     public $geocoder = 'nominatim';
+    /** @var bool|null null = automático según el token del DENUE. */
     public $denue = null;
+    /** @var array{lat: float, lng: float} Centro del mapa sin ubicación. */
     public $startpoint = ['lat' => 25.43328030, 'lng' => -100.96047970];
 
+    /**
+     * @param array<string, mixed> $options Ver la descripción de la clase y las opciones de baseInput.
+     */
     public function __construct($options = [])
     {
         $options['class'] = 'inputaddress';
@@ -78,6 +92,9 @@ class inputaddress extends baseInput
 
     /**
      * El usuario ya ubicó la dirección: hay coordenadas guardadas o predeterminadas.
+     *
+     * @param bool $storedOnly true = solo cuenta lo guardado, no los predeterminados.
+     * @return bool
      */
     private function hasLocation(bool $storedOnly = false): bool
     {
@@ -88,12 +105,21 @@ class inputaddress extends baseInput
         return !$storedOnly && is_numeric($this->defaults['lat'] ?? null) && is_numeric($this->defaults['lng'] ?? null);
     }
 
+    /**
+     * @param string $field
+     * @return bool
+     */
     private function isFrozen(string $field): bool
     {
         return in_array($field, $this->frozen, true)
             || (in_array($field, self::COORDS, true) && in_array('location', $this->frozen, true));
     }
 
+    /**
+     * Valor guardado en el dataset (arreglo vacío si no hay).
+     *
+     * @return array<string, mixed>
+     */
     private function storedValue(): array
     {
         $value = $this->value;
@@ -105,6 +131,8 @@ class inputaddress extends baseInput
 
     /**
      * Valor efectivo por campo: almacenado, o el predeterminado si está vacío.
+     *
+     * @return array<string, mixed>
      */
     private function currentValues(): array
     {
@@ -120,6 +148,13 @@ class inputaddress extends baseInput
         return $values;
     }
 
+    /**
+     * Normaliza lo recibido del navegador: textos recortados, lat/lng como float y los campos congelados tomados de
+     * lo guardado o de defaults.
+     *
+     * @param mixed $val
+     * @return array<string, string|float|null>
+     */
     public function __toMongo($val)
     {
         $val = is_array($val) ? $val : [];
@@ -138,11 +173,21 @@ class inputaddress extends baseInput
         return $result;
     }
 
+    /**
+     * @param mixed $val
+     * @return mixed
+     */
     public function __toPHP($val)
     {
         return $val;
     }
 
+    /**
+     * Revisa los obligatorios (requiredfields, o todos con required) y que lat/lng sean numéricos.
+     *
+     * @param mixed $newval
+     * @return bool
+     */
     public function is_valid($newval)
     {
         $newval = is_array($newval) ? $newval : [];
@@ -163,11 +208,19 @@ class inputaddress extends baseInput
         return true;
     }
 
+    /**
+     * @param string $field
+     * @return string
+     */
     private function fieldId(string $field): string
     {
         return $this->id . '_' . $field;
     }
 
+    /**
+     * @param string $field
+     * @return string
+     */
     private function fieldName(string $field): string
     {
         return $this->name . '[' . $field . ']';
@@ -175,6 +228,9 @@ class inputaddress extends baseInput
 
     /**
      * Configuración de 'suggest' de inputText para un campo con autocompletado del DENUE.
+     *
+     * @param string $field
+     * @return array<string, mixed>|null null si el campo no usa el DENUE.
      */
     private function denueSuggest(string $field): ?array
     {
@@ -207,6 +263,11 @@ class inputaddress extends baseInput
         ];
     }
 
+    /**
+     * @param string $field
+     * @param mixed $value
+     * @return string HTML.
+     */
     private function renderField(string $field, $value): string
     {
         $input = new inputText([
@@ -222,11 +283,25 @@ class inputaddress extends baseInput
         return $input->__toString();
     }
 
+    /**
+     * @param string $field
+     * @param mixed $value
+     * @return string HTML.
+     */
     private function renderHidden(string $field, $value): string
     {
         return '<input type="hidden" id="' . $this->fieldId($field) . '" name="' . htmlspecialchars($this->fieldName($field), ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '">';
     }
 
+    /**
+     * Registra el JS del mapa (Leaflet), del geocodificador y de las sugerencias.
+     *
+     * @global class_nframework $nframework
+     * @global Javas $javas
+     * @global class_config $config
+     * @param array<string, mixed> $values Valores actuales.
+     * @return void
+     */
     private function addJs(array $values): void
     {
         global $nframework, $javas, $config;
@@ -366,6 +441,9 @@ JS, 'general');
         $javas->addjs('nfAddress.setup(' . $opts . ');', 'ready');
     }
 
+    /**
+     * @return string HTML.
+     */
     public function __toString()
     {
         $values = $this->currentValues();

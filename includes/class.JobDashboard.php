@@ -1,6 +1,16 @@
 <?php
+/**
+ * Tabla con los trabajos pendientes y fallidos por cola de la colección jobs.
+ *
+ *   echo (new JobDashboard())->render();
+ */
 class JobDashboard
 {
+    /**
+     * @global MongoDB\Client $m
+     * @global class_config $config
+     * @return string HTML (<table>).
+     */
     public function render()
     {
         global $m, $config;

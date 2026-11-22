@@ -1,9 +1,20 @@
 <?php
 
+/**
+ * Migas de pan a partir de la ruta del script actual (PHP_SELF): un enlace por carpeta y el nombre del archivo
+ * sin extensión como último elemento (se omite index.php).
+ *
+ *   echo new BreadCrumbs();
+ */
 class BreadCrumbs
 {
+    /** @var string URL base de los enlaces ('/'). */
     public $root;
+    /** @var string Ruta del script sin la '/' inicial. */
     public $self;
+    /**
+     * @param array<string, mixed> $options Se acepta por compatibilidad; hoy no se usa.
+     */
     public function __construct($options = [])
     {
 
@@ -13,6 +24,9 @@ class BreadCrumbs
         }
     }
 
+    /**
+     * @return string HTML (<ul class="breadcrumbs">).
+     */
     public function __toString(): string
     {
         $crumbs = '<li class="page-item"><a href="' . $this->root . '" class="page-link"><span class="mif-meter"></span></a></li>';

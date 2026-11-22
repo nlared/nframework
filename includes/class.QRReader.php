@@ -1,7 +1,21 @@
 <?php
+/**
+ * Lector de códigos QR con la cámara (qr-scanner). Al leer un código llama a la función JS indicada en
+ * setResult con el resultado.
+ *
+ *   $qr = new QRReader();
+ *   $qr->setResult = 'alLeerQR';   // function alLeerQR(result) { ... result.data ... }
+ *   echo $qr;
+ */
 class QRReader{
+	/** @var string URL a la que regresa el botón de salida. */
 	public String $exitpath='/';
+	/** @var string Nombre de la función JS que recibe el resultado. */
 	public $setResult='defaultSetResult';
+	/**
+	 * @global class_nframework $nframework
+	 * @return string HTML con el video y el JS del lector.
+	 */
 	function __toString():string{
 		global $nframework;
 		$nframework->jss['121']='https://cdn.nlared.com/qr-scanner/qr-scanner.umd.min.js';

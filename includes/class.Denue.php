@@ -48,6 +48,12 @@ class Denue
     /** Palabras que se dejan en minúscula al pasar a formato título. */
     private const LOWER_WORDS = ['de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'en', 'a'];
 
+    /**
+     * Token del API del DENUE ($config['inegi-denue-token'], Admin → Sitio → INEGI); '' si no hay.
+     *
+     * @global class_config $config
+     * @return string
+     */
     public static function token(): string
     {
         global $config;
@@ -55,6 +61,11 @@ class Denue
         return is_string($token) ? trim($token) : '';
     }
 
+    /**
+     * true si hay token configurado.
+     *
+     * @return bool
+     */
     public static function enabled(): bool
     {
         return self::token() !== '';
@@ -62,6 +73,9 @@ class Denue
 
     /**
      * Minúsculas, sin acentos ni signos y con espacios simples: para comparar textos.
+     *
+     * @param string $text
+     * @return string
      */
     public static function normalize(string $text): string
     {
@@ -73,6 +87,9 @@ class Denue
 
     /**
      * "VIRREYES RESIDENCIAL DE LA SIERRA" → "Virreyes Residencial de la Sierra".
+     *
+     * @param string $text
+     * @return string
      */
     public static function title(string $text): string
     {
@@ -88,6 +105,9 @@ class Denue
 
     /**
      * Clave INEGI (01-32) del estado escrito, o '' si no se reconoce.
+     *
+     * @param string $name
+     * @return string
      */
     public static function stateCode(string $name): string
     {
@@ -116,6 +136,9 @@ class Denue
     /**
      * Convierte un establecimiento del DENUE en los campos de inputaddress.
      * Ubicacion viene como "LOCALIDAD, Municipio, ESTADO" (con espacios de relleno).
+     *
+     * @param array<string, mixed> $record Establecimiento tal como lo devuelve el API.
+     * @return array{country: string, state: string, municipality: string, city: string, neighborhood: string, street: string, zipcode: string, lat: float|null, lng: float|null}
      */
     public static function parseRecord(array $record): array
     {
@@ -145,6 +168,12 @@ class Denue
      * Sugerencias para el campo $field mientras se escribe $q, usando como contexto los demás campos
      * ya llenados ($context: state, municipality, city, neighborhood, street, zipcode, country, lat, lng,
      * located). Devuelve [{label, value, address}] donde address son los campos a llenar al elegir.
+     *
+     * @param string $field Campo de inputaddress (state, municipality, city, neighborhood, street, zipcode).
+     * @param string $q Texto escrito.
+     * @param array<string, mixed> $context
+     * @param int $limit
+     * @return list<array{label: string, value: string, address: array<string, mixed>}>
      */
     public static function suggest(string $field, string $q, array $context = [], int $limit = 15): array
     {
@@ -193,6 +222,11 @@ class Denue
     /**
      * Textos a buscar, del más al menos específico. El API solo reconoce palabras completas, así que
      * también se prueba sin la última palabra (la que se está escribiendo) y con los otros campos.
+     *
+     * @param string $field
+     * @param string $q
+     * @param array<string, mixed> $ctx
+     * @return list<string> Máximo 3.
      */
     public static function conditions(string $field, string $q, array $ctx): array
     {
@@ -217,6 +251,13 @@ class Denue
     /**
      * Filtra los establecimientos que coinciden con lo escrito, los ordena por cuántos campos del
      * contexto respetan y deja una sugerencia por valor distinto.
+     *
+     * @param string $field
+     * @param string $q
+     * @param array<string, mixed> $ctx
+     * @param list<array<string, mixed>> $records Establecimientos del API.
+     * @param int $limit
+     * @return list<array{label: string, value: string, address: array<string, mixed>}>
      */
     public static function rank(string $field, string $q, array $ctx, array $records, int $limit = 15): array
     {
@@ -308,6 +349,13 @@ class Denue
         }, array_slice(array_values($found), 0, $limit));
     }
 
+    /**
+     * Estados cuyo nombre coincide con $q (sin consultar el API).
+     *
+     * @param string $q
+     * @param int $limit
+     * @return list<array{label: string, value: string, address: array<string, mixed>}>
+     */
     private static function suggestStates(string $q, int $limit): array
     {
         $nq = self::normalize($q);
@@ -322,6 +370,9 @@ class Denue
 
     /**
      * Llama al API (con caché) y devuelve la lista de establecimientos; [] si no hay o si falla.
+     *
+     * @param string $path Ruta del API después de BASE_URL (sin el token).
+     * @return list<array<string, mixed>>
      */
     public static function request(string $path): array
     {
@@ -336,6 +387,12 @@ class Denue
         });
     }
 
+    /**
+     * GET con cURL (12 s) que reintenta con caBundle() si falla la verificación TLS del certificado de INEGI.
+     *
+     * @param string $url
+     * @return string|null Cuerpo de la respuesta con estado 200, o null.
+     */
     private static function httpGet(string $url): ?string
     {
         $get = function (?string $cainfo) use ($url) {
@@ -368,6 +425,8 @@ class Denue
     /**
      * Paquete de CA del sistema + el intermedio que INEGI no envía. El intermedio se descarga por HTTP,
      * por eso solo se usa si es una CA verificada contra las raíces del sistema.
+     *
+     * @return string|null Ruta del paquete de CA, o null si no se pudo armar.
      */
     private static function caBundle(): ?string
     {

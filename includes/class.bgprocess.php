@@ -2,15 +2,32 @@
 
 use Cocur\BackgroundProcess\BackgroundProcess;
 
+/**
+ * Comando largo en segundo plano (cocur/background-process). El PID se guarda en $_SESSION['pids'][id], así que
+ * la misma página puede consultar o detener el proceso en peticiones siguientes. Ver docs/backgroundps.php.
+ *
+ *   $p = new bgprocess(['id' => 'respaldo', 'cmd' => 'mongodump ...', 'logfile' => '/tmp/respaldo.log']);
+ *   if (!$p->isRunning()) { $p->start(); }
+ *   echo $p->renderDashboard();
+ */
 class bgprocess
 {
+    /** @var string Comando de shell (escape los argumentos con escapeshellarg()). */
     public $cmd;
+    /** @var int|null */
     public $pid;
+    /** @var string Archivo donde se escribe la salida. */
     public $logfile;
+    /** @var string Identificador del proceso en la sesión. */
     public $id;
+    /** @var string|null JS del tablero al cambiar el estado. */
     public $onChange;
+    /** @var string|null JS del tablero al terminar. */
     public $onComplete;
 
+    /**
+     * @param array{id: string, cmd?: string, logfile?: string, onChange?: string, onComplete?: string} $options
+     */
     public function __construct($options)
     {
         foreach ($options as $nam => $op) {
@@ -25,6 +42,11 @@ class bgprocess
             $this->pid = $_SESSION['pids'][$this->id]['pid'];
         }
     }
+    /**
+     * Lanza el comando y guarda el PID en la sesión.
+     *
+     * @return void
+     */
     public function start()
     {
         $proc = new BackgroundProcess($this->cmd);
@@ -33,6 +55,9 @@ class bgprocess
         $_SESSION['pids'][$this->id]['pid'] = $this->pid;        
     }
 
+    /**
+     * @return array{data: string|false, isRunning: bool} Contenido del log y si sigue corriendo.
+     */
     public function status()
     {
         $process = BackgroundProcess::createFromPID($this->pid);
@@ -42,6 +67,9 @@ class bgprocess
                 'isRunning' => $process->isRunning()
             ];
     }
+    /**
+     * @return bool
+     */
     public function isRunning()
     {
         if (!empty($_SESSION['pids'][$this->id]['pid'])) {
@@ -51,6 +79,9 @@ class bgprocess
             return false;
         }
     }
+    /**
+     * @return bool true si estaba corriendo y se detuvo.
+     */
     public function stop()
     {
         $process = BackgroundProcess::createFromPID($this->pid);
@@ -64,6 +95,12 @@ class bgprocess
     }
 
 
+    /**
+     * Tablero con botones iniciar/detener y el log en vivo.
+     *
+     * @global class_nframework $nframework
+     * @return string HTML.
+     */
     public function renderDashboard()
     {
         global $nframework;
@@ -148,6 +185,9 @@ JS;
         return $html;
     }
 
+    /**
+     * @return string Icono simple de estado (compatibilidad).
+     */
     public function __toString()
     {
         // Backward compatibility simple widget

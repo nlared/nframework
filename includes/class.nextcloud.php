@@ -1,12 +1,24 @@
 <?php
 
+/**
+ * Administración de usuarios de Nextcloud por su API OCS (Provisioning) con una cuenta de administrador.
+ */
 class nextcloud{
 // Configuration
+	/** @var string */
 	private $nextcloud_url = 'https://your-nextcloud-instance.com';
+	/** @var string */
 	private $admin_username = 'admin';
+	/** @var string */
 	private $admin_password = 'admin_password';
+	/** @var mixed */
 	public $err;
 
+	/**
+	 * @param string $nextcloud_url URL base de la instancia.
+	 * @param string $admin_username
+	 * @param string $admin_password
+	 */
 	function __construct($nextcloud_url,$admin_username,$admin_password){
 		$this->nextcloud_url=$nextcloud_url;
 		$this->admin_username=$admin_username;
@@ -15,6 +27,12 @@ class nextcloud{
 	}
 	
 	// Create user function
+	/**
+	 * @param string $newUser
+	 * @param string $newPass
+	 * @param string $displayName
+	 * @return string 'Response: <xml>' o 'Error: <curl>'.
+	 */
 	function createUser($newUser, $newPass,$displayName) {
 	    $ch = curl_init();
 	    curl_setopt($ch, CURLOPT_URL, $this->nextcloud_url . '/ocs/v1.php/cloud/users');
@@ -40,6 +58,10 @@ class nextcloud{
 	    curl_close($ch);
 	}
 	
+	/**
+	 * @param string $username
+	 * @return mixed
+	 */
 	function existsUser($username){
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $this->nextcloud_url."/ocs/v1.php/cloud/users/$username");
@@ -63,6 +85,14 @@ class nextcloud{
 		
 	}
 	
+	/**
+	 * Cambia una propiedad del usuario (email, displayname, quota...).
+	 *
+	 * @param string $user
+	 * @param string $property
+	 * @param string $value
+	 * @return string|bool Respuesta de la API.
+	 */
 	function changeUserPropery($user, $property, $value) {
 	    $ch = curl_init();
 	    curl_setopt($ch, CURLOPT_URL, $this->nextcloud_url . '/ocs/v1.php/cloud/users/' . $user);
@@ -87,6 +117,10 @@ class nextcloud{
 	}
 	
 	
+	/**
+	 * @param string $user
+	 * @return void
+	 */
 	function disableNextcloudUser($user) {
 	    $ch = curl_init();
 	    curl_setopt($ch, CURLOPT_URL, $this->nextcloud_url . '/ocs/v1.php/cloud/users/' . $user . '/disable');
@@ -105,6 +139,10 @@ class nextcloud{
 	        echo 'Response: ' . $response;
 	    }
 	}
+	/**
+	 * @param string $user
+	 * @return void
+	 */
 	function deleteNextcloudUser( $user) {
 	    $ch = curl_init();
 	    curl_setopt($ch, CURLOPT_URL, $this->nextcloud_url  . '/ocs/v1.php/cloud/users/' . $user);
@@ -123,6 +161,14 @@ class nextcloud{
 	        echo 'Response: ' . $response;
 	    }
 	}
+	/**
+	 * @param string $url
+	 * @param string $admin_user
+	 * @param string $admin_pass
+	 * @param string $user
+	 * @param string $backup_location
+	 * @return void
+	 */
 	function backupUserData($url, $admin_user, $admin_pass, $user, $backup_location) {
 	    $user_data_url = $this->nextcloud_url  . $user . '/';
 	    $backup_folder = $backup_location . $user . '_backup/';

@@ -1,7 +1,16 @@
 <?php
 
+/**
+ * Icono de notificaciones con menú desplegable para plantillas basadas en Bootstrap (no Metro UI). Lee
+ * $this->items si se asigna.
+ *
+ * @property list<array{link: string, title: string, content: string}> $items Notificaciones a mostrar (HTML crudo).
+ */
 class Notifications
 {
+    /**
+     * @return string HTML.
+     */
     public function icon()
     {
         if (empty($this->items)) {

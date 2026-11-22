@@ -1,14 +1,31 @@
 <?php
 
+/**
+ * Ventana modal (<dialog>) con un formulario, botones Cerrar y Aceptar, y campos ocultos op y pos. El contenido
+ * es HTML crudo: escape lo que venga del usuario. Abrirla en el navegador:
+ * document.querySelector('#id').showModal().
+ *
+ *   echo new Dialog(['id' => 'dlgnota', 'title' => 'Nueva nota', 'content' => $campo]);
+ */
 class Dialog
 {
+    /** @var string Título (HTML). */
     public $title;
+    /** @var string|null */
     public $onShow;
+    /** @var string|null */
     public $onAcept;
+    /** @var string|null */
     public $onClose;
+    /** @var string Id del <dialog>; por omisión dialogs_<n>. También es el nombre de la constante JS con el elemento. */
     public $id;
+    /** @var string HTML dentro de <div class="grid">: filas de controles. */
     public $content;
 
+    /**
+     * @global class_nframework $nframework
+     * @param array{id?: string, title?: string, content?: string, onShow?: string, onAcept?: string, onClose?: string} $options
+     */
     public function __construct($options = [])
     {
         global $nframework;
@@ -20,6 +37,10 @@ class Dialog
         }
     }
 
+    /**
+     * @global Javas $javas
+     * @return string HTML del <dialog>; registra en $javas el botón Cerrar.
+     */
     public function __toString()
     {
         global $javas;

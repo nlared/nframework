@@ -15,24 +15,44 @@
  */
 class Signature_pad extends baseInput
 {
+  /** @var float */
   public $minWidth = 0.5; // Grosor mínimo del trazo
+  /** @var float */
   public $maxWidth = 2.5; // Grosor máximo del trazo
+  /** @var int */
   public $throttle = 16; // ms entre puntos
+  /** @var int */
   public $minDistance = 5; // Distancia mínima entre puntos
+  /** @var string */
   public $backgroundColor = 'rgba(0,0,0,0)'; // Fondo del lienzo
+  /** @var string */
   public $penColor = 'black'; // Color del trazo
+  /** @var float */
   public $velocityFilterWeight = 0.7;
+  /** @var string */
   public $canvasContextOptions = '';
+  /** @var string|null */
   public $path; // Ruta del PNG en el servidor (solo en la sesión)
+  /** @var string */
   public $onSuccess = ''; // JS al guardar (variable `result` con la respuesta)
+  /** @var string */
   public $onError = ''; // JS si falla (variable `message`)
+  /** @var string */
   public $onEmptyAlert = ''; // JS al intentar guardar sin firma
+  /** @var string|null */
   public $extension; // Archivo PHP con la función onsave
+  /** @var string|null */
   public $onsave; // Nombre de la función: onsave(string $path, array $conf): mixed
+  /** @var string|null */
   public $submit; // op con que se envía el formulario contenedor después de guardar la firma
+  /** @var int */
   public $width = 400;
+  /** @var int */
   public $height = 200;
 
+  /**
+   * @param array<string, mixed> $options Propiedades públicas (path, width, height, penColor, extension, onsave, submit...) y las de baseInput (id, name, caption, dataset, field...).
+   */
   public function __construct($options = [])
   {
     parent::__construct($options);
@@ -40,12 +60,22 @@ class Signature_pad extends baseInput
     $this->backreadonly = true;
   }
 
+  /**
+   * La firma se guarda por su propio endpoint: el valor del campo siempre es válido.
+   *
+   * @param mixed $newval
+   * @return bool
+   */
   public function is_valid($newval)
   {
     return true;
   }
 
-  /** Configuración para /nframework/imageup.php (el navegador no la ve). */
+  /**
+   * Configuración para /nframework/imageup.php (el navegador no la ve).
+   *
+   * @return array<string, mixed>
+   */
   public function sessionConfig(): array
   {
     $conf = [
@@ -65,6 +95,11 @@ class Signature_pad extends baseInput
     return $conf;
   }
 
+  /**
+   * @global class_nframework $nframework
+   * @global Javas $javas
+   * @return string HTML del lienzo y sus botones.
+   */
   public function __toString(): string
   {
     global $nframework, $javas;

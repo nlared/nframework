@@ -1,11 +1,21 @@
 <?php
 
+/**
+ * Acumulador del JavaScript de la página, disponible como $javas. Lo agregado con addjs() se emite al final del
+ * documento en un solo <script> (empaquetado por nfshutdown()), junto con el JS base del framework (datatables,
+ * tomselects, nfNoAutofill...). Pase datos con json_encode(), nunca interpolando texto.
+ *
+ *   $javas->addjs('toast(' . json_encode($mensaje) . ');', 'ready');
+ */
 class Javas
 {
+	/** @var array{general: string, resize: string, ready: string, scroll: string} Código por sección. */
 	public array $js; // =['general'=>'','resize'=>'','ready'=>''];
 
+	/** @var bool true cuando ya se imprimió (__toString solo emite una vez). */
 	public bool $flushed = false;
 
+	/** @var array<string, string> HTML adicional antes del <script> final. */
 	public array $docend = [];
 
 	public function __construct()
@@ -14,11 +24,24 @@ class Javas
 		// $this->docend=[];
 	}
 
+	/**
+	 * Agrega código a una sección: 'general' (se ejecuta al cargar el script), 'ready' (DOMContentLoaded / jQuery
+	 * ready), 'resize' (al cambiar el tamaño de la ventana, con retardo de 100 ms) o 'scroll'.
+	 *
+	 * @param string $jss Código JavaScript.
+	 * @param 'general'|'ready'|'resize'|'scroll' $seccion
+	 * @return void
+	 */
 	public function addjs($jss, $seccion = 'general')
 	{
 		$this->js[$seccion] .= $jss;
 	}
 
+	/**
+	 * @global class_nframework $nframework
+	 * @global string $csrftoken
+	 * @return string <script> con todo el JS acumulado; '' si ya se imprimió.
+	 */
 	public function __toString(): string
 	{
 		global $nframework, $csrftoken;

@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * Plantilla con menú lateral (navview de Metro UI): abre <body> y el contenedor principal; el contenido de la
+ * página va después. Incluye búsqueda en el menú y el usuario actual.
+ *
+ *   echo new Sidebar(['title' => 'Mi sitio', 'sidemenu' => '<li><a href="/">Inicio</a></li>']);
+ */
 class Sidebar
 {
     public string $title = 'Sidebar';
@@ -14,6 +20,9 @@ class Sidebar
     public bool $expand = false;
     public bool $static = false;
 
+    /**
+     * @param array{title?: string, sidemenu?: string, content?: string, menuAdd?: string, color?: string, contentclass?: string, focuscolor?: string, darkcolor?: string, footer?: string, expand?: bool, static?: bool} $options sidemenu es HTML de <li> (crudo).
+     */
     public function __construct($options)
     {
         foreach ($options as $k => $v) {
@@ -21,6 +30,13 @@ class Sidebar
         }
     }
 
+    /**
+     * @global Javas $javas
+     * @global User $user
+     * @global class_nframework $nframework
+     * @global class_config $config
+     * @return string HTML.
+     */
     public function __toString(): string
     {
         global $javas, $user, $nframework, $config;

@@ -288,7 +288,7 @@ router.php              front controller (incluye nframework/router.php y croute
 includes/include.php    bootstrap: proxies/IP, config, MongoDB, listas negras, CSRF por origen, estadísticas,
                         errores, autoload, sesión, idioma, $user, $javas, nfshutdown(), secureform/csrf*
 includes/functions.php  helpers (caché, seguridad, Mongo, redirecciones, archivos)
-includes/class.Base.php componentes de formulario, dataset, datasetArray, datasetpdo, Icon, TreeView
+includes/class.Base.php componentes de formulario, dataset, datasetpdo, Icon, TreeView
 includes/class.*.php    User, Table, Dialog, Javas, Job, bgprocess, embededArray, XMLS, Sidebar, UIManager…
 nframework/             endpoints internos: router, uploadfile, datatable, select_ajax, nfdialog/nftable,
                         OAuth (google/, facebook/, microsoft/), templates/ (Twig: basic, panda), test.php
@@ -305,6 +305,10 @@ tests/                  PHPUnit: bootstrap.php simula $config y $m = null
 - `includes/` usa 4 espacios; `docs/` y varias páginas usan tabuladores. Respete el del archivo.
 - Mantenga el estilo global (sin namespaces, `global` en funciones); no introduzca contenedores DI ni
   frameworks nuevos.
+- Documente con docblocks lo que el código no dice (patrón de `class.TablefIA.php`): descripción y ejemplo de
+  uso en cada clase, `@global Tipo $var` por cada `global`, `@param` tipado (formas como
+  `array{campo: string}`) y `@return`. No agregue tipos nativos a firmas existentes: rompería subclases y
+  llamadas de los sitios. `tests/Unit/DocblocksTest.php` lo verifica en `includes/`.
 - Al cambiar o añadir un componente, actualice/añada su ejemplo en `docs/`, regístrelo en
   `docs/components.json` (la página en `sections`, la clase en `components`; `DocsCatalogTest` lo verifica) y
   agregue tests en `tests/Unit` cuando no dependan de MongoDB.

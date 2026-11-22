@@ -1,12 +1,44 @@
 <?php
 
+/**
+ * Usuario de la colección users; el actual está en $user (el invitado tiene username = 'guest'). Los campos
+ * del documento se leen como propiedades ($user->email) o como arreglo ($user['email']); _id se devuelve como
+ * texto. Asignar una propiedad la guarda de inmediato con $set y unset() hace $unset; username y _id no se
+ * pueden cambiar así. Las contraseñas nunca se buscan en la base: se verifican con nfPasswordVerify().
+ *
+ *   $user->requireAuth();
+ *   if ($user->in('admins') || $user->can('reportes')) { ... }
+ *   $user->telefono = $tel;                       // updateOne inmediato
+ *   $otro = new User(['username' => $correo]);    // o ['_id' => $id]
+ *   $u = User::authenticate($correo, $clave);     // User|null
+ *
+ * @implements ArrayAccess<string, mixed>
+ * @property-read string $_id Id del usuario en texto ('' si no existe).
+ * @property-read string $fullname nombres + primerap + segundoap.
+ * @property string $username
+ * @property mixed $permissions Mapa permiso => bool (ver can()).
+ */
 class User implements ArrayAccess
 {
+    /** @var array<string, mixed> Documento del usuario (con _id en texto); [] si no se encontró. */
     public $info;
+    /** @var MongoDB\Client */
     private $m;
+    /** @var string Base del sitio. */
     private $db;
+    /** @var array<string, true>|null Grupos del usuario, cargados una vez por petición. */
     private ?array $groupCache = null;
+    /** @var Notifications */
     public $notifications;
+    /**
+     * Busca el usuario con los criterios de $info (findOne en users). Un _id en texto se convierte a ObjectId;
+     * 'password' no se consulta: se verifica contra el hash. Si no hay coincidencia el objeto queda vacío
+     * (isLoggedIn() = false).
+     *
+     * @global MongoDB\Client $m
+     * @global class_config $config
+     * @param array<string, mixed> $info Filtro: ['_id' => $id], ['username' => $correo], opcionalmente con 'password'.
+     */
     public function __construct($info)
     {
         global $m, $config;
@@ -47,6 +79,12 @@ class User implements ArrayAccess
     /**
      * Autentica por usuario (sin distinguir mayúsculas) y contraseña.
      * Si el hash almacenado es legado (sha512 sin sal) se migra a password_hash().
+     *
+     * @global MongoDB\Client $m
+     * @global class_config $config
+     * @param string $username
+     * @param string $password Contraseña en claro.
+     * @return User|null null si no existe o la contraseña no coincide.
      */
     public static function authenticate($username, $password): ?User
     {
@@ -70,10 +108,20 @@ class User implements ArrayAccess
         return new User(['_id' => $doc['_id']]);
     }
 
+    /**
+     * true si hay un usuario real (no el invitado 'guest').
+     *
+     * @return bool
+     */
     public  function isLoggedIn(): bool
     {
         return !empty($this->info['username']) && $this->info['username'] != 'guest';
     }
+    /**
+     * Sin sesión guarda la URL actual en $_SESSION['login_redirect'], redirige a /account/login y termina.
+     *
+     * @return void
+     */
     public function requireAuth()
     {
         if (!$this->isLoggedIn()) {
@@ -83,6 +131,13 @@ class User implements ArrayAccess
         }
     }
 
+    /**
+     * Valor booleano de permissions[$verb] del documento del usuario (acepta true/false, 1/0, 'true'/'false',
+     * 'on'/'off'). false si no existe.
+     *
+     * @param string $verb Nombre del permiso.
+     * @return bool
+     */
     public function can($verb)
     {
         $val = isset($this->info['permissions']) && array_key_exists($verb, (array)$this->info['permissions'])
@@ -93,6 +148,14 @@ class User implements ArrayAccess
         return $filtered === null ? (bool) $val : $filtered;
     }
 
+    /**
+     * true si el usuario está en el grupo $verb (colección usersgroups, campo users). Los grupos se consultan una
+     * sola vez por petición.
+     *
+     * @global class_config $config
+     * @param string $verb Nombre del grupo ('admins', 'developers'...).
+     * @return bool
+     */
     public function in($verb)
     {
         global $config;
@@ -113,6 +176,15 @@ class User implements ArrayAccess
         return isset($this->groupCache[(string) $verb]);
     }
 
+    /**
+     * Inserta un usuario: username en minúsculas y password con nfPasswordHash(). No valida duplicados ni longitud
+     * (NF_PASSWORD_MIN_LENGTH): hágalo antes.
+     *
+     * @global class_config $config
+     * @global MongoDB\Client $m
+     * @param array<string, mixed> $info Con 'username' y 'password' en claro, más los campos que se quieran guardar.
+     * @return User
+     */
     public static function create($info): User
     {
         global $config, $m;
@@ -123,6 +195,11 @@ class User implements ArrayAccess
         return new User(['_id' =>  $info['_id']]);
     }
 
+    /**
+     * Documento completo del usuario como arreglo.
+     *
+     * @return array<string, mixed>
+     */
     public function data()
     {
         return $this->info;
@@ -131,6 +208,10 @@ class User implements ArrayAccess
     /**
      * URL de la foto de perfil ($height = $width si se omite). Usa AVIF o WebP según el navegador
      * (nfImageFormat()); la ruta /images/pngto{formato}/users/ la sirve nframework/router.php.
+     *
+     * @param int $width
+     * @param int|null $height
+     * @return string URL relativa.
      */
     public function gravatar($width = 32, $height = null)
     {
@@ -140,6 +221,15 @@ class User implements ArrayAccess
         return '/images/pngto' . $format . '/users/' . $width . '/' . $height . '/' . $this->info['_id'] . '.' . $format;
     }
 
+    /**
+     * HTML del menú de usuario de la plantilla: iniciar sesión / registro para invitados; perfil, tema y cerrar
+     * sesión para usuarios.
+     *
+     * @global string $themecolor
+     * @global class_config $config
+     * @global ThemeSwitcher $themeswitcher
+     * @return string HTML.
+     */
     public function usermenu()
     {
         global $themecolor, $config, $themeswitcher;
@@ -222,11 +312,22 @@ HTML;
         return $result;
     }
 
+    /**
+     * @param string $name
+     * @return bool
+     */
     public function __isset($name)
     {
         return isset($this->info[$name]);
     }
 
+    /**
+     * Guarda el campo en memoria y en MongoDB ($set) si cambió. username y _id se ignoran.
+     *
+     * @param string $name
+     * @param mixed $value
+     * @return void
+     */
     public function __set($name, $value)
     {
         switch ($name) {
@@ -245,6 +346,12 @@ HTML;
         }
     }
 
+    /**
+     * Quita el campo en memoria y en MongoDB ($unset). username y _id se ignoran.
+     *
+     * @param string $name
+     * @return void
+     */
     public function __unset($name)
     {
         switch ($name) {
@@ -261,6 +368,10 @@ HTML;
         }
     }
 
+    /**
+     * @param string $name Campo del documento, '_id' (texto) o 'fullname'.
+     * @return mixed null si el campo no existe.
+     */
     public function __get($name)
     {
         $result = null;
@@ -288,6 +399,9 @@ HTML;
         return $result;
     }
 
+    /**
+     * @return array{db: string, info: array<string, mixed>}
+     */
     public function __debugInfo()
     {
         return [
@@ -296,6 +410,13 @@ HTML;
         ];
     }
 
+    /**
+     * Igual que __set(): $user['campo'] = $valor.
+     *
+     * @param string $name
+     * @param mixed $value
+     * @return void
+     */
     public function offsetSet(mixed $name, mixed $value): void
     {
         switch ($name) {
@@ -313,11 +434,21 @@ HTML;
         }
     }
 
+    /**
+     * @param string $name
+     * @return bool
+     */
     public function offsetExists(mixed $name): bool
     {
         return isset($this->info[$name]);
     }
 
+    /**
+     * Igual que __unset(): unset($user['campo']).
+     *
+     * @param string $name
+     * @return void
+     */
     public function offsetUnset(mixed $name): void
     {
         switch ($name) {
@@ -333,6 +464,12 @@ HTML;
         }
     }
 
+    /**
+     * Igual que __get(): $user['campo'].
+     *
+     * @param string $name
+     * @return mixed
+     */
     public function offsetGet(mixed $name): mixed
     {
         $result = null;

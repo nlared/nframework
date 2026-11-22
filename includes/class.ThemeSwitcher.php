@@ -1,8 +1,19 @@
 <?php
 
+/**
+ * Selector de tema claro / sistema / oscuro. Guarda la elección en localStorage ('user-theme') y aplica la
+ * clase dark-side a <html>. El JS se agrega una sola vez por página.
+ *
+ *   echo new ThemeSwitcher();   // o $nframework->themeSwitcher()
+ */
 class ThemeSwitcher
 {
 
+    /**
+     * @global Javas $javas
+     * @global class_nframework $nframework
+     * @return string HTML.
+     */
     public function __toString(): string
     {
         global $javas, $nframework;

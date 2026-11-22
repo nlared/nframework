@@ -1,15 +1,37 @@
 <?php
 
+/**
+ * Base para representar un XML como objetos de PHP (CFDI, complementos del SAT). Cada subclase es un elemento:
+ * tagName, atributos como propiedades, _sequence con el orden de los hijos y containervar para elementos
+ * repetibles (accesibles como arreglo). generateClassesFromXsd() genera las subclases desde un XSD;
+ * toXmlString() serializa, deserialize() carga un DOMElement y validateWithXsd() valida.
+ *
+ *   XMLS::generateClassesFromXsd('/sat/xsd/cfdv40.xsd', __DIR__ . '/generated', 'Generated\\Cfdi');
+ *   $cfdi->deserialize($dom->documentElement);
+ *   $ok = $cfdi->validateWithXsd('/sat/xsd/cfdv40.xsd', $errores);
+ *
+ * @implements ArrayAccess<int|string, mixed>
+ */
 class XMLS implements ArrayAccess
 {
+    /** @var string Nombre del elemento con prefijo (cfdi:Comprobante). */
     public $tagName = '';
+    /** @var string */
     public $className = '';
+    /** @var list<string> Atributos del elemento según el XSD. */
     public $attributes = [];
+    /** @var string Atributos extra en texto (xmlns, xsi:schemaLocation...). */
     public $addattributes = '';
+    /** @var string Propiedad arreglo que guarda los hijos repetibles; habilita $obj[] = $hijo. */
     public $containervar = '';
+    /** @var list<string> Propiedades hijas en el orden que exige el XSD. */
     public $_sequence = [];
+    /** @var string */
     public $lastSerializationError = '';
 
+    /**
+     * @param array<string, mixed> $ops Valores iniciales de propiedades existentes (las demás se ignoran).
+     */
     public function __construct(array $ops = [])
     {
         $this->className = static::class;
@@ -25,12 +47,22 @@ class XMLS implements ArrayAccess
         }
     }
 
+    /**
+     * @param string $value
+     * @return string
+     */
     private function encodeSpecial(string $value): string
     {
         // Use htmlspecialchars for proper XML escaping
         return htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 
+    /**
+     * Nombre válido de propiedad PHP a partir de un nombre XML.
+     *
+     * @param string $name
+     * @return string
+     */
     private static function normalizeIdentifier(string $name): string
     {
         $normalized = preg_replace('/[^a-zA-Z0-9_]/', '_', $name) ?? '';
@@ -41,6 +73,12 @@ class XMLS implements ArrayAccess
         return $normalized;
     }
 
+    /**
+     * Nombre válido de clase PHP a partir de un nombre XML.
+     *
+     * @param string $name
+     * @return string
+     */
     private static function normalizeClassName(string $name): string
     {
         $normalized = preg_replace('/[^a-zA-Z0-9]+/', ' ', $name) ?? '';
@@ -56,6 +94,11 @@ class XMLS implements ArrayAccess
         return $normalized;
     }
 
+    /**
+     * @param DOMElement $complexType
+     * @param DOMXPath $xpath
+     * @return array{attributes: list<string>, sequence: list<string>, repeatable: array<string, bool>}
+     */
     private static function parseComplexType(DOMElement $complexType, DOMXPath $xpath): array
     {
         $attributes = [];
@@ -115,6 +158,10 @@ class XMLS implements ArrayAccess
         ];
     }
 
+    /**
+     * @param list<LibXMLError> $errors
+     * @return string
+     */
     private static function formatLibxmlErrors(array $errors): string
     {
         if (empty($errors)) {
@@ -136,6 +183,10 @@ class XMLS implements ArrayAccess
         return empty($lines) ? 'Unknown XML parsing error' : implode('; ', $lines);
     }
 
+    /**
+     * @param string $message
+     * @return string
+     */
     private static function sanitizeForXmlComment(string $message): string
     {
         $sanitized = trim($message);
@@ -149,6 +200,11 @@ class XMLS implements ArrayAccess
         return $sanitized;
     }
 
+    /**
+     * @param mixed $value XMLS, arreglo de XMLS o escalar.
+     * @param string $propertyName
+     * @return string
+     */
     private function stringifyXmlValue($value, string $propertyName): string
     {
         if (is_array($value)) {
@@ -188,6 +244,12 @@ class XMLS implements ArrayAccess
         return (string)$value;
     }
 
+    /**
+     * XML del elemento y sus hijos (sin declaración <?xml?>).
+     *
+     * @return string
+     * @throws RuntimeException Si un valor no se puede serializar.
+     */
     public function toXmlString(): string
     {
         $this->lastSerializationError = '';
@@ -277,6 +339,10 @@ class XMLS implements ArrayAccess
             "\n</{$this->tagName}>";
     }
 
+    /**
+     * @param DOMElement $elementNode
+     * @return string
+     */
     private static function elementNodeName(DOMElement $elementNode): string
     {
         $elementName = $elementNode->getAttribute('name');
@@ -293,6 +359,12 @@ class XMLS implements ArrayAccess
         return '';
     }
 
+    /**
+     * @param DOMElement $elementNode
+     * @param DOMXPath $xpath
+     * @param array<string, DOMElement> $complexTypeMap
+     * @return DOMElement|null
+     */
     private static function resolveComplexTypeForElement(
         DOMElement $elementNode,
         DOMXPath $xpath,
@@ -316,6 +388,16 @@ class XMLS implements ArrayAccess
         return null;
     }
 
+    /**
+     * @param DOMElement $elementNode
+     * @param DOMXPath $xpath
+     * @param array<string, DOMElement> $complexTypeMap
+     * @param list<string> $parentPath
+     * @param array<string, array<string, mixed>> $definitions Se llena por referencia.
+     * @param int $depth
+     * @param int $maxDepth
+     * @return void
+     */
     private static function collectElementDefinitions(
         DOMElement $elementNode,
         DOMXPath $xpath,
@@ -379,6 +461,17 @@ class XMLS implements ArrayAccess
         }
     }
 
+    /**
+     * Genera un archivo PHP por elemento del XSD con una subclase de XMLS.
+     *
+     * @param string $xsdPath
+     * @param string $outputDir Se crea si no existe.
+     * @param string $namespace Prefijo de los nombres generados.
+     * @param array{overwrite?: bool, recursiveElements?: bool, maxDepth?: int} $options
+     * @return list<string> Archivos generados.
+     * @throws InvalidArgumentException Si el XSD no existe.
+     * @throws RuntimeException Si el XSD no se puede leer o no se pueden escribir los archivos.
+     */
     public static function generateClassesFromXsd(
         string $xsdPath,
         string $outputDir,
@@ -540,6 +633,10 @@ class XMLS implements ArrayAccess
         return $generatedFiles;
     }
 
+    /**
+     * @return DOMDocument
+     * @throws RuntimeException Si el XML generado no es válido.
+     */
     public function toXmlDocument(): DOMDocument
     {
         $dom = new DOMDocument('1.0', 'UTF-8');
@@ -562,6 +659,12 @@ class XMLS implements ArrayAccess
         return $dom;
     }
 
+    /**
+     * @param string $xsdPath
+     * @param list<string> $errors Recibe los mensajes de error de validación.
+     * @return bool
+     * @throws InvalidArgumentException Si el XSD no existe.
+     */
     public function validateWithXsd(string $xsdPath, array &$errors = []): bool
     {
         if (!is_file($xsdPath)) {
@@ -587,6 +690,9 @@ class XMLS implements ArrayAccess
         }
     }
 
+    /**
+     * @return string XML, o un comentario XML con el error.
+     */
     public function __toString(): string
     {
         try {
@@ -600,6 +706,14 @@ class XMLS implements ArrayAccess
         }
     }
 
+    /**
+     * Carga atributos e hijos de $xml en este objeto, instanciando las subclases correspondientes.
+     *
+     * @param DOMElement $xml
+     * @param array<string, string> $namespaceTranslations Prefijo XML => prefijo de clase.
+     * @param array<string, string> $classTranslations Nombre de elemento => clase PHP.
+     * @return void
+     */
     public function deserialize(DOMElement $xml, array $namespaceTranslations = [], array $classTranslations = []): void
     {
         $this->tagName = $xml->tagName;
@@ -659,6 +773,12 @@ class XMLS implements ArrayAccess
     }
 
     // ArrayAccess implementation
+    /**
+     * @param int|string|null $offset
+     * @param mixed $value
+     * @return void
+     * @throws RuntimeException Si la clase no define containervar.
+     */
     public function offsetSet($offset, $value): void
     {
         if (empty($this->containervar)) {
@@ -672,6 +792,10 @@ class XMLS implements ArrayAccess
         }
     }
 
+    /**
+     * @param int|string $offset
+     * @return bool
+     */
     public function offsetExists($offset): bool
     {
         if (empty($this->containervar)) {
@@ -681,6 +805,10 @@ class XMLS implements ArrayAccess
         return isset($this->{$this->containervar}[$offset]);
     }
 
+    /**
+     * @param int|string $offset
+     * @return void
+     */
     public function offsetUnset($offset): void
     {
         if (!empty($this->containervar) && isset($this->{$this->containervar}[$offset])) {
@@ -688,6 +816,10 @@ class XMLS implements ArrayAccess
         }
     }
 
+    /**
+     * @param int|string $offset
+     * @return mixed
+     */
     public function offsetGet($offset): mixed
     {
         if (empty($this->containervar)) {
