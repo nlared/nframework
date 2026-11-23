@@ -67,17 +67,22 @@ class TableF
 		');
         $initquery = (empty($this->query) ? '' : "$('#builder-basic').queryBuilder('setRulesFromMongo'," . $this->query . ")");
 
+        // query-builder.js no expone QueryBuilder ni Utils como globales (quedan dentro de su UMD): la API
+        // pública es $.fn.queryBuilder.defaults() y el escape de regex va aquí.
         $javas->addjs(
-            <<<js
-       
-        
-        QueryBuilder.defaults({
+            <<<'js'
+function nfQbEscapeRegExp(s) {
+    return String(s).replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
+}
+if (window.jQuery && jQuery.fn.queryBuilder) {
+    jQuery.fn.queryBuilder.defaults({
         mongoOperators: {
-            begins_withi: function(v) { return { '\$regex': '^' + Utils.escapeRegExp(v[0]), '\$options': 'i' }; },
-            containsi: function(v) { return { '\$regex':  Utils.escapeRegExp(v[0]), '\$options': 'i' }; },
-            ends_withi: function(v) { return { '\$regex': Utils.escapeRegExp(v[0]) + '\$', '\$options': 'i' }; }
+            begins_withi: function(v) { return { '$regex': '^' + nfQbEscapeRegExp(v[0]), '$options': 'i' }; },
+            containsi: function(v) { return { '$regex': nfQbEscapeRegExp(v[0]), '$options': 'i' }; },
+            ends_withi: function(v) { return { '$regex': nfQbEscapeRegExp(v[0]) + '$', '$options': 'i' }; }
         }
     });
+}
 js,
             'general'
         );
@@ -162,9 +167,9 @@ $('#builder-basic').queryBuilder({
   allow_empty :true,
   lang_code: 'es',
   mongoOperators: {
-            begins_with: function(v) { return { '\$regex': '^' + Utils.escapeRegExp(v[0]), '\$options': 'i' }; },
+            begins_with: function(v) { return { '\$regex': '^' + nfQbEscapeRegExp(v[0]), '\$options': 'i' }; },
             contains: function(v) { return { '\$regex': (v[0]), '\$options': 'i' }; },
-            ends_with: function(v) { return { '\$regex': Utils.escapeRegExp(v[0]) + '\$', '\$options': 'i' }; }
+            ends_with: function(v) { return { '\$regex': nfQbEscapeRegExp(v[0]) + '\$', '\$options': 'i' }; }
         }
 });
 
