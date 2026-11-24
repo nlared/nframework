@@ -19,6 +19,25 @@ entradas.
 
 Ver `docs/upgrades.php`.
 
+# 2026.2
+
+## 2026-11-23 — Antivirus ClamAV en las subidas
+
+- Admin → Antivirus configura `clamd` por TCP (servidor, puerto, tiempo de espera, tamaño máximo y qué hacer si
+  clamd falla) y tiene un botón para probar la conexión. Se guarda en `configs/site` como `$config['clamav']`.
+- **Solo si se habilita**, `nframework/uploadfile.php` (`inputFile`/`inputFiles`, archivos de nftables),
+  `tinymceupload.php` (imágenes de `inputMCE`) y `nfimport.php` analizan cada archivo antes de guardarlo o
+  leerlo. Un archivo infectado se borra y se rechaza. Mientras no se habilite, nada cambia.
+- A quién afecta: sitios que lo habiliten. Con «Rechazar» (por omisión), si clamd no responde no se puede
+  subir ningún archivo; y los archivos mayores al «Tamaño máximo» se rechazan aunque `inputFiles` permita más
+  (`sizelimit`). Busque `sizelimit` en el sitio y ajuste el tamaño máximo (y `StreamMaxLength` de clamd).
+- Código propio del sitio que reciba archivos: `ClamAV::uploadError($tmp, $nombre)` (ver `docs/clamav.php`).
+
+## 2026-11-23 — Constructor de consultas de Tablef
+
+- Se corrigió el error «QueryBuilder is not defined» que detenía los scripts de las páginas con `Tablef` y
+  los operadores «empieza con» / «termina con». No requiere cambios en los sitios.
+
 # 2026.1
 
 ## 2026-11-22 — Versionado y migraciones automáticas
