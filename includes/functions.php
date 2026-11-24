@@ -963,6 +963,37 @@ function nfIpMatches(string $ip, string $rule): bool
 }
 
 /**
+ * Paso de verificación en dos pasos para los inicios de sesión externos (OAuth de Google, Microsoft, Facebook):
+ * si el usuario ya tiene twofa_secret, quita la sesión recién creada, lo deja pendiente en
+ * $_SESSION['tmp_user'] y lo envía a /account/twofa, como hace /account/login con contraseña. Llámela justo
+ * después de asignar $_SESSION['user']; sin 2FA no hace nada. $_SESSION['login_redirect'] se conserva.
+ *
+ *   $_SESSION['user'] = (string) $useroauth->_id;
+ *   nfTwofaChallenge($_SESSION['user']);   // termina la petición si hay que pedir el código
+ *
+ * @global MongoDB\Client $m
+ * @global class_config $config
+ * @param string $userId _id del usuario en texto
+ * @return void
+ */
+function nfTwofaChallenge(string $userId): void
+{
+    global $m, $config;
+    if (!isValidObjectId($userId)) {
+        return;
+    }
+    $doc = $m->{$config['sitedb']}->users->findOne(['_id' => toMongoId($userId)], ['projection' => ['twofa_secret' => 1]]);
+    if (empty($doc['twofa_secret'])) {
+        return;
+    }
+    unset($_SESSION['user']);
+    $_SESSION['tmp_user'] = $userId;
+    session_write_close();
+    header('Location: /account/twofa');
+    exit();
+}
+
+/**
  * Devuelve $url solo si apunta a este sitio (ruta relativa) o a un host permitido
  * en $config['allowed_redirect_hosts']; en otro caso devuelve $default.
  *

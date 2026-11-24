@@ -209,16 +209,25 @@ $router->addRoute('/account/twofa', function (string $route, array $p) {
 		exit();
 	}
 	$msgError = '';
-	if (!empty($_POST['code']) && is_string($_POST['code'])) {
+	$code = is_string($_POST['code'] ?? null) ? trim($_POST['code']) : '';
+	$recovery = is_string($_POST['recovery'] ?? null) ? trim($_POST['recovery']) : '';
+	if ($code !== '' || $recovery !== '') {
 		$user = new User([
 			'_id' => $_SESSION['tmp_user']
 		]);
 		if (!nflogAttempt('twofa:' . $GLOBALS['ip'], 10, 900)) {
 			$msgError = 'Demasiados intentos, intente más tarde.';
-		} elseif (!empty($user->twofa_secret) && TOTP::create($user->twofa_secret)->verify(trim($_POST['code']))) {
+		} elseif ($code !== '' && !empty($user->twofa_secret) && TOTP::create($user->twofa_secret)->verify((string) preg_replace('/\D/', '', $code))) {
+			nfCompleteLogin($user);
+		} elseif ($recovery !== '' && !empty($user->twofa_secret) && User::recoveryKeyMatches($recovery, $user->twofa_recovery)) {
+			// La llave es de un solo uso: se borra junto con el 2FA y el usuario lo vuelve a configurar.
+			unset($user->twofa_recovery);
+			unset($user->twofa_secret);
+			error_log('nframework 2FA: ' . $user->username . ' entró con su llave de recuperación desde ' . $GLOBALS['ip']);
+			$_SESSION['login_redirect'] = '/account/security?recovered=1';
 			nfCompleteLogin($user);
 		} else {
-			$msgError = 'Código incorrecto';
+			$msgError = $recovery !== '' ? 'Llave de recuperación incorrecta' : 'Código incorrecto';
 		}
 	}
 
@@ -233,6 +242,135 @@ $router->addRoute('/account/twofa', function (string $route, array $p) {
 	]);
 }, ['GET', 'POST']);
 
+
+/**
+ * Activación de la verificación en dos pasos (TOTP) del usuario con sesión. El secreto vive en la sesión
+ * hasta que el usuario escribe un código válido; solo entonces se guarda en twofa_secret. include.php
+ * envía aquí a quien la tiene obligatoria (Admin → Sitio / Usuarios) y todavía no la activó.
+ */
+$router->addRoute('/account/twofa-setup', function (string $route, array $p) {
+	global $twig, $config, $nframework, $user;
+	$user->requireAuth();
+	$done = static function () {
+		$redir = (string) ($_SESSION['login_redirect'] ?? '');
+		$_SESSION['login_redirect'] = '';
+		header('Location: ' . nfSafeRedirect($redir !== '' && !str_starts_with($redir, '/account/') ? $redir : '/'));
+		exit();
+	};
+	if (!empty($user->twofa_secret)) {
+		$done();
+	}
+	if (empty($_SESSION['twofa_setup']) || !is_string($_SESSION['twofa_setup'])) {
+		// 20 bytes (160 bits, lo que recomienda RFC 4226): 32 caracteres, cómodos de capturar a mano.
+		$_SESSION['twofa_setup'] = TOTP::generate(null, 20)->getSecret();
+	}
+	$totp = TOTP::createFromSecret($_SESSION['twofa_setup']);
+	$totp->setLabel((string) $user->username);
+	$totp->setIssuer((string) ($config['title'] ?? nfSiteHost()));
+
+	$msgError = '';
+	if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+		$code = is_string($_POST['code'] ?? null) ? preg_replace('/\D/', '', $_POST['code']) : '';
+		if (!csrfValidate()) {
+			$msgError = 'Formulario caducado, intente de nuevo.';
+		} elseif (!nflogAttempt('twofasetup:' . $user->_id, 10, 900)) {
+			$msgError = 'Demasiados intentos, intente más tarde.';
+		} elseif (strlen($code) === 6 && $totp->verify($code, null, 15)) {
+			$user->twofa_secret = $_SESSION['twofa_setup'];
+			unset($_SESSION['twofa_setup']);
+			nflogReset('twofasetup:' . $user->_id);
+			// Llave de recuperación: se muestra una sola vez; se guarda solo su hash.
+			$key = User::recoveryKeyGenerate();
+			$user->twofa_recovery = User::recoveryKeyHash($key);
+			$redir = (string) ($_SESSION['login_redirect'] ?? '');
+			$_SESSION['login_redirect'] = '';
+			$nframework->usecommon = true;
+			echo $twig->load('recoverykey.html')->render([
+				'nframework' => ['themeSwitcher' => $nframework->themeSwitcher()],
+				'lng' => $nframework->language(),
+				'key' => $key,
+				'activated' => true,
+				'continue' => nfSafeRedirect($redir !== '' && !str_starts_with($redir, '/account/') ? $redir : '/account/security'),
+			]);
+			return;
+		} else {
+			$msgError = 'Código incorrecto. Revise que la hora del teléfono sea la correcta.';
+		}
+	}
+
+	$qr = (new PngWriter())->write(new Endroid\QrCode\QrCode($totp->getProvisioningUri()));
+	$nframework->usecommon = true;
+	echo $twig->load('twofasetup.html')->render([
+		'nframework' => ['themeSwitcher' => $nframework->themeSwitcher()],
+		'lng' => $nframework->language(),
+		'qr' => $qr->getDataUri(),
+		'secret' => trim(chunk_split($_SESSION['twofa_setup'], 4, ' ')),
+		'required' => $user->twofaPending(),
+		'csrf' => csrfToken('/account/twofa-setup'),
+		'msgError' => $msgError,
+	]);
+}, ['GET', 'POST']);
+
+/**
+ * Seguridad de la cuenta: estado del 2FA, activarlo (/account/twofa-setup), desactivarlo si no es obligatorio
+ * y generar una llave de recuperación nueva. Desactivar y regenerar piden un código vigente de la app.
+ */
+$router->addRoute('/account/security', function (string $route, array $p) {
+	global $twig, $config, $nframework, $user;
+	$user->requireAuth();
+	$active = !empty($user->twofa_secret);
+	$msgError = '';
+	$msgOk = !empty($_GET['recovered'])
+		? 'Entró con su llave de recuperación: se desactivó la verificación en dos pasos. Actívela de nuevo para generar otra llave.'
+		: '';
+
+	if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+		$op = is_string($_POST['op'] ?? null) ? $_POST['op'] : '';
+		$code = is_string($_POST['code'] ?? null) ? (string) preg_replace('/\D/', '', $_POST['code']) : '';
+		if (!csrfValidate()) {
+			$msgError = 'Formulario caducado, intente de nuevo.';
+		} elseif (!$active || !in_array($op, ['recovery', 'disable'], true)) {
+			$msgError = 'Operación no válida.';
+		} elseif (!nflogAttempt('security:' . $user->_id, 10, 900)) {
+			$msgError = 'Demasiados intentos, intente más tarde.';
+		} elseif (strlen($code) !== 6 || !TOTP::createFromSecret((string) $user->twofa_secret)->verify($code, null, 15)) {
+			$msgError = 'Código incorrecto. Escriba el código que muestra su app de autenticación.';
+		} elseif ($op === 'recovery') {
+			nflogReset('security:' . $user->_id);
+			$key = User::recoveryKeyGenerate();
+			$user->twofa_recovery = User::recoveryKeyHash($key);
+			$nframework->usecommon = true;
+			echo $twig->load('recoverykey.html')->render([
+				'nframework' => ['themeSwitcher' => $nframework->themeSwitcher()],
+				'lng' => $nframework->language(),
+				'key' => $key,
+				'activated' => false,
+				'continue' => '/account/security',
+			]);
+			return;
+		} elseif ($user->twofaRequired()) {
+			$msgError = 'La verificación en dos pasos es obligatoria para su cuenta; no se puede desactivar.';
+		} else {
+			nflogReset('security:' . $user->_id);
+			unset($user->twofa_secret);
+			unset($user->twofa_recovery);
+			$active = false;
+			$msgOk = 'Se desactivó la verificación en dos pasos.';
+		}
+	}
+
+	$nframework->usecommon = true;
+	echo $twig->load('security.html')->render([
+		'nframework' => ['themeSwitcher' => $nframework->themeSwitcher()],
+		'lng' => $nframework->language(),
+		'active' => $active,
+		'required' => $user->twofaRequired(),
+		'hasRecovery' => !empty($user->twofa_recovery),
+		'csrf' => csrfToken('/account/security'),
+		'msgError' => $msgError,
+		'msgOk' => $msgOk,
+	]);
+}, ['GET', 'POST']);
 
 $router->addRoute('/account/signup', function (string $route, array $p) {
 	global $twig, $config, $nframework, $m;
@@ -475,32 +613,242 @@ $router->addRoute('/account/totp-setup', function ($route, $arg) {
 }, 'GET');
 
 
+/**
+ * Datos comunes de las plantillas de /account: idioma, selector de tema, token CSRF y mensajes.
+ *
+ * @param string $action ruta del formulario (para el token CSRF)
+ * @param array<string, mixed> $vars variables propias de la página
+ * @return array<string, mixed>
+ */
+function nfAccountView(string $action, array $vars = []): array
+{
+	global $nframework;
+	$nframework->usecommon = true;
+	return $vars + [
+		'nframework' => ['themeSwitcher' => $nframework->themeSwitcher()],
+		'lng' => $nframework->language(),
+		'csrf' => csrfToken($action),
+		'msgError' => '',
+		'msgOk' => '',
+	];
+}
+
+/**
+ * Centro de la cuenta: enlaces a perfil, contraseña, seguridad, sesiones y (admins) panel.
+ */
+$nfAccountHome = function (string $route, array $p) {
+	global $twig, $user;
+	$user->requireAuth();
+	echo $twig->load('account.html')->render(nfAccountView('/account/', [
+		'username' => (string) $user->username,
+		'name' => (string) ($user->name ?? ''),
+		'avatar' => $user->gravatar(120, 120) . '?v=' . (int) ($user->picture_updated ?? 0),
+		'twofa' => !empty($user->twofa_secret),
+		'sessions' => count((array) $user->sessions),
+		'admin' => $user->in('admins'),
+	]));
+};
+$router->addRoute('/account', $nfAccountHome, 'GET');
+$router->addRoute('/account/', $nfAccountHome, 'GET');
+
+/**
+ * Perfil: nombre visible y foto ({_id}.png en User::picturesDir(), 512×512).
+ */
 $router->addRoute('/account/profile', function (string $route, array $p) {
-	global $twig, $config, $nframework, $user;
+	global $twig, $user;
 	$user->requireAuth();
-	$nframework->usecommon = true;
-	$template = $twig->load('profile.html');
-	echo $template->render([
-		'nframework' => [
-			'themeSwitcher' => $nframework->themeSwitcher()
-		],
-		'lng' => $nframework->language(),
-		'user' => $user
-	]);
+	$msgError = '';
+	$msgOk = '';
+	$dir = User::picturesDir();
+	$picture = $dir . '/' . $user->_id . '.png';
+	if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+		$op = is_string($_POST['op'] ?? null) ? $_POST['op'] : '';
+		if (!csrfValidate()) {
+			$msgError = 'Formulario caducado, intente de nuevo.';
+		} elseif ($op === 'save') {
+			$name = is_string($_POST['name'] ?? null) ? trim(preg_replace('/\s+/u', ' ', $_POST['name'])) : '';
+			if (mb_strlen($name) > 120) {
+				$msgError = 'El nombre admite como máximo 120 caracteres.';
+			} else {
+				$user->name = $name;
+				$msgOk = 'Perfil guardado.';
+			}
+			$file = $_FILES['picture'] ?? null;
+			if ($msgError === '' && is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+				if ($file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name']) || $file['size'] > 5 * 1048576) {
+					$msgError = 'No se recibió la foto (máximo 5 MB).';
+				} elseif (($virus = ClamAV::uploadError($file['tmp_name'], (string) $file['name'])) !== null) {
+					$msgError = $virus;
+				} elseif (@getimagesize($file['tmp_name']) === false) {
+					$msgError = 'El archivo no es una imagen.';
+				} elseif (!is_dir($dir) && !@mkdir($dir, 0775, true) || !is_writable($dir)) {
+					error_log('nframework profile: no se puede escribir en ' . $dir);
+					$msgError = 'El servidor no puede guardar fotos de perfil; avise al administrador.';
+				} else {
+					try {
+						(new ImageManager(new GdDriver()))->decodePath($file['tmp_name'])->cover(512, 512)->save($picture);
+						$user->picture_updated = time();
+						$msgOk = 'Perfil y foto guardados.';
+					} catch (Throwable $e) {
+						$msgError = 'No se pudo procesar la imagen.';
+					}
+				}
+			}
+		} elseif ($op === 'deletepicture') {
+			if (is_file($picture)) {
+				@unlink($picture);
+			}
+			$user->picture_updated = time();
+			$msgOk = 'Se quitó la foto.';
+		}
+	}
+	echo $twig->load('profile.html')->render(nfAccountView('/account/profile', [
+		'username' => (string) $user->username,
+		'name' => (string) ($user->name ?? ''),
+		'avatar' => $user->gravatar(160, 160) . '?v=' . (int) ($user->picture_updated ?? 0),
+		'hasPicture' => is_file($picture),
+		'msgError' => $msgError,
+		'msgOk' => $msgOk,
+	]));
 }, ['GET', 'POST']);
-$router->addRoute('/account/sessions', function (string $route, array $p) {
-	global $twig, $config, $nframework, $user;
+
+/**
+ * Cambio de contraseña. Pide la actual (salvo cuentas creadas por OAuth sin contraseña) y cierra las demás
+ * sesiones del usuario.
+ */
+$router->addRoute('/account/password', function (string $route, array $p) {
+	global $twig, $config, $user, $m;
 	$user->requireAuth();
-	$nframework->usecommon = true;
-	$template = $twig->load('sessions.html');
-	echo $template->render([
-		'nframework' => [
-			'themeSwitcher' => $nframework->themeSwitcher()
-		],
-		'lng' => $nframework->language(),
-		'user' => $user
-	]);
-}, 'GET');
+	$hasPassword = !empty($user->password);
+	$msgError = '';
+	$msgOk = '';
+	if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+		$current = is_string($_POST['current'] ?? null) ? $_POST['current'] : '';
+		$new = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+		$confirm = is_string($_POST['confirm'] ?? null) ? $_POST['confirm'] : '';
+		$mask = is_string($config['passwordmask'] ?? null) ? trim($config['passwordmask']) : '';
+		if (!csrfValidate()) {
+			$msgError = 'Formulario caducado, intente de nuevo.';
+		} elseif (!nflogAttempt('cpassword:' . $user->_id, 10, 900)) {
+			$msgError = 'Demasiados intentos, intente más tarde.';
+		} elseif ($hasPassword && !nfPasswordVerify($current, $user->password)) {
+			$msgError = 'La contraseña actual no es correcta.';
+		} elseif ($new !== $confirm) {
+			$msgError = 'Las contraseñas nuevas no coinciden.';
+		} elseif (strlen($new) < NF_PASSWORD_MIN_LENGTH) {
+			$msgError = 'La contraseña debe tener al menos ' . NF_PASSWORD_MIN_LENGTH . ' caracteres.';
+		} elseif ($mask !== '' && @preg_match($mask, $new) === 0) {
+			$msgError = 'La contraseña no cumple las reglas del sitio.';
+		} else {
+			nflogReset('cpassword:' . $user->_id);
+			$user->password = nfPasswordHash($new);
+			$closed = nfAccountCloseSessions($user, array_diff((array) $user->sessions, [session_id()]));
+			$hasPassword = true;
+			$msgOk = 'Contraseña cambiada.' . ($closed > 0 ? ' Se cerraron ' . $closed . ' sesión(es) en otros dispositivos.' : '');
+		}
+	}
+	echo $twig->load('password.html')->render(nfAccountView('/account/password', [
+		'hasPassword' => $hasPassword,
+		'minLength' => NF_PASSWORD_MIN_LENGTH,
+		'msgError' => $msgError,
+		'msgOk' => $msgOk,
+	]));
+}, ['GET', 'POST']);
+
+/**
+ * Cierra sesiones del usuario: las borra de la colección sessions (así dejan de valer) y de su lista.
+ *
+ * @global MongoDB\Client $m
+ * @global class_config $config
+ * @param User $user dueño de las sesiones
+ * @param array<int, string> $ids ids de sesión que se cierran (solo se aceptan los que son del usuario)
+ * @return int sesiones cerradas
+ */
+function nfAccountCloseSessions(User $user, array $ids): int
+{
+	global $m, $config;
+	$ids = array_values(array_intersect((array) $user->sessions, $ids));
+	if ($ids === []) {
+		return 0;
+	}
+	$m->{$config['sitedb']}->sessions->deleteMany(['_id' => ['$in' => $ids]]);
+	$unset = [];
+	foreach ($ids as $id) {
+		if (preg_match('/^[A-Za-z0-9,\-]+$/', $id)) {
+			$unset['sessions_info.' . $id] = '';
+		}
+	}
+	if ($unset !== []) {
+		$m->{$config['sitedb']}->users->updateOne(['_id' => toMongoId($user->_id)], ['$unset' => $unset]);
+	}
+	$user->sessions = array_values(array_diff((array) $user->sessions, $ids));
+	return count($ids);
+}
+
+/**
+ * Sesiones abiertas: dispositivo, IP, inicio y último uso; cerrar una o todas las demás.
+ */
+$router->addRoute('/account/sessions', function (string $route, array $p) {
+	global $twig, $config, $user, $m;
+	$user->requireAuth();
+	$msgError = '';
+	$msgOk = '';
+	$ids = array_values(array_filter((array) $user->sessions, 'is_string'));
+	$alive = [];
+	foreach ($m->{$config['sitedb']}->sessions->find(['_id' => ['$in' => $ids]], ['projection' => ['last_accessed' => 1]]) as $doc) {
+		$alive[(string) $doc['_id']] = $doc['last_accessed'] ?? null;
+	}
+	// Las que ya expiraron se quitan de la lista del usuario.
+	if (count($alive) < count($ids)) {
+		nfAccountCloseSessions($user, array_diff($ids, array_keys($alive)));
+		$ids = array_keys($alive);
+	}
+
+	if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+		$op = is_string($_POST['op'] ?? null) ? $_POST['op'] : '';
+		$token = is_string($_POST['token'] ?? null) ? $_POST['token'] : '';
+		if (!csrfValidate()) {
+			$msgError = 'Formulario caducado, intente de nuevo.';
+		} elseif ($op === 'others') {
+			$closed = nfAccountCloseSessions($user, array_diff($ids, [session_id()]));
+			$msgOk = 'Se cerraron ' . $closed . ' sesión(es).';
+		} elseif ($op === 'close') {
+			foreach ($ids as $id) {
+				if ($id !== session_id() && hash_equals(User::sessionToken($id), $token)) {
+					nfAccountCloseSessions($user, [$id]);
+					$msgOk = 'Sesión cerrada.';
+				}
+			}
+		}
+		$ids = array_values(array_filter((array) $user->sessions, 'is_string'));
+	}
+
+	$info = $m->{$config['sitedb']}->users->findOne(
+		['_id' => toMongoId($user->_id)],
+		['projection' => ['sessions_info' => 1], 'typeMap' => ['root' => 'array', 'document' => 'array', 'array' => 'array']]
+	)['sessions_info'] ?? [];
+	$rows = [];
+	foreach ($ids as $id) {
+		$i = is_array($info[$id] ?? null) ? $info[$id] : [];
+		$last = $alive[$id] ?? null;
+		$since = $i['since'] ?? null;
+		$rows[] = [
+			'token' => User::sessionToken($id),
+			'current' => $id === session_id(),
+			'device' => User::describeAgent((string) ($i['agent'] ?? '')),
+			'ip' => (string) ($i['ip'] ?? ''),
+			'since' => $since instanceof MongoDB\BSON\UTCDateTime ? $since->toDateTime()->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i') : '',
+			'last' => $last instanceof MongoDB\BSON\UTCDateTime ? $last->toDateTime()->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i') : '',
+			'sort' => $last instanceof MongoDB\BSON\UTCDateTime ? (int) (string) $last : 0,
+		];
+	}
+	usort($rows, fn($a, $b) => [$b['current'], $b['sort']] <=> [$a['current'], $a['sort']]);
+	echo $twig->load('sessions.html')->render(nfAccountView('/account/sessions', [
+		'rows' => $rows,
+		'msgError' => $msgError,
+		'msgOk' => $msgOk,
+	]));
+}, ['GET', 'POST']);
 $router->addRoute('/account/apitokens', function (string $route, array $p) {
 	global $twig, $config, $nframework, $user;
 	$user->requireAuth();
@@ -525,6 +873,9 @@ $router->addRoute('/account/logout', function (string $route, array $p) {
 
 	$m->{$config['sitedb']}->endpoints->deleteOne(['_id' => (string)session_id()]);
 	$user->sessions = $tmp;
+	if (!empty($user->_id) && preg_match('/^[A-Za-z0-9,\-]+$/', session_id())) {
+		$m->{$config['sitedb']}->users->updateOne(['_id' => toMongoId($user->_id)], ['$unset' => ['sessions_info.' . session_id() => '']]);
+	}
 
 	unset($user);
 	unset($_SESSION['user']);
@@ -902,12 +1253,8 @@ function nfConvertedImageConf(string $id): ?array
 	if ($id !== 'users' || ($cache = nfCacheDir('avatars')) === null) {
 		return null;
 	}
-	$src = (string) ($config['users_pictures'] ?? '');
-	if ($src === '') {
-		$src = ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/img/nf/users';
-	}
 	return [
-		'src' => rtrim($src, '/'),
+		'src' => User::picturesDir(),
 		'dst' => $cache,
 		'default' => nfDefaultAvatar($cache),
 		'maxage' => 300,

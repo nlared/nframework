@@ -1224,11 +1224,37 @@ if (!empty($_SESSION['user']) && is_string($_SESSION['user']) && preg_match('/^[
             $tmp = (array) $user->sessions;
             $tmp[] = session_id();
             $user->sessions = array_values(array_unique($tmp));
+            // Dispositivo de la sesión para /account/sessions (el id de sesión solo tiene [A-Za-z0-9,-]).
+            if (preg_match('/^[A-Za-z0-9,\-]+$/', session_id())) {
+                $m->{$config['sitedb']}->users->updateOne(['_id' => toMongoId($user->_id)], ['$set' => [
+                    'sessions_info.' . session_id() => [
+                        'ip' => (string) $ip,
+                        'agent' => mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 300),
+                        'since' => new MongoDB\BSON\UTCDateTime(),
+                    ],
+                ]]);
+            }
         }
     }
 
     if ($user->in('developers')) {
         $developermode = true;
+    }
+    // 2FA obligatorio (Admin → Sitio o Admin → Usuarios): hasta activarlo solo puede configurarlo o salir.
+    // Se revisa aquí y no en el login para cubrir contraseña, OAuth, activación por correo y sesiones abiertas.
+    if (PHP_SAPI !== 'cli' && $user->twofaPending()
+        && !User::twofaExemptPath((string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH))) {
+        if ($nframework->isAjax()) {
+            http_response_code(403);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['error' => 'Debe activar la verificación en dos pasos: abra /account/twofa-setup.']);
+            exit();
+        }
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+            $_SESSION['login_redirect'] = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+        }
+        header('Location: /account/twofa-setup');
+        exit();
     }
     // Un POST del panel puede cambiar configuración, reglas, páginas o menús: se vacía la caché
     // local al terminar la petición, después de que la página guardó.

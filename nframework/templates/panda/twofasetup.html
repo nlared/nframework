@@ -1,0 +1,45 @@
+<style>
+    body {
+        background: url("/img/bg-1.jpg") bottom right no-repeat;
+        background-size: cover;
+    }
+
+    .dark-side {
+        body {
+            background: url("/img/bg-2.jpg") bottom right no-repeat;
+            background-size: cover;
+        }
+    }
+
+    .formbox {
+        inset: 0;
+        margin: auto;
+    }
+</style>
+<div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox" style="max-width:480px">
+    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['twofa_setup_title']}}</div>
+    {% if required %}
+    <div class="remark warning fg-black">{{lng['twofa_setup_required']}}</div>
+    {% endif %}
+    <p>{{lng['twofa_setup_info']}}</p>
+    <div class="text-center">
+        <img src="{{qr}}" alt="QR" width="220" height="220" class="bg-white p-2">
+        <div class="mt-2"><small>{{lng['twofa_setup_manual']}}</small><br><code class="fg-white" style="word-break:break-all">{{secret}}</code></div>
+    </div>
+    <form action="/account/twofa-setup" method="POST" class="mt-4 mb-2">
+        <input type="hidden" name="CSRFToken" value="{{csrf}}">
+        <div class="form-group">
+            <input type="text" name="code" data-role="input" inputmode="numeric" autocomplete="one-time-code"
+                pattern="[0-9 ]{6,7}" maxlength="7" required autofocus
+                placeholder="{{lng['twofa_code']}}" data-prepend="<span class='mif-key'></span>" />
+        </div>
+        {% if msgError %}
+        <div class="mt-2"><div class="remark alert fg-black">{{msgError}}</div></div>
+        {% endif %}
+        <div class="form-actions border-top bd-white pt-4 d-flex flex-center">
+            <button class="button success">{{lng['twofa_verify']}}</button>
+            <a class="ml-auto fg-white" href="/account/logout">{{lng['logout_link']}}</a>
+        </div>
+    </form>
+</div>
+{{nframework['themeSwitcher']|raw}}

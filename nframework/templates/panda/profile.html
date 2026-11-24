@@ -1,0 +1,54 @@
+<style>
+    body {
+        background: url("/img/bg-1.jpg") bottom right no-repeat;
+        background-size: cover;
+    }
+
+    .dark-side {
+        body {
+            background: url("/img/bg-2.jpg") bottom right no-repeat;
+            background-size: cover;
+        }
+    }
+
+    .formbox {
+        inset: 0;
+        margin: auto;
+    }
+
+    .nf-account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .75rem; }
+    .nf-account-grid a { display: flex; flex-direction: column; align-items: center; gap: .4rem; padding: 1rem .5rem;
+        border: 1px solid rgba(255,255,255,.35); border-radius: var(--nf-radius, 8px); color: inherit; text-decoration: none; text-align: center; }
+    .nf-account-grid a:hover { background: rgba(255,255,255,.12); }
+    .nf-account-grid .mif-2x { font-size: 2rem; }
+</style>
+<div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox" style="max-width:520px;width:calc(100% - 2rem)">
+    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['account_profile']}}</div>
+    {% if msgOk %}<div class="remark success fg-black">{{msgOk}}</div>{% endif %}
+    {% if msgError %}<div class="remark alert fg-black">{{msgError}}</div>{% endif %}
+    <form action="/account/profile" method="POST" enctype="multipart/form-data" class="mt-4">
+        <input type="hidden" name="CSRFToken" value="{{csrf}}">
+        <div class="text-center mb-4">
+            <img src="{{avatar}}" alt="" width="120" height="120" style="border-radius:50%">
+        </div>
+        <div class="form-group">
+            <label>{{lng['username']}}</label>
+            <input type="text" data-role="input" value="{{username}}" readonly>
+        </div>
+        <div class="form-group">
+            <label>{{lng['account_name']}}</label>
+            <input type="text" name="name" data-role="input" maxlength="120" value="{{name}}" autocomplete="name">
+        </div>
+        <div class="form-group">
+            <label>{{lng['account_picture']}}</label>
+            <input type="file" name="picture" data-role="file" accept="image/png,image/jpeg,image/webp,image/gif">
+            <small>{{lng['account_picture_info']}}</small>
+        </div>
+        <div class="form-actions d-flex flex-center gap-2 mt-4">
+            <button class="button success" name="op" value="save"><span class="mif-floppy-disk"></span>&nbsp;{{lng['save']}}</button>
+            {% if hasPicture %}<button class="button alert ml-auto" name="op" value="deletepicture" formnovalidate>{{lng['account_picture_delete']}}</button>{% endif %}
+        </div>
+    </form>
+    <div class="border-top bd-white pt-4 mt-4"><a class="fg-white" href="/account/"><span class="mif-arrow-left"></span>&nbsp;{{lng['account_title']}}</a></div>
+</div>
+{{nframework['themeSwitcher']|raw}}

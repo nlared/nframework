@@ -18,6 +18,13 @@ $password = new inputText(['id' => 'password', 'name' => "password", 'caption' =
 $username = new inputText(['dataset' => &$dataset, 'field' => 'username', 'caption' => $nframework->language['username'] . ':', 'required' => true]);
 
 $disabled = new inputCheckbox(['dataset' => &$dataset, 'field' => 'disabled', 'caption' => $nframework->language['disabled'] . ':']);
+$twofarequired = new inputCheckbox(['dataset' => &$dataset, 'field' => 'twofa_required', 'caption' => 'Requerir la verificación en dos pasos (2FA) a este usuario']);
+// Estado del 2FA: el secreto nunca se muestra ni viaja al navegador.
+$twofaUserId = is_string($_GET['_id']) && isValidObjectId($_GET['_id']) ? toMongoId($_GET['_id']) : null;
+$twofaActive = $twofaUserId !== null && !empty($m->{$config['sitedb']}->users->findOne(
+	['_id' => $twofaUserId],
+	['projection' => ['twofa_secret' => 1]]
+)['twofa_secret'] ?? null);
 
 if (file_exists($_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.php')) {
 	include $_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.php';
@@ -38,6 +45,17 @@ if ($nframework->isAjax()) {
 			$result = [
 				'error' => $e->getMessage()
 			];
+		}
+	}
+	if ($_POST['op'] == 'twofareset') {
+		// El usuario pierde su teléfono: se borra el secreto y, si el 2FA es obligatorio, lo activa de nuevo al entrar.
+		if (!csrfValidate()) {
+			$result = ['error' => 'Formulario caducado, recargue la página.'];
+		} elseif ($twofaUserId === null) {
+			$result = ['error' => 'Usuario inválido.'];
+		} else {
+			$m->{$config['sitedb']}->users->updateOne(['_id' => $twofaUserId], ['$unset' => ['twofa_secret' => '']]);
+			$result = ['error' => false, 'ids' => ['twofaStatus' => '<span class="tag">No activada</span>']];
 		}
 	}
 	if ($_POST['op'] == 'password') {
@@ -95,6 +113,17 @@ if ($nframework->isAjax()) {
 					include $_SERVER['DOCUMENT_ROOT'] . '/admins/users/user.ui.php';
 				}
 				?>
+				<div class="row">
+					<div class="cell-md-6"><?= $twofarequired ?>
+						<small class="d-block fg-gray mt-1">Hasta activarla solo podrá abrir <code>/account/twofa-setup</code> o salir.<?= !empty($config['twofa_required']) ? ' El sitio ya la exige a todos (Admin → Sitio).' : '' ?></small>
+					</div>
+					<div class="cell-md-6">
+						2FA: <span id="twofaStatus"><?= $twofaActive ? '<span class="tag success">Activa</span>' : '<span class="tag">No activada</span>' ?></span>
+						<?php if ($twofaActive) { ?>
+							<button class="button secureop warning ml-2" value="twofareset" onclick="return confirm('¿Restablecer la verificación en dos pasos de este usuario? Tendrá que volver a escanear el código QR.');"><span class="mif-key"></span>&nbsp;Restablecer 2FA</button>
+						<?php } ?>
+					</div>
+				</div>
 				<div class="row">
 					<div class="cell"><?= $disabled ?></div>
 					<div class="cell-md-3"><a href="#" onclick="dialogpass_open();" class="btn btn-primary button primary w-100" data-toggle="modal" data-target="#demoDialog1"><span class="mif-lock"></span>&nbsp;<?= $nframework->language['changepassword'] ?></a></div>

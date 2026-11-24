@@ -242,6 +242,7 @@ $homepagetype = new inputradios(['dataset' => &$dataset, 'field' => 'homepagetyp
 /* ---------- Cuentas ---------- */
 $email = new inputText(siteTextOptions('email', ['dataset' => &$dataset, 'pattern' => SITE_EMAIL_PATTERN, 'tags' => ['inputmode' => 'email'], 'caption' => 'Correo del webmaster (opcional):', 'placeholder' => 'webmaster@ejemplo.com']));
 $canregister = new inputcheckbox(['dataset' => &$dataset, 'field' => 'canregister', 'caption' => 'Permitir que los visitantes creen su propia cuenta']);
+$twofarequired = new inputcheckbox(['dataset' => &$dataset, 'field' => 'twofa_required', 'caption' => 'Requerir la verificación en dos pasos (2FA) a todos los usuarios']);
 $passwordmask = new inputText(siteTextOptions('passwordmask', ['dataset' => &$dataset, 'caption' => 'Expresión regular para contraseñas:', 'default' => '/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/', 'required' => true]));
 
 /* ---------- Correo saliente (SMTP) ---------- */
@@ -405,6 +406,9 @@ JS, 'ready');
 			<div class="row">
 				<div class="cell-md-6"><?= $email ?><?= siteHelp('Dirección a la que se dirigen avisos técnicos del sitio.') ?></div>
 				<div class="cell-md-6"><br><?= $canregister ?><?= siteHelp('Si se desactiva, solo un administrador puede dar de alta usuarios.') ?></div>
+			</div>
+			<div class="row">
+				<div class="cell"><?= $twofarequired ?><?= siteHelp('Quien no la tenga activa no podrá usar el sitio hasta escanear un código QR con una app de autenticación (<code>/account/twofa-setup</code>); aplica también a las sesiones abiertas y a usted mismo en la siguiente página que abra. Para exigirla solo a algunos usuarios, márquela en Admin → Usuarios.') ?></div>
 			</div>
 			<div class="row">
 				<div class="cell"><?= $passwordmask ?><?= siteHelp('Expresión regular PHP con delimitadores. Ejemplo: <code>/^(?=.*[A-Za-z])(?=.*\d).{' . NF_PASSWORD_MIN_LENGTH . ',}$/</code> exige letras, números y al menos ' . NF_PASSWORD_MIN_LENGTH . ' caracteres.') ?></div>

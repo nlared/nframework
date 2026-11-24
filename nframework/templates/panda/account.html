@@ -1,0 +1,44 @@
+<style>
+    body {
+        background: url("/img/bg-1.jpg") bottom right no-repeat;
+        background-size: cover;
+    }
+
+    .dark-side {
+        body {
+            background: url("/img/bg-2.jpg") bottom right no-repeat;
+            background-size: cover;
+        }
+    }
+
+    .formbox {
+        inset: 0;
+        margin: auto;
+    }
+
+    .nf-account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .75rem; }
+    .nf-account-grid a { display: flex; flex-direction: column; align-items: center; gap: .4rem; padding: 1rem .5rem;
+        border: 1px solid rgba(255,255,255,.35); border-radius: var(--nf-radius, 8px); color: inherit; text-decoration: none; text-align: center; }
+    .nf-account-grid a:hover { background: rgba(255,255,255,.12); }
+    .nf-account-grid .mif-2x { font-size: 2rem; }
+</style>
+<div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox" style="max-width:640px;width:calc(100% - 2rem)">
+    <div class="d-flex flex-align-center gap-4 border-bottom bd-white pb-4 mb-4">
+        <img src="{{avatar}}" alt="" class="avatar" width="80" height="80" style="border-radius:50%">
+        <div>
+            <div class="h3 text-weight-7 m-0">{{name ?: username}}</div>
+            {% if name %}<div>{{username}}</div>{% endif %}
+        </div>
+    </div>
+    <div class="nf-account-grid">
+        <a href="/account/profile"><span class="mif-profile mif-2x"></span>{{lng['account_profile']}}<small>{{lng['account_profile_info']}}</small></a>
+        <a href="/account/password"><span class="mif-key mif-2x"></span>{{lng['account_password']}}<small>{{lng['account_password_info']}}</small></a>
+        <a href="/account/security"><span class="mif-security mif-2x"></span>{{lng['security_title']}}
+            <small>{{lng['twofa_title']}}: {% if twofa %}{{lng['security_active']}}{% else %}{{lng['security_inactive']}}{% endif %}</small></a>
+        <a href="/account/sessions"><span class="mif-devices mif-2x"></span>{{lng['account_sessions']}}<small>{{sessions}} {{lng['account_sessions_open']}}</small></a>
+        {% if admin %}<a href="/admin/"><span class="mif-cog mif-2x"></span>{{lng['account_admin']}}<small>/admin/</small></a>{% endif %}
+        <a href="/account/logout"><span class="mif-exit mif-2x"></span>{{lng['logout_link']}}<small>&nbsp;</small></a>
+    </div>
+    <div class="border-top bd-white pt-4 mt-4"><a class="fg-white" href="/"><span class="mif-home"></span>&nbsp;{{lng['home']}}</a></div>
+</div>
+{{nframework['themeSwitcher']|raw}}

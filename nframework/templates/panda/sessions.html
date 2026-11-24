@@ -1,0 +1,58 @@
+<style>
+    body {
+        background: url("/img/bg-1.jpg") bottom right no-repeat;
+        background-size: cover;
+    }
+
+    .dark-side {
+        body {
+            background: url("/img/bg-2.jpg") bottom right no-repeat;
+            background-size: cover;
+        }
+    }
+
+    .formbox {
+        inset: 0;
+        margin: auto;
+    }
+
+    .nf-account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .75rem; }
+    .nf-account-grid a { display: flex; flex-direction: column; align-items: center; gap: .4rem; padding: 1rem .5rem;
+        border: 1px solid rgba(255,255,255,.35); border-radius: var(--nf-radius, 8px); color: inherit; text-decoration: none; text-align: center; }
+    .nf-account-grid a:hover { background: rgba(255,255,255,.12); }
+    .nf-account-grid .mif-2x { font-size: 2rem; }
+</style>
+<div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox" style="max-width:720px;width:calc(100% - 2rem)">
+    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['account_sessions']}}</div>
+    {% if msgOk %}<div class="remark success fg-black">{{msgOk}}</div>{% endif %}
+    {% if msgError %}<div class="remark alert fg-black">{{msgError}}</div>{% endif %}
+    <p>{{lng['account_sessions_info']}}</p>
+    <table class="table compact" style="color:inherit">
+        <thead><tr><th>{{lng['account_device']}}</th><th>IP</th><th>{{lng['account_since']}}</th><th>{{lng['account_last']}}</th><th></th></tr></thead>
+        <tbody>
+        {% for r in rows %}
+            <tr>
+                <td>{{r.device}}{% if r.current %} <span class="tag success">{{lng['account_this_device']}}</span>{% endif %}</td>
+                <td><code class="fg-white">{{r.ip}}</code></td>
+                <td>{{r.since}}</td>
+                <td>{{r.last}}</td>
+                <td>{% if not r.current %}
+                    <form action="/account/sessions" method="POST" class="m-0">
+                        <input type="hidden" name="CSRFToken" value="{{csrf}}">
+                        <input type="hidden" name="token" value="{{r.token}}">
+                        <button class="button small alert" name="op" value="close">{{lng['account_close']}}</button>
+                    </form>
+                {% endif %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% if rows|length > 1 %}
+    <form action="/account/sessions" method="POST" onsubmit="return confirm('{{lng['account_close_others_confirm']|e('js')}}');">
+        <input type="hidden" name="CSRFToken" value="{{csrf}}">
+        <button class="button alert" name="op" value="others"><span class="mif-exit"></span>&nbsp;{{lng['account_close_others']}}</button>
+    </form>
+    {% endif %}
+    <div class="border-top bd-white pt-4 mt-4"><a class="fg-white" href="/account/"><span class="mif-arrow-left"></span>&nbsp;{{lng['account_title']}}</a></div>
+</div>
+{{nframework['themeSwitcher']|raw}}

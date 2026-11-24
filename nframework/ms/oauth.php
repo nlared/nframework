@@ -139,6 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['code']) && !isset($_GE
 
 				$_SESSION['user'] = (string)$useroauth->_id;
 			}
+			// Con 2FA activo se pide el código antes de iniciar la sesión.
+			nfTwofaChallenge($_SESSION['user']);
 			session_write_close();
 			if (!empty($_SESSION['login_redirect'])) {
 				$redir = nfSafeRedirect($_SESSION['login_redirect']);

@@ -74,8 +74,9 @@ PHP) ?>
 		<thead><tr><th>Ruta</th><th>Qué hace</th></tr></thead>
 		<tbody>
 			<tr><td><code>/</code></td><td>Página de inicio (<code>_home</code> si <code>homepagetype = 'page'</code>). Si no hay <code>index.php</code>, ni página <code>/</code>, <code>_home</code> o <code>_parallax</code>, muestra una bienvenida con ligas a la documentación y al login (<code>nframework/templates/welcome.html</code>).</td></tr>
-			<tr><td><code>/account/login</code>, <code>/signup</code>, <code>/forgot</code>, <code>/reset</code>, <code>/activate/</code>, <code>/twofa</code>, <code>/logout</code></td><td>Cuentas de usuario (ver <a href="user.php">Usuarios</a>).</td></tr>
-			<tr><td><code>/account/profile</code>, <code>/sessions</code>, <code>/apitokens</code>, <code>/totp-setup</code></td><td>Perfil, sesiones abiertas, tokens y QR para 2FA.</td></tr>
+			<tr><td><code>/account/login</code>, <code>/signup</code>, <code>/forgot</code>, <code>/reset</code>, <code>/activate/</code>, <code>/twofa</code>, <code>/twofa-setup</code>, <code>/logout</code></td><td>Cuentas de usuario (ver <a href="user.php">Usuarios</a>).</td></tr>
+			<tr><td><code>/account/</code>, <code>/profile</code>, <code>/password</code>, <code>/security</code>, <code>/sessions</code></td><td>Mi cuenta: perfil (nombre y foto), contraseña, verificación en dos pasos y llave de recuperación, sesiones abiertas.</td></tr>
+			<tr><td><code>/account/apitokens</code>, <code>/totp-setup</code></td><td>Heredadas: <code>apitokens</code> no tiene plantilla y <code>totp-setup</code> no activa el 2FA (use <code>/account/security</code>).</td></tr>
 			<tr><td><code>/login-google/oauth</code>, <code>/login-facebook/oauth</code>, <code>/login-microsoft/oauth</code></td><td>Inicio de sesión con proveedores externos.</td></tr>
 			<tr><td><code>/images/config/{tamaño}/logo.png</code>, <code>/images/config/{ancho}/{alto}/logo.png</code></td><td>Logo del sitio redimensionado.</td></tr>
 			<tr><td><code>/favicon.ico</code></td><td>Ícono de 16, 32 y 48 px generado del logo (<code>logo</code> en <code>config.php</code>). Un <code>favicon.ico</code> propio en el document root tiene prioridad.</td></tr>

@@ -19,6 +19,49 @@ entradas.
 
 Ver `docs/upgrades.php`.
 
+# Próxima versión
+
+## 2026-11-24 — Mi cuenta (/account/)
+
+- Nueva página `/account/` con Perfil (`/account/profile`: nombre y foto), Contraseña (`/account/password`),
+  Seguridad (`/account/security`) y Sesiones (`/account/sessions`: ver y cerrar dispositivos). Antes
+  `/account/profile` y `/account/sessions` fallaban (no existían sus plantillas) y el menú de usuario enlazaba a
+  `/account/myprofile.php` y `/account/cpassword.php`, que no existen; ahora enlaza a `/account/` y
+  `/account/password`.
+- A quién afecta: sitios con páginas propias en esas rutas o en `/account/` (un archivo existente gana a la
+  ruta); revise si sobra alguna. Cambiar la contraseña desde `/account/password` cierra las demás sesiones del
+  usuario y aplica `passwordmask` (Admin → Sitio).
+- Cada sesión nueva guarda IP y navegador en `users.sessions_info`; las sesiones abiertas antes de actualizar
+  aparecen como «Desconocido».
+
+## 2026-11-24 — Verificación en dos pasos obligatoria
+
+- Nueva página `/account/twofa-setup` para activar el 2FA (QR + código). Antes no había forma de activarlo
+  y el formulario de `/account/twofa` no enviaba el código (apuntaba a `/account/signup`); ya funciona.
+- Nueva página `/account/security` (enlace «Seguridad» en el menú de usuario): estado del 2FA, activarlo,
+  desactivarlo si no es obligatorio y generar una llave de recuperación de un solo uso (se guarda su hash en
+  `users.twofa_recovery`). Al activar el 2FA se genera y se muestra la llave. En `/account/twofa`, «¿Perdió su
+  teléfono?» acepta la llave: entra, la gasta y desactiva el 2FA para volver a configurarlo.
+- Admin → Sitio: «Requerir la verificación en dos pasos a todos los usuarios» (`twofa_required` en
+  `configs/site`). Admin → Usuarios: lo mismo para un usuario (`users.twofa_required`) y «Restablecer 2FA».
+- Quien la tenga obligatoria y sin activar es enviado a `/account/twofa-setup` desde cualquier página
+  (también sesiones ya abiertas e inicios por OAuth); las peticiones AJAX reciben 403. Nada cambia si no se
+  marca ninguna casilla.
+- **Corrección de seguridad:** el inicio con Google, Microsoft o Facebook ya pide el código a quien tiene 2FA
+  activo (antes entraba sin él). Si el sitio tiene su propio OAuth que asigna `$_SESSION['user']`, agregue
+  `nfTwofaChallenge($_SESSION['user']);` justo después: busque `$_SESSION['user'] =` en el código del sitio.
+- A quién afecta: sitios que la habiliten. Si el sitio usa otra plantilla que `panda`, agregue
+  `twofasetup.html`, `security.html` y `recoverykey.html`. Las rutas propias que deban seguir abiertas (webhooks con sesión) no deberían depender
+  de un usuario con sesión; revise `crouter.php`. `/account/totp-setup` (guarda `totp_secret`, que el login
+  no usa) queda igual; no lo use para el 2FA.
+
+## 2026-11-23 — Botón de Administración en el menú de usuario
+
+- `$user->usermenu()` agrega un botón «Administración» (a `/admin/`) cuando el usuario está en el grupo
+  `admins`. Los demás usuarios no ven cambios.
+- A quién afecta: sitios cuya plantilla usa `usermenu()` (lo hace `Sidebar`). Si el sitio ya tenía su propio
+  enlace al panel, quedará repetido: busque `/admin` en `common2.php` y en las plantillas del sitio.
+
 # 2026.2
 
 ## 2026-11-23 — Antivirus ClamAV en las subidas

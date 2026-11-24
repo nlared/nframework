@@ -1,0 +1,62 @@
+<style>
+    body {
+        background: url("/img/bg-1.jpg") bottom right no-repeat;
+        background-size: cover;
+    }
+
+    .dark-side {
+        body {
+            background: url("/img/bg-2.jpg") bottom right no-repeat;
+            background-size: cover;
+        }
+    }
+
+    .formbox {
+        inset: 0;
+        margin: auto;
+    }
+</style>
+<div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox" style="max-width:560px">
+    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['security_title']}}</div>
+    {% if msgOk %}<div class="remark success fg-black">{{msgOk}}</div>{% endif %}
+    {% if msgError %}<div class="remark alert fg-black">{{msgError}}</div>{% endif %}
+
+    <h5 class="mt-4">{{lng['twofa_title']}}
+        {% if active %}<span class="tag success">{{lng['security_active']}}</span>{% else %}<span class="tag">{{lng['security_inactive']}}</span>{% endif %}
+        {% if required %}<span class="tag warning">{{lng['security_required']}}</span>{% endif %}
+    </h5>
+    {% if not active %}
+        <p>{{lng['security_enable_info']}}</p>
+        <a href="/account/twofa-setup" class="button success"><span class="mif-key"></span>&nbsp;{{lng['security_enable']}}</a>
+    {% else %}
+        <h5 class="mt-4">{{lng['recovery_title']}}
+            {% if hasRecovery %}<span class="tag success">{{lng['recovery_has']}}</span>{% else %}<span class="tag alert">{{lng['recovery_none']}}</span>{% endif %}
+        </h5>
+        <p>{{lng['recovery_info']}}</p>
+        <form action="/account/security" method="POST" class="mb-4">
+            <input type="hidden" name="CSRFToken" value="{{csrf}}">
+            <input type="hidden" name="op" value="recovery">
+            <div class="form-group">
+            <input type="text" name="code" data-role="input" inputmode="numeric" autocomplete="one-time-code"
+                pattern="[0-9 ]{6,7}" maxlength="7" required
+                placeholder="{{lng['twofa_code']}}" data-prepend="<span class='mif-key'></span>" />
+            </div>
+            <button class="button primary mt-2"><span class="mif-lock"></span>&nbsp;{{lng['recovery_generate']}}</button>
+        </form>
+        {% if not required %}
+        <h5 class="mt-4">{{lng['security_disable']}}</h5>
+        <form action="/account/security" method="POST" onsubmit="return confirm('{{lng['security_disable_confirm']|e('js')}}');">
+            <input type="hidden" name="CSRFToken" value="{{csrf}}">
+            <input type="hidden" name="op" value="disable">
+            <div class="form-group">
+            <input type="text" name="code" data-role="input" inputmode="numeric" autocomplete="one-time-code"
+                pattern="[0-9 ]{6,7}" maxlength="7" required
+                placeholder="{{lng['twofa_code']}}" data-prepend="<span class='mif-key'></span>" />
+            </div>
+            <button class="button alert mt-2">{{lng['security_disable']}}</button>
+        </form>
+        {% endif %}
+    {% endif %}
+    <div class="border-top bd-white pt-4 mt-4"><a class="fg-white" href="/account/"><span class="mif-arrow-left"></span>&nbsp;{{lng['account_title']}}</a></div>
+</div>
+{{nframework['themeSwitcher']|raw}}

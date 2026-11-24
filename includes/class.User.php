@@ -118,6 +118,157 @@ class User implements ArrayAccess
         return !empty($this->info['username']) && $this->info['username'] != 'guest';
     }
     /**
+     * true si el usuario debe activar la verificación en dos pasos (TOTP) y aún no lo hace: el sitio la exige
+     * a todos ($config['twofa_required'], Admin → Sitio) o solo a él (campo twofa_required, Admin → Usuarios).
+     * include.php lo usa para retenerlo en /account/twofa-setup hasta que la active.
+     *
+     * @global class_config $config
+     * @return bool
+     */
+    public function twofaPending(): bool
+    {
+        global $config;
+        return $this->isLoggedIn() && self::twofaPendingFor(!empty($config['twofa_required']), (array) $this->info);
+    }
+
+    /**
+     * true si el sitio o un administrador le exigen 2FA a este usuario (aunque ya lo tenga activo): entonces no
+     * puede desactivarlo desde /account/security.
+     *
+     * @global class_config $config
+     * @return bool
+     */
+    public function twofaRequired(): bool
+    {
+        global $config;
+        return !empty($config['twofa_required']) || !empty($this->info['twofa_required']);
+    }
+
+    /**
+     * Llave de recuperación nueva: 20 caracteres (100 bits) sin letras ambiguas, en grupos de 5
+     * (p. ej. «K7Q2M-9XHTR-4BDWZ-P3NFC»). Se muestra una vez; guarde solo recoveryKeyHash().
+     *
+     * @return string
+     */
+    public static function recoveryKeyGenerate(): string
+    {
+        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $key = '';
+        for ($i = 0; $i < 20; $i++) {
+            $key .= $alphabet[random_int(0, 31)];
+        }
+        return implode('-', str_split($key, 5));
+    }
+
+    /**
+     * Hash con el que se guarda la llave (twofa_recovery). Ignora mayúsculas, espacios y guiones.
+     *
+     * @param string $key llave tal como la escribe el usuario
+     * @return string sha256 en hexadecimal, o '' si no tiene el largo de una llave
+     */
+    public static function recoveryKeyHash(string $key): string
+    {
+        $key = strtoupper((string) preg_replace('/[\s\-]/', '', $key));
+        return preg_match('/^[A-HJ-NP-Z2-9]{20}$/', $key) ? hash('sha256', $key) : '';
+    }
+
+    /**
+     * true si $key es la llave de recuperación cuyo hash es $hash.
+     *
+     * @param string $key llave escrita por el usuario
+     * @param mixed $hash valor guardado en twofa_recovery
+     * @return bool
+     */
+    public static function recoveryKeyMatches(string $key, $hash): bool
+    {
+        $computed = self::recoveryKeyHash($key);
+        return $computed !== '' && is_string($hash) && $hash !== '' && hash_equals($hash, $computed);
+    }
+
+    /**
+     * Carpeta de las fotos de perfil ({_id}.png): $config['users_pictures'] o $DOCUMENT_ROOT/img/nf/users.
+     * La usan /account/profile (al subir) y /images/pngto{formato}/users/ (al servir, ver gravatar()).
+     *
+     * @global class_config $config
+     * @return string sin diagonal final
+     */
+    public static function picturesDir(): string
+    {
+        global $config;
+        $dir = (string) ($config['users_pictures'] ?? '');
+        if ($dir === '') {
+            $dir = ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/img/nf/users';
+        }
+        return rtrim($dir, '/');
+    }
+
+    /**
+     * Identificador público de una sesión para /account/sessions: el id real es la credencial de la sesión
+     * y nunca se envía al navegador.
+     *
+     * @param string $sessionId id de la sesión (colección sessions)
+     * @return string 20 caracteres hexadecimales
+     */
+    public static function sessionToken(string $sessionId): string
+    {
+        return substr(hash('sha256', 'nfsession:' . $sessionId), 0, 20);
+    }
+
+    /**
+     * Descripción corta de un User-Agent («Chrome en Windows»), para la lista de sesiones.
+     *
+     * @param string $agent cabecera User-Agent
+     * @return string
+     */
+    public static function describeAgent(string $agent): string
+    {
+        $browsers = ['Edg/' => 'Edge', 'OPR/' => 'Opera', 'SamsungBrowser' => 'Samsung Internet', 'Firefox/' => 'Firefox',
+            'CriOS' => 'Chrome', 'Chrome/' => 'Chrome', 'FxiOS' => 'Firefox', 'Safari/' => 'Safari'];
+        $systems = ['iPhone' => 'iPhone', 'iPad' => 'iPad', 'Android' => 'Android', 'Windows' => 'Windows',
+            'Mac OS X' => 'macOS', 'CrOS' => 'ChromeOS', 'Linux' => 'Linux'];
+        $find = static function (array $map) use ($agent): string {
+            foreach ($map as $needle => $name) {
+                if (str_contains($agent, $needle)) {
+                    return $name;
+                }
+            }
+            return '';
+        };
+        $browser = $find($browsers);
+        $system = $find($systems);
+        if ($browser === '' && $system === '') {
+            return $agent === '' ? 'Desconocido' : mb_substr($agent, 0, 60);
+        }
+        return trim($browser . ($browser !== '' && $system !== '' ? ' en ' : '') . $system);
+    }
+
+    /**
+     * Regla de twofaPending() sin depender de la sesión ni de la configuración global.
+     *
+     * @param bool $siteRequired el sitio exige 2FA a todos
+     * @param array<string, mixed> $info documento del usuario (twofa_required, twofa_secret)
+     * @return bool
+     */
+    public static function twofaPendingFor(bool $siteRequired, array $info): bool
+    {
+        return ($siteRequired || !empty($info['twofa_required'])) && empty($info['twofa_secret']);
+    }
+
+    /**
+     * Rutas que un usuario con 2FA pendiente puede abrir: la activación, salir y recursos de la plantilla.
+     *
+     * @param string $path ruta de la petición (sin query)
+     * @return bool
+     */
+    public static function twofaExemptPath(string $path): bool
+    {
+        if (in_array($path, ['/account/twofa-setup', '/account/logout', '/main.js', '/sw.js', '/manifest.json', '/favicon.ico', '/robots.txt'], true)) {
+            return true;
+        }
+        return str_starts_with($path, '/images/');
+    }
+
+    /**
      * Sin sesión guarda la URL actual en $_SESSION['login_redirect'], redirige a /account/login y termina.
      *
      * @return void
@@ -222,8 +373,25 @@ class User implements ArrayAccess
     }
 
     /**
+     * Enlace del menú de usuario que lleva a /admin/; vacío si el usuario no está en el grupo admins
+     * (admin/common2.php vuelve a comprobarlo al entrar).
+     *
+     * @return string HTML.
+     */
+    public function adminMenuButton(): string
+    {
+        if (!$this->in('admins')) {
+            return '';
+        }
+        return <<<HTML
+                        <a href="/admin/" class="button flat-button fg-black">
+                            <span class="mif-cog"></span>&nbsp;Administración</a>
+HTML;
+    }
+
+    /**
      * HTML del menú de usuario de la plantilla: iniciar sesión / registro para invitados; perfil, tema y cerrar
-     * sesión para usuarios.
+     * sesión para usuarios, y un botón a /admin/ para el grupo admins.
      *
      * @global string $themecolor
      * @global class_config $config
@@ -242,6 +410,7 @@ class User implements ArrayAccess
             $safeUsername = htmlspecialchars((string) $this->info['username'], ENT_QUOTES, 'UTF-8');
             $avatar32 = htmlspecialchars($this->gravatar(32), ENT_QUOTES, 'UTF-8');
             $avatar120 = htmlspecialchars($this->gravatar(120), ENT_QUOTES, 'UTF-8');
+            $adminButton = $this->adminMenuButton();
             $result = <<<HTML
                 <a href="#" class="app-bar-item">
                     <img src="{$avatar32}" alt="user picture" class="avatar">
@@ -254,10 +423,15 @@ class User implements ArrayAccess
                         <div>{$this->title}</div>
                     </div>
                     <div class="bg-white d-flex flex-justify-between flex-equal-items p-2">
-                        <a href="/account/myprofile.php" class="button flat-button fg-black">
-                            <span class="mif-profile icon"></span>&nbsp;Perfil</a>
-                        <a href="/account/cpassword.php" class="button flat-button fg-black">
+                        <a href="/account/" class="button flat-button fg-black">
+                            <span class="mif-profile icon"></span>&nbsp;Mi cuenta</a>
+                        <a href="/account/password" class="button flat-button fg-black">
                             <span class="mif-key"></span>&nbspContraseña</a>
+                    </div>
+                    <div class="bg-white d-flex flex-justify-between flex-equal-items p-2">
+                        <a href="/account/security" class="button flat-button fg-black">
+                            <span class="mif-security"></span>&nbsp;Seguridad</a>
+                        {$adminButton}
                     </div>
                     <div class="bg-white d-flex flex-justify-between flex-equal-items p-2">
                         {$themeswitcher}

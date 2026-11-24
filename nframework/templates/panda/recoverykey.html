@@ -1,0 +1,32 @@
+<style>
+    body {
+        background: url("/img/bg-1.jpg") bottom right no-repeat;
+        background-size: cover;
+    }
+
+    .dark-side {
+        body {
+            background: url("/img/bg-2.jpg") bottom right no-repeat;
+            background-size: cover;
+        }
+    }
+
+    .formbox {
+        inset: 0;
+        margin: auto;
+    }
+</style>
+<div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox" style="max-width:520px">
+    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['recovery_title']}}</div>
+    {% if activated %}<div class="remark success fg-black">{{lng['recovery_activated']}}</div>{% endif %}
+    <p>{{lng['recovery_show_info']}}</p>
+    <div class="text-center p-4 bg-white fg-black" style="font: 600 1.4rem/1.4 monospace; letter-spacing: .08em; user-select: all" id="recoverykey">{{key}}</div>
+    <div class="d-flex flex-center mt-2">
+        <button type="button" class="button" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('recoverykey').textContent.trim()).then(function(){ toast('{{lng['recovery_copied']|e('js')}}'); });"><span class="mif-copy"></span>&nbsp;{{lng['recovery_copy']}}</button>
+    </div>
+    <div class="remark warning fg-black mt-4">{{lng['recovery_warning']}}</div>
+    <div class="form-actions border-top bd-white pt-4 d-flex flex-center">
+        <a class="button success" href="{{continue}}">{{lng['recovery_saved']}}</a>
+    </div>
+</div>
+{{nframework['themeSwitcher']|raw}}

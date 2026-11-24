@@ -82,6 +82,8 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
                 $m->{$config['sitedb']}->users->insertOne($doc);
                 $_SESSION['user'] = (string)$newid;
             }
+            // Con 2FA activo se pide el código antes de iniciar la sesión.
+            nfTwofaChallenge($_SESSION['user']);
             $_SESSION['oauth'] = [
                 'provider' => 'google',
                 'picture' => isset($profile['picture']) ? $profile['picture'] : '',
