@@ -19,7 +19,7 @@ entradas.
 
 Ver `docs/upgrades.php`.
 
-# Próxima versión
+# 2026.3
 
 ## 2026-11-24 — Mi cuenta (/account/)
 
