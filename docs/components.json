@@ -266,6 +266,12 @@
                     "description": "nfMailer(): enviar correos con el SMTP del sitio, adjuntos y servidor alterno."
                 },
                 {
+                    "file": "clamav.php",
+                    "title": "Antivirus",
+                    "icon": "mif-security",
+                    "description": "ClamAV: analizar archivos con clamd por TCP; configuración y prueba en Admin → Antivirus."
+                },
+                {
                     "file": "cache.php",
                     "title": "Caché",
                     "icon": "mif-history",
@@ -595,6 +601,13 @@
             "category": "backend",
             "doc": "upgrades.php",
             "summary": "Migraciones versionadas por sitio (upgrades/*.php, colección nfmigrations) y reglas para revisar o corregir el código de los sitios."
+        },
+        {
+            "class": "ClamAV",
+            "file": "includes/class.ClamAV.php",
+            "category": "backend",
+            "doc": "clamav.php",
+            "summary": "Cliente de clamd por TCP: ping(), version(), scanFile() y scanString()."
         },
         {
             "class": "Denue",

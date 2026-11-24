@@ -55,6 +55,10 @@ $sidemenu .= '
         <span class="icon"><span class="mif-security"></span></span>
         <span class="caption">' . $nframework->language['security'] . '</span>
     </a></li> 
+    <li class="slide"><a href="/admin/clamav/" >
+        <span class="icon"><span class="mif-bug-control"></span></span>
+        <span class="caption">' . $nframework->language['antivirus'] . '</span>
+    </a></li>
     <li class="slide"><a href="/admin/sat/" >
         <span class="icon"><span class="mif-key"></span></span>
         <span class="caption">SAT</span>

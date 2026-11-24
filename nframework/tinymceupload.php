@@ -65,6 +65,11 @@ if ($imageFolder === null) {
         header("HTTP/1.1 400 Invalid image.");
         return;
     }
+    // Antivirus (Admin → Antivirus).
+    if (($virusError = ClamAV::uploadError($temp['tmp_name'], $temp['name'])) !== null) {
+        header("HTTP/1.1 400 " . (str_contains($virusError, 'rechazado') ? 'File rejected by antivirus.' : 'Antivirus unavailable.'));
+        return;
+    }
 	if(!file_exists($imageFolder)){
 		mkdir($imageFolder,0777,true);
 	}

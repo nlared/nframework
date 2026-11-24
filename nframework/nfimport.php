@@ -298,6 +298,11 @@ if ($nframework->isAjax()) {
         $importFileHasHeader = ($_POST['import_file_has_header'] ?? 'yes') === 'yes';
         $importFileRange = $_POST['import_file_range'] ?? '';
         $file = $_FILES['importfile'] ?? [];
+        // Antivirus (Admin → Antivirus): se revisa antes de abrir el archivo con PhpSpreadsheet.
+        if (is_string($file['tmp_name'] ?? null) && $file['tmp_name'] !== '' && is_uploaded_file($file['tmp_name'])
+            && ($virusError = ClamAV::uploadError($file['tmp_name'], (string) ($file['name'] ?? ''))) !== null) {
+            throw new InvalidArgumentException($virusError);
+        }
 
         if ($op === 'suggest_excel_range') {
             $normalizedType = strtolower(trim((string) $importFileType));

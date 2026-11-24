@@ -265,6 +265,7 @@ $nframework->languages['es-MX'] = [
     'account_activation_failed' => 'La activación de la cuenta ha fallado.',
     'account_activation_email_sent' => 'Se ha enviado un correo electrónico de activación.',
     'account_activation' => 'Activación de la cuenta',
+    'antivirus' => 'Antivirus',
     'auths' => 'Autenticaciones',
     'security' => 'Seguridad',
     'filemanager' => 'Administrador de archivos',

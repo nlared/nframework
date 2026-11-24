@@ -128,6 +128,14 @@ function handleFileUploadProcess(array $upload): array
 		return ['error' => 'El archivo excede el tamaño permitido', 'onresult' => []];
 	}
 
+	// Antivirus (Admin → Antivirus): un archivo infectado se borra y no llega al directorio destino.
+	if (($virusError = ClamAV::uploadError($ufile['tmp_name'], $filename)) !== null) {
+		if (is_file($ufile['tmp_name'])) {
+			unlink($ufile['tmp_name']);
+		}
+		return ['error' => $virusError, 'onresult' => []];
+	}
+
 	if (!move_uploaded_file($ufile['tmp_name'], $fullPath)) {
 		error_log('nframework upload: no se pudo mover ' . $ufile['tmp_name'] . ' a ' . $fullPath);
 		return ['error' => 'No se pudo guardar el archivo', 'onresult' => []];

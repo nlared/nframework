@@ -65,5 +65,6 @@ La documentación de /docs/ es ejecutable: cada página muestra el resultado jun
 ## Servicios
 
 - [Correo](/docs/mail.php): nfMailer(): enviar correos con el SMTP del sitio, adjuntos y servidor alterno.
+- [Antivirus](/docs/clamav.php): ClamAV: analizar archivos con clamd por TCP; configuración y prueba en Admin → Antivirus.
 - [Caché](/docs/cache.php): nfCacheRemember() en el servidor y serveFile()/testcache() en el navegador.
 - [Idiomas](/docs/i18n.php): Detección de idioma, $nframework->language y cómo agregar textos.
