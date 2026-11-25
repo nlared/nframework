@@ -243,6 +243,138 @@ class User implements ArrayAccess
     }
 
     /**
+     * Clasifica las sesiones del usuario sin tocar MongoDB (lo usa sessionsReport()).
+     *
+     * - `active`: el documento existe en `sessions` y su último uso está dentro de `session.gc_maxlifetime`.
+     * - `idle`: el documento existe pero rebasó ese tiempo; MongoSessionHandler no revisa la antigüedad al
+     *   leer, así que **sigue valiendo** hasta que la purga (gc) lo borre.
+     * - `gone`: está en la lista del usuario pero ya no en `sessions` (expiró y se purgó, o se cerró).
+     *
+     * Ejemplo:
+     * ```php
+     * $rows = User::sessionRows(['abc'], ['abc' => 1700000000], ['abc' => ['ip' => '1.2.3.4']], 1440, time());
+     * ```
+     *
+     * @param array<int, string> $ids ids de sesión de la lista del usuario (`users.sessions`)
+     * @param array<string, int|null> $alive id => último uso (segundos Unix) de los que existen en `sessions`
+     * @param array<string, array{ip?: string, agent?: string, since?: int|null}> $info `users.sessions_info`
+     *        (since en segundos Unix)
+     * @param int $maxLifetime segundos de `session.gc_maxlifetime`
+     * @param int $now segundos Unix actuales
+     * @param string $currentId id de la sesión de quien consulta (se marca `current`)
+     * @return array<int, array{id: string, token: string, current: bool, status: string, device: string, agent: string,
+     *         ip: string, since: int|null, last: int|null, expires: int|null}> activas primero, luego inactivas y
+     *         terminadas; dentro de cada grupo, la de uso más reciente primero.
+     */
+    public static function sessionRows(array $ids, array $alive, array $info, int $maxLifetime, int $now, string $currentId = ''): array
+    {
+        $rows = [];
+        foreach (array_unique(array_filter($ids, 'is_string')) as $id) {
+            $i = is_array($info[$id] ?? null) ? $info[$id] : [];
+            $exists = array_key_exists($id, $alive);
+            $last = $exists && $alive[$id] !== null ? (int) $alive[$id] : null;
+            if (!$exists) {
+                $status = 'gone';
+            } elseif ($last !== null && $now - $last > $maxLifetime) {
+                $status = 'idle';
+            } else {
+                $status = 'active';
+            }
+            $agent = (string) ($i['agent'] ?? '');
+            $rows[] = [
+                'id' => $id,
+                'token' => self::sessionToken($id),
+                'current' => $currentId !== '' && $id === $currentId,
+                'status' => $status,
+                'device' => self::describeAgent($agent),
+                'agent' => $agent,
+                'ip' => (string) ($i['ip'] ?? ''),
+                'since' => isset($i['since']) ? (int) $i['since'] : null,
+                'last' => $last,
+                'expires' => $last !== null ? $last + $maxLifetime : null,
+            ];
+        }
+        $order = ['active' => 0, 'idle' => 1, 'gone' => 2];
+        usort($rows, fn($a, $b) => [$order[$a['status']], !$a['current'], -($a['last'] ?? $a['since'] ?? 0)]
+            <=> [$order[$b['status']], !$b['current'], -($b['last'] ?? $b['since'] ?? 0)]);
+        return $rows;
+    }
+
+    /**
+     * Sesiones del usuario con su estado (activa, inactiva o terminada), dispositivo, IP, inicio, último uso y
+     * caducidad. Ver sessionRows().
+     *
+     * @return array<int, array{id: string, token: string, current: bool, status: string, device: string, agent: string,
+     *         ip: string, since: int|null, last: int|null, expires: int|null}>
+     */
+    public function sessionsReport(): array
+    {
+        if (empty($this->info['_id'])) {
+            return [];
+        }
+        $db = $this->m->{$this->db};
+        $doc = $db->users->findOne(
+            ['_id' => tomongoid($this->info['_id'])],
+            ['projection' => ['sessions' => 1, 'sessions_info' => 1], 'typeMap' => ['root' => 'array', 'document' => 'array', 'array' => 'array']]
+        ) ?? [];
+        $ids = array_values(array_filter((array) ($doc['sessions'] ?? []), 'is_string'));
+        $alive = [];
+        if ($ids !== []) {
+            foreach ($db->sessions->find(['_id' => ['$in' => $ids]], ['projection' => ['last_accessed' => 1]]) as $s) {
+                $last = $s['last_accessed'] ?? null;
+                $alive[(string) $s['_id']] = $last instanceof MongoDB\BSON\UTCDateTime ? (int) floor((int) (string) $last / 1000) : null;
+            }
+        }
+        $info = [];
+        foreach ((array) ($doc['sessions_info'] ?? []) as $id => $i) {
+            if (is_array($i)) {
+                $since = $i['since'] ?? null;
+                $i['since'] = $since instanceof MongoDB\BSON\UTCDateTime ? (int) floor((int) (string) $since / 1000) : null;
+                $info[(string) $id] = $i;
+            }
+        }
+        $current = session_status() === PHP_SESSION_ACTIVE ? (string) session_id() : '';
+        return self::sessionRows($ids, $alive, $info, (int) ini_get('session.gc_maxlifetime') ?: 1440, time(), $current);
+    }
+
+    /**
+     * Cierra sesiones del usuario: las borra de `sessions` (dejan de valer de inmediato), de su lista
+     * (`users.sessions`) y de `users.sessions_info`. Solo se aceptan ids que sean del usuario.
+     *
+     * ```php
+     * $user->closeSessions(array_diff((array) $user->sessions, [session_id()]));   // todas menos la actual
+     * ```
+     *
+     * @param array<int, string> $ids ids de sesión
+     * @return int sesiones quitadas de la lista
+     */
+    public function closeSessions(array $ids): int
+    {
+        if (empty($this->info['_id'])) {
+            return 0;
+        }
+        $ids = array_values(array_intersect(array_filter((array) ($this->info['sessions'] ?? []), 'is_string'), $ids));
+        if ($ids === []) {
+            return 0;
+        }
+        $db = $this->m->{$this->db};
+        $db->sessions->deleteMany(['_id' => ['$in' => $ids]]);
+        $unset = [];
+        foreach ($ids as $id) {
+            if (preg_match('/^[A-Za-z0-9,\-]+$/', $id)) {
+                $unset['sessions_info.' . $id] = '';
+            }
+        }
+        $update = ['$pull' => ['sessions' => ['$in' => $ids]]];
+        if ($unset !== []) {
+            $update['$unset'] = $unset;
+        }
+        $db->users->updateOne(['_id' => tomongoid($this->info['_id'])], $update);
+        $this->info['sessions'] = array_values(array_diff((array) $this->info['sessions'], $ids));
+        return count($ids);
+    }
+
+    /**
      * Regla de twofaPending() sin depender de la sesión ni de la configuración global.
      *
      * @param bool $siteRequired el sitio exige 2FA a todos

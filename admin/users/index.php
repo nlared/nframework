@@ -5,7 +5,7 @@ if (!$user->in('admins')) {
 }
 $datatable = new Table();
 $datatable->Ajax([
-	'id' => 'testid',
+	'id' => 'users',
 	'db' => $config['sitedb'],
 	'collection' => 'users',
 	'header' => '<th>' . $nframework->language['username'] . '</th><th>' . $nframework->language['options'] . '</th>',
@@ -29,9 +29,30 @@ $datatable->Ajax([
 $password = new inputText(['id' => 'password', 'name' => "password", 'caption' => $nframework->language['password'] . ':', 'required' => true]);
 
 if ($nframework->isAjax()) {
-	if (!empty($_GET['eliminar'])) {
-		$m->{$config['sitedb']}->users->deleteOne(['_id' => tomongoid($_GET['eliminar'])]);
+	$id = is_string($_POST['eliminar'] ?? null) ? $_POST['eliminar'] : '';
+	if (!csrfValidate()) {
+		$result = ['error' => 'Formulario caducado, recargue la página.'];
+	} elseif (!isValidObjectId($id)) {
+		$result = ['error' => 'Usuario inválido.'];
+	} elseif ($id === (string) $user->_id) {
+		$result = ['error' => 'No puede eliminar su propio usuario.'];
+	} else {
+		$db = $m->{$config['sitedb']};
+		$doc = $db->users->findOne(['_id' => toMongoId($id)], ['projection' => ['sessions' => 1]]);
+		if ($doc === null) {
+			$result = ['error' => 'El usuario ya no existe.'];
+		} else {
+			// Sus sesiones dejan de valer y se quita de los grupos.
+			$sessions = array_values(array_filter((array) ($doc['sessions'] ?? []), 'is_string'));
+			if ($sessions !== []) {
+				$db->sessions->deleteMany(['_id' => ['$in' => $sessions]]);
+			}
+			$db->usersgroups->updateMany(['users' => toMongoId($id)], ['$pull' => ['users' => toMongoId($id)]]);
+			$db->users->deleteOne(['_id' => toMongoId($id)]);
+			$result = ['error' => false];
+		}
 	}
+	return;
 } else {
 	$nframework->usecommon = true;
 ?>
@@ -43,15 +64,30 @@ if ($nframework->isAjax()) {
 		</div>
 	</div>
 	<script>
-		function eliminar(el) {
-			$.ajax({
-				url: "index.php",
-				data: {
-					eliminar: el
+		function eliminar(id) {
+			Swal.fire({
+				title: '¿Eliminar este usuario?',
+				text: 'Se cerrarán sus sesiones y se quitará de sus grupos. No se puede deshacer.',
+				icon: 'warning',
+				showCancelButton: true,
+				confirmButtonColor: '#d33',
+				confirmButtonText: 'Sí, eliminar',
+				cancelButtonText: 'Cancelar'
+			}).then(function (r) {
+				if (!r.isConfirmed) {
+					return;
 				}
-			}).done(function(data) {
-				toast(data);
-				datatables["usersgroups"].clearPipeline().draw(false);
+				$.post(location.pathname, {eliminar: id, CSRFToken: <?= json_encode(csrfToken(NF_AJAX_FORM_ACTION)) ?>}).done(function (data) {
+					if (data && data.error) {
+						Swal.fire('Error', data.error, 'error');
+						return;
+					}
+					toast('Usuario eliminado.');
+					datatables['users'].clearPipeline();
+					datatables['users'].draw(false);
+				}).fail(function (x) {
+					Swal.fire('Error', 'El servidor respondió ' + x.status + '.', 'error');
+				});
 			});
 		}
 	</script>
@@ -107,7 +143,8 @@ if ($nframework->isAjax()) {
 				method: 'post',
 				data: {
 					op: 'password',
-					password: $('#password').val()
+					password: $('#password').val(),
+					CSRFToken: <?= json_encode(csrfToken(NF_AJAX_FORM_ACTION)) ?>
 				},
 				success: function(respuesta) {
 					nAjaxFormDone(respuesta);

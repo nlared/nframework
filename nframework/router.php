@@ -756,33 +756,15 @@ $router->addRoute('/account/password', function (string $route, array $p) {
 }, ['GET', 'POST']);
 
 /**
- * Cierra sesiones del usuario: las borra de la colección sessions (así dejan de valer) y de su lista.
+ * Cierra sesiones del usuario (ver User::closeSessions()).
  *
- * @global MongoDB\Client $m
- * @global class_config $config
  * @param User $user dueño de las sesiones
  * @param array<int, string> $ids ids de sesión que se cierran (solo se aceptan los que son del usuario)
  * @return int sesiones cerradas
  */
 function nfAccountCloseSessions(User $user, array $ids): int
 {
-	global $m, $config;
-	$ids = array_values(array_intersect((array) $user->sessions, $ids));
-	if ($ids === []) {
-		return 0;
-	}
-	$m->{$config['sitedb']}->sessions->deleteMany(['_id' => ['$in' => $ids]]);
-	$unset = [];
-	foreach ($ids as $id) {
-		if (preg_match('/^[A-Za-z0-9,\-]+$/', $id)) {
-			$unset['sessions_info.' . $id] = '';
-		}
-	}
-	if ($unset !== []) {
-		$m->{$config['sitedb']}->users->updateOne(['_id' => toMongoId($user->_id)], ['$unset' => $unset]);
-	}
-	$user->sessions = array_values(array_diff((array) $user->sessions, $ids));
-	return count($ids);
+	return $user->closeSessions($ids);
 }
 
 /**

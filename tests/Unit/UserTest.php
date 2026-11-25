@@ -297,6 +297,36 @@ class UserTest extends TestCase
     /**
      * Helper method to create a User object without touching MongoDB
      */
+    /**
+     * Clasificación de sesiones: activa, inactiva (sigue en sessions pero rebasó gc_maxlifetime) y terminada.
+     */
+    public function testSessionRowsClassifiesAndSorts(): void
+    {
+        $now = 1_800_000_000;
+        $rows = User::sessionRows(
+            ['gone1', 'idle1', 'act1', 'cur', 'act1', 123],
+            ['idle1' => $now - 5000, 'act1' => $now - 600, 'cur' => $now - 900],
+            [
+                'act1' => ['ip' => '10.0.0.1', 'agent' => 'Mozilla/5.0 (Windows NT 10.0) Chrome/120 Safari/537', 'since' => $now - 7200],
+                'gone1' => ['ip' => '10.0.0.9', 'since' => $now - 90000],
+            ],
+            1440,
+            $now,
+            'cur'
+        );
+        $this->assertSame(['cur', 'act1', 'idle1', 'gone1'], array_column($rows, 'id'));
+        $this->assertSame(['active', 'active', 'idle', 'gone'], array_column($rows, 'status'));
+        $this->assertTrue($rows[0]['current']);
+        $this->assertFalse($rows[1]['current']);
+        $this->assertSame('Chrome en Windows', $rows[1]['device']);
+        $this->assertSame('10.0.0.1', $rows[1]['ip']);
+        $this->assertSame($now - 600 + 1440, $rows[1]['expires']);
+        $this->assertNull($rows[3]['last']);
+        $this->assertNull($rows[3]['expires']);
+        $this->assertSame(User::sessionToken('act1'), $rows[1]['token']);
+        $this->assertSame([], User::sessionRows([], [], [], 1440, $now));
+    }
+
     private function getMockUser(array $userData): User
     {
         // Bypass the constructor (it queries MongoDB)

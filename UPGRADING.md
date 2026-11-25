@@ -19,6 +19,29 @@ entradas.
 
 Ver `docs/upgrades.php`.
 
+# Próxima versión
+
+## 2026-11-24 — Eliminar usuarios en Admin → Usuarios
+
+- La lista no se actualizaba al eliminar (el JS recargaba otra tabla); ahora se refresca. Eliminar pide
+  confirmación, va por POST con token CSRF, no permite eliminar el propio usuario, cierra las sesiones del
+  eliminado y lo quita de sus grupos (`usersgroups`).
+- A quién afecta: solo a código del sitio que llamara `/admin/users/index.php?eliminar=<id>` por GET (deja de
+  funcionar); busque `eliminar=` en el sitio.
+
+## 2026-11-24 — Sesiones en Admin → Usuarios → usuario
+
+- `admin/users/user.php` se rediseñó: muestra las sesiones del usuario como activas, inactivas (pasaron
+  `session.gc_maxlifetime` pero siguen valiendo hasta la purga) y terminadas, con dispositivo, IP, inicio, último
+  uso y caducidad; permite cerrar una, todas, solo las inactivas o limpiar el historial. Nuevos métodos
+  `User::sessionsReport()`, `User::sessionRows()` y `User::closeSessions()` (`nfAccountCloseSessions()` ahora lo usa).
+- Las operaciones `save` y `password` de `user.php` ahora exigen el token CSRF (`CSRFToken`). Afecta a código del
+  sitio que haga POST a `/admin/users/user.php` sin él; busque `users/user.php` en el sitio.
+- `admin/users/session_data.php` ya no recibe el id de sesión en la URL (`?_id=`) sino `?user=<id>&token=<token>`
+  (`User::sessionToken()`); oculta el secreto Anti-CSRF. Busque `session_data.php` en el sitio.
+- Si el sitio tiene `admins/users/user.ui.php`, ahora sí se incluye (antes la condición estaba rota) dentro del
+  formulario del usuario.
+
 # 2026.3
 
 ## 2026-11-24 — Mi cuenta (/account/)
