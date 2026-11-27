@@ -95,6 +95,12 @@ class TablefIA
     public $fewshot = 5;
     /** Tiempo máximo de ejecución del pipeline en MongoDB (ms). */
     public $maxtime = 30000;
+    /**
+     * @var bool Permite que un $sort/$group que excede la memoria de MongoDB (100 MB por etapa) escriba a disco
+     * en lugar de fallar. Apagado por defecto: el pipeline lo escribe la IA y así una consulta pesada no
+     * ocupa disco del servidor; actívelo en colecciones grandes junto con un maxtime adecuado.
+     */
+    public $allowdiskuse = false;
     /** @var string */
     public $model = 'claude-opus-5-5';
     /** @var string */
@@ -170,6 +176,7 @@ class TablefIA
             'attempts' => max(1, min(5, (int) $this->attempts)),
             'fewshot' => max(0, min(10, (int) $this->fewshot)),
             'maxtime' => max(1000, (int) $this->maxtime),
+            'allowdiskuse' => (bool) $this->allowdiskuse,
             'model' => $this->model,
             'effort' => $this->effort,
             'requireauth' => (bool) $this->requireauth,
@@ -1004,24 +1011,25 @@ class TablefIA
 
     /**
      * Ejecuta el pipeline y devuelve las filas en el orden de $columns con tipos nativos (ver cellValue()).
-     * Sin allowDiskUse: un $sort/$group que exceda la memoria de MongoDB falla en lugar de escribir a disco.
-     * $seen recibe las columnas que aparecieron en al menos un documento.
+     * Sin $allowDiskUse (por defecto) un $sort/$group que exceda la memoria de MongoDB falla en lugar de
+     * escribir a disco. $seen recibe las columnas que aparecieron en al menos un documento.
      *
      * @param MongoDB\Collection $collection
      * @param list<array<string, mixed>> $pipeline
      * @param list<string> $columns
      * @param int $maxTimeMS
      * @param array<string, true>|null $seen
+     * @param bool $allowDiskUse Ver la propiedad allowdiskuse.
      * @return list<list<mixed>>
      */
-    public static function run(MongoDB\Collection $collection, array $pipeline, array $columns, int $maxTimeMS = 30000, ?array &$seen = null): array
+    public static function run(MongoDB\Collection $collection, array $pipeline, array $columns, int $maxTimeMS = 30000, ?array &$seen = null, bool $allowDiskUse = false): array
     {
         $rows = [];
         $seen = [];
         $cursor = $collection->aggregate($pipeline, [
             'typeMap' => ['root' => 'array', 'document' => 'array', 'array' => 'array'],
             'maxTimeMS' => $maxTimeMS,
-            'allowDiskUse' => false,
+            'allowDiskUse' => $allowDiskUse,
         ]);
         foreach ($cursor as $doc) {
             $row = [];

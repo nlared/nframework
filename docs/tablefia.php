@@ -75,7 +75,8 @@ PHP) ?>
 			<tr><td><code>limit</code>, <code>exportlimit</code></td><td>Filas máximas en pantalla (1000) y en la exportación CSV/Excel (50000).</td></tr>
 			<tr><td><code>fieldsample</code></td><td>Documentos de muestra para inferir los campos de las colecciones sin <code>fields</code> (200).</td></tr>
 			<tr><td><code>attempts</code></td><td>Intentos con la IA cuando el pipeline no pasa la validación, MongoDB lo rechaza o el resultado no trae las columnas (3, máximo 5). Cada intento recibe los anteriores y el error de cada uno.</td></tr>
-			<tr><td><code>maxtime</code></td><td>Tiempo máximo de ejecución del pipeline en MongoDB, en milisegundos (30000).</td></tr>
+			<tr><td><code>maxtime</code></td><td>Tiempo máximo de ejecución del pipeline en MongoDB, en milisegundos (30000). Aplica también a la exportación.</td></tr>
+			<tr><td><code>allowdiskuse</code></td><td><code>false</code> por defecto: un <code>$sort</code> o <code>$group</code> que exceda la memoria de MongoDB (100 MB por etapa) falla con un error. Con <code>true</code> escribe a disco y termina (más lento); úselo en colecciones grandes junto con un <code>maxtime</code> mayor.</td></tr>
 			<tr><td><code>sample</code></td><td>Filas del resultado que se guardan como muestra en <code>nftablesfia</code> (20; 0 para no guardar datos).</td></tr>
 			<tr><td><code>fewshot</code></td><td>Consultas guardadas de este <code>uso</code> que la IA recibe como ejemplos de pregunta → pipeline (5, máximo 10, 0 = ninguna). Se eligen las favoritas y las más ejecutadas, y solo si sus colecciones no cambiaron y pasan la validación actual.</td></tr>
 			<tr><td><code>shared</code></td><td><code>true</code> (defecto): todos ven y reutilizan las consultas del uso; <code>false</code>: cada usuario ve solo las suyas.</td></tr>
@@ -106,7 +107,7 @@ PHP) ?>
 		<li><code>$lookup</code> solo en su forma simple y solo para las relaciones declaradas; sin <code>pipeline</code> ni <code>let</code>.</li>
 		<li>El <code>match</code> obligatorio y el <code>$unset</code> de <code>hidden</code> van antes de las etapas generadas: la IA no puede saltarlos ni filtrar por campos ocultos.</li>
 		<li>También se revisan los valores: expresiones regulares (<code>$regex</code>, <code>$regexMatch</code>, <code>/…/</code>) de más de <?= TablefIA::MAX_REGEX ?> caracteres, con cuantificadores anidados (<code>(a+)+</code>) o referencias; <code>$range</code> de más de 1000 elementos o con campos; más de <?= TablefIA::MAX_LOOKUPS ?> <code>$lookup</code> o <?= TablefIA::MAX_UNWINDS ?> <code>$unwind</code>; más de <?= TablefIA::MAX_DEPTH ?> niveles de anidación.</li>
-		<li>Se ejecuta con <code>maxTimeMS</code> y sin <code>allowDiskUse</code>: un <code>$sort</code> o <code>$group</code> que exceda la memoria de MongoDB falla en lugar de escribir a disco.</li>
+		<li>Se ejecuta con <code>maxTimeMS</code> y, salvo <code>'allowdiskuse' => true</code>, sin <code>allowDiskUse</code>: un <code>$sort</code> o <code>$group</code> que exceda la memoria de MongoDB falla en lugar de escribir a disco.</li>
 		<li>El token del componente vive en la sesión, ligado al usuario que cargó la página; caduca tras 8 horas sin uso y se renueva en cada petición y cada vez que se dibuja el componente.</li>
 		<li>No incluya colecciones como <code>users</code> o <code>sessions</code>; si lo hace, oculte los campos sensibles con <code>hidden</code>.</li>
 	</ul>

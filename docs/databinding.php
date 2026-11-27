@@ -94,12 +94,25 @@ $dataset = new dataset(['collection' => $coleccion, '_id' => $id, 'nameprefix' =
 // _id de texto (p.ej. un RFC o un folio) en lugar de ObjectId.
 $dataset = new dataset(['collection' => $coleccion, '_id' => 'XAXX010101000', 'simpleid' => true, 'nameprefix' => 'data']);
 
-// Dentro de una transacción (requiere replica set).
+// Transacción (requiere replica set; Admin → Inicio → MongoDB indica cómo convertir un standalone).
+// Los dataset de la lista leen y escriben con la sesión; si el callback devuelve texto (errores de save())
+// o lanza una excepción, no se guarda nada. Las demás operaciones llevan ['session' => $sesion].
+$errores = nfTransaction(function ($sesion) use ($dataset, $coleccion) {
+    if (($e = $dataset->save()) !== false) {
+        return $e;
+    }
+    $coleccion->updateOne(['_id' => $otroId], ['$inc' => ['usos' => 1]], ['session' => $sesion]);
+    return false;
+}, [$dataset]);
+
+// Equivalente manual (sin reintentos ante conflictos):
 $sesion = $m->startSession();
 $sesion->startTransaction();
 $dataset->mongo_session = $sesion;
 $errores = $dataset->save();
 $errores === false ? $sesion->commitTransaction() : $sesion->abortTransaction();
+$dataset->mongo_session = null;
 PHP) ?>
+	<p><code>nfMongoTopology()</code> dice si el servidor es <code>standalone</code>, <code>replicaset</code> o <code>sharded</code> y si admite transacciones (<code>['transactions' => true]</code>); en standalone <code>nfTransaction()</code> lanza <code>RuntimeException</code>. Ante un conflicto de escritura el driver repite el callback: no envíe correos ni escriba archivos dentro de él. Tras abortar, <code>$dataset->refresh()</code> descarta en memoria los valores que no se guardaron.</p>
 	<p>La versión AJAX de este mismo formulario está en <a href="databindingajax.php">Databinding AJAX</a>.</p>
 </div>

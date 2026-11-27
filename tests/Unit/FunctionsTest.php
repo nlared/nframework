@@ -452,4 +452,26 @@ class FunctionsTest extends TestCase
         $this->assertSame(nfSupportsAvif() ? 'avif' : 'webp', nfImageFormat());
         unset($_SESSION['nf']['browser']['avif']);
     }
+
+    public function testMongoTopologyFromHello(): void
+    {
+        $standalone = nfMongoTopologyFromHello(['isWritablePrimary' => true, 'maxWireVersion' => 21, 'logicalSessionTimeoutMinutes' => 30]);
+        $this->assertSame('standalone', $standalone['type']);
+        $this->assertFalse($standalone['transactions']);
+
+        $rs = nfMongoTopologyFromHello((object) ['setName' => 'rs0', 'isWritablePrimary' => true, 'maxWireVersion' => 21, 'logicalSessionTimeoutMinutes' => 30]);
+        $this->assertSame(['type' => 'replicaset', 'setName' => 'rs0', 'primary' => true, 'transactions' => true], $rs);
+
+        // Secundario: no puede escribir ni abrir transacciones.
+        $secondary = nfMongoTopologyFromHello(['setName' => 'rs0', 'isWritablePrimary' => false, 'secondary' => true, 'maxWireVersion' => 21, 'logicalSessionTimeoutMinutes' => 30]);
+        $this->assertFalse($secondary['primary']);
+        $this->assertFalse($secondary['transactions']);
+
+        // isMaster de MongoDB 3.6 (wire 6): replica set sin transacciones.
+        $this->assertFalse(nfMongoTopologyFromHello(['setName' => 'rs0', 'ismaster' => true, 'maxWireVersion' => 6, 'logicalSessionTimeoutMinutes' => 30])['transactions']);
+
+        // mongos: transacciones desde 4.2 (wire 8).
+        $this->assertTrue(nfMongoTopologyFromHello(['msg' => 'isdbgrid', 'maxWireVersion' => 8, 'logicalSessionTimeoutMinutes' => 30])['transactions']);
+        $this->assertFalse(nfMongoTopologyFromHello(['msg' => 'isdbgrid', 'maxWireVersion' => 7, 'logicalSessionTimeoutMinutes' => 30])['transactions']);
+    }
 }

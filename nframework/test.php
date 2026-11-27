@@ -706,31 +706,9 @@ if ($dbOk) {
 		$errores[] = 'Excepción capturada: ' .  htmlspecialchars($e->getMessage());
 	}
 
-	$indexes = [
-		['colletion' => 'users', 'key' => ['username' => 1], 'options' => ['unique' => true]],
-		['colletion' => 'pages', 'key' => ['path' => 1]],
-		['colletion' => 'usersgroups', 'key' => ['name' => 1]],
-		['colletion' => 'nfuristats', 'key' => ['ip' => 1, 'created_at' => 1]],
-		['colletion' => 'nfuristats', 'key' => ['created_at' => 1, 'ip' => 1]],
-		['colletion' => 'nfsecurityrules', 'key' => ['enabled' => 1]],
-		// User::in() consulta usersgroups por usuario y nombre en casi cada página.
-		['colletion' => 'usersgroups', 'key' => ['users' => 1, 'name' => 1]],
-		['colletion' => 'nf_attempts', 'key' => ['ip' => 1]],
-		// Efirma: una entrada por usuario y certificado.
-		['colletion' => 'efirmas', 'key' => ['owner' => 1, 'nocert' => 1], 'options' => ['unique' => true]],
-		// TablefIA: listado de consultas guardadas por uso y búsqueda de la misma pregunta.
-		['colletion' => 'nftablesfia', 'key' => ['uso' => 1, 'ultimaejecucion' => -1]],
-		['colletion' => 'nftablesfia', 'key' => ['uso' => 1, 'prompt' => 1, 'confighash' => 1]],
-		['colletion' => 'nftablesfia', 'key' => ['uso' => 1, 'promptnorm' => 1, 'confighash' => 1]],
-	];
-	// TablefIA: borrar consultas sin ejecutarse en N días que nadie marcó como favorita ('fijada' => false).
-	if (!empty($config['tablefia_ttl_days'])) {
-		$indexes[] = ['colletion' => 'nftablesfia', 'key' => ['ultimaejecucion' => 1], 'options' => [
-			'name' => 'tablefia_ttl',
-			'expireAfterSeconds' => (int) $config['tablefia_ttl_days'] * 86400,
-			'partialFilterExpression' => ['fijada' => false],
-		]];
-	}
+	// Lista única con el diagnóstico de Admin → Inicio (includes/class.nfIndexes.php).
+	require_once 'class.nfIndexes.php';
+	$indexes = nfIndexes::required($config);
 	// Migraciones de datos (upgrades/*.php del framework y del sitio): las que falten, una sola vez cada una.
 	try {
 		// En web esto corre antes de include.php (sin el autoload del framework).
@@ -746,23 +724,28 @@ if ($dbOk) {
 	} catch (Throwable $e) {
 		$errores[] = 'Migraciones: ' . htmlspecialchars($e->getMessage());
 	}
-	// Opcional: borrar automáticamente las estadísticas de peticiones con más de N días.
-	if (!empty($config['nfuristats_ttl_days'])) {
-		$indexes[] = ['colletion' => 'nfuristats', 'key' => ['createdAt' => 1], 'options' => ['expireAfterSeconds' => (int) $config['nfuristats_ttl_days'] * 86400]];
-	}
-
 	foreach ($indexes as $idx) {
-		if (!isset($idx['options'])) {
-			$idx['options'] = [];
-		}
 		try {
-			$result = $m->{$config['sitedb']}->{$idx['colletion']}->createIndex(
+			$result = $m->{$config['sitedb']}->{$idx['collection']}->createIndex(
 				$idx['key'],
 				$idx['options']
 			);
 			out("Index created: $result\n");
 		} catch (MongoDB\Driver\Exception\CommandException $e) {
-			out("Error on Index " . $e->getMessage());
+			// TTL ya existente con otros días (IndexOptionsConflict): createIndex no lo cambia, collMod sí.
+			if ($e->getCode() === 85 && isset($idx['options']['expireAfterSeconds'])) {
+				try {
+					$m->{$config['sitedb']}->command(['collMod' => $idx['collection'], 'index' => [
+						'keyPattern' => $idx['key'],
+						'expireAfterSeconds' => $idx['options']['expireAfterSeconds'],
+					]]);
+					out('Index TTL updated: ' . $idx['collection'] . ' ' . $idx['options']['expireAfterSeconds'] . "s\n");
+					continue;
+				} catch (Throwable $e2) {
+					$e = $e2;
+				}
+			}
+			out("Error on Index " . $e->getMessage() . "\n");
 			continue;
 		}
 	}

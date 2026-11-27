@@ -44,12 +44,14 @@ PHP) ?>
 
 	<h3>3. Ejecutar el trabajador</h3>
 	<?= docCode(<<<'BASH'
-# Desde includes/: procesa la cola "email"; cada trabajo tiene 5 s antes de considerarse abandonado.
-php job_worker.php email 5
+# Desde includes/. HTTP_HOST elige el sitio (bloque de config.php); sin él se usa localhost.
+# Procesa la cola "email"; un trabajo tomado queda reservado 300 s (otro worker no lo toma antes).
+HTTP_HOST=www.ejemplo.com php job_worker.php email 300
 
-# Como servicio (systemd), uno por cola:
-# ExecStart=/usr/bin/php /var/www/sitio/includes/job_worker.php email 5
+# Procesar lo pendiente y terminar (cron):
+HTTP_HOST=www.ejemplo.com php job_worker.php email 300 --once
 BASH, 'bash') ?>
+	<p><a href="/admin/workers/">Admin → Workers</a> muestra los workers que corren, las colas y los trabajos fallidos (con su error, para reintentarlos o eliminarlos), inicia un worker temporal y da la configuración de systemd, supervisor o cron ya armada para el sitio. Reinicie los workers después de actualizar el código: cargan las clases al iniciar.</p>
 	<p>El trabajador toma el siguiente trabajo pendiente cuya hora ya pasó, ejecuta <code>handle()</code> y lo borra si termina bien. Si lanza una excepción llama a <code>retry(5)</code>; al agotar <code>maxAttempts</code> lo marca con <code>failed_at</code> y <code>error</code>. Solo instancia clases que heredan de <code>Job</code>.</p>
 
 	<h3>Estado de las colas</h3>

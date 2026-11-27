@@ -103,6 +103,7 @@ abstract class Job
                 ]]
             );
         } else {
+            $m->{$config['sitedb']}->jobs->updateOne(['_id' => $this->_id], ['$set' => ['attempts' => $this->attempts]]);
             $this->fail();
         }
     }

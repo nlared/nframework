@@ -78,7 +78,7 @@ function tablefiaExecute($db, array $cfg, array $doc, int $limit): array
 {
 	$stages = TablefIA::parsePipeline($doc['pipeline']);
 	$pipeline = TablefIA::buildPipeline($cfg, $doc['coleccion'], $stages, $limit + 1);
-	$rows = TablefIA::run($db->{$doc['coleccion']}, $pipeline, $doc['columnas'], $cfg['maxtime'] ?? 30000);
+	$rows = TablefIA::run($db->{$doc['coleccion']}, $pipeline, $doc['columnas'], $cfg['maxtime'] ?? 30000, $seen, !empty($cfg['allowdiskuse']));
 	$truncated = count($rows) > $limit;
 	return [array_slice($rows, 0, $limit), $truncated];
 }
@@ -200,7 +200,7 @@ try {
 					}
 					$pipeline = TablefIA::buildPipeline($cfg, (string) $answer['coleccion'], $stages, $cfg['limit'] + 1);
 					tablefiaProgress($progressFile, 'Ejecutando en la base de datos…');
-					$rows = TablefIA::run($db->{$answer['coleccion']}, $pipeline, $columns, $cfg['maxtime'] ?? 30000, $seen);
+					$rows = TablefIA::run($db->{$answer['coleccion']}, $pipeline, $columns, $cfg['maxtime'] ?? 30000, $seen, !empty($cfg['allowdiskuse']));
 					// Hay filas pero ninguna trae alguna columna: el $project final no coincide con 'columnas'.
 					$missing = $rows === [] ? [] : array_diff($columns, $seen);
 					if ($missing !== [] && $attempt < $attempts) {

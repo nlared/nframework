@@ -2925,7 +2925,7 @@ class dataset
     public $simpleid;
     /** @var mixed Sin uso. */
     public $autosave; // pensar
-    /** @var MongoDB\Driver\Session|null Sesión para transacciones. */
+    /** @var MongoDB\Driver\Session|null Sesión para transacciones (lecturas y escrituras); ver nfTransaction(). */
     public $mongo_session;
     /** @var string|int Reemplaza '$' en los campos (arreglos posicionales). */
     public $position = ''; // se va
@@ -2969,7 +2969,8 @@ class dataset
                 : new MongoDB\BSON\ObjectID(trim($this->_id))
             );
 
-            $this->info = (array) $this->collection->findOne(['_id' => $this->_id]);
+            // Con mongo_session la lectura va dentro de la transacción (ve lo escrito en ella).
+            $this->info = (array) $this->collection->findOne(['_id' => $this->_id], $this->sessionOptions());
             if (count($this->info) == 0) {
                 $this->info = ['_id' => $this->_id];
             }
@@ -2978,6 +2979,16 @@ class dataset
             $this->info = ['_id' => $this->_id];
         }
         unset($this->info['']);
+    }
+
+    /**
+     * Opciones con la sesión de la transacción (mongo_session), o vacías.
+     *
+     * @return array{session?: MongoDB\Driver\Session}
+     */
+    private function sessionOptions(): array
+    {
+        return empty($this->mongo_session) ? [] : ['session' => $this->mongo_session];
     }
 
     /**
@@ -2992,7 +3003,7 @@ class dataset
                 ? $this->_id
                 : toMongoId(trim((string) $this->_id));
             // findOne() devuelve null si el documento ya no existe: antes count(null) lanzaba TypeError.
-            $doc = $this->collection->findOne(['_id' => $id]);
+            $doc = $this->collection->findOne(['_id' => $id], $this->sessionOptions());
             $this->info = $doc ? (array) $doc : ['_id' => $this->_id];
         }
     }

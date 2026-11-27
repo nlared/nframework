@@ -166,7 +166,7 @@ $dataset->estado = 'ok';       // asignar una propiedad hace updateOne con upser
 
 Patrón habitual para "nuevo registro": si no hay `_id` válido en la URL, redirigir a `?_id=<new ObjectId>`
 antes del `require`. Arreglos dentro del documento: `embededArray` (ver `docs/arraylist.php`).
-`dataset->mongo_session` permite transacciones.
+Transacciones (requieren replica set; Admin → Inicio lo verifica y propone la conversión): `nfTransaction(fn ($sesion) => $dataset->save(), [$dataset])` —texto devuelto o excepción = abort, se reintenta ante conflictos— o `dataset->mongo_session` a mano; `nfMongoTopology()['transactions']`.
 
 **Tablas** — `Table` (DataTables):
 

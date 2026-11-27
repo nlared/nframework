@@ -528,32 +528,65 @@ try {
     diagAdd($g, 'ok', 'Conexión', 'MongoDB ' . htmlspecialchars((string) $build['version']) . ', base de datos <b>' . htmlspecialchars($sitedb) . '</b>');
 
     $db = $m->{$sitedb};
-    $missingIdx = [];
-    $wanted = [
-        'users' => ['username' => 1],
-        'pages' => ['path' => 1],
-        'usersgroups' => ['users' => 1, 'name' => 1],
-        'nfuristats' => ['ip' => 1, 'created_at' => 1],
-        'nf_attempts' => ['ip' => 1],
-    ];
-    foreach ($wanted as $coll => $key) {
-        $found = false;
-        foreach ($db->{$coll}->listIndexes() as $idx) {
-            if ((array) $idx->getKey() == $key) {
-                $found = true;
-                break;
-            }
+
+    // Transacciones (nfTransaction(), dataset->mongo_session): solo en replica set o clúster con mongos.
+    $topo = nfMongoTopology();
+    if ($topo['type'] === 'standalone') {
+        // Host y puerto del primer servidor de la cadena de conexión, sin usuario ni contraseña.
+        preg_match('~^mongodb(?:\+srv)?://(?:[^@/]*@)?([^/?,]+)~', (string) ($config['mongo_connection_string'] ?? ''), $mh);
+        $rsHost = $mh[1] ?? 'localhost';
+        if (!str_contains($rsHost, ':')) {
+            $rsHost .= ':27017';
         }
-        if (!$found) {
-            $missingIdx[] = $coll . '(' . implode(', ', array_keys($key)) . ')';
+        $rsHost = str_starts_with($rsHost, 'localhost:') ? '127.0.0.1' . substr($rsHost, 9) : $rsHost;
+        diagAdd($g, 'warn', 'Transacciones', 'MongoDB es un servidor <b>standalone</b>: no admite transacciones, así que <code>nfTransaction()</code> y <code>dataset</code> con <code>mongo_session</code> fallan («Transaction numbers are only allowed on a replica set member or mongos»). Conviértalo en un replica set de un solo nodo: no requiere más servidores, conserva los datos y solo reinicia mongod una vez.', [
+            'En el servidor de MongoDB, agregue a <code>/etc/mongod.conf</code>:<pre>replication:' . "\n" . '  replSetName: rs0</pre>Si tiene <code>security.authorization: enabled</code>, agregue también una llave interna: <code>openssl rand -base64 756 | sudo tee /etc/mongod.key; sudo chown mongodb: /etc/mongod.key; sudo chmod 400 /etc/mongod.key</code> y en <code>security:</code> la línea <code>keyFile: /etc/mongod.key</code>.',
+            'Reinicie: <code>sudo systemctl restart mongod</code>',
+            'Inicie el replica set (una sola vez; el host debe ser el que usan los clientes para conectarse, no localhost si hay otros servidores): <code>mongosh --eval "rs.initiate({_id: \'rs0\', members: [{_id: 0, host: \'' . htmlspecialchars($rsHost) . '\'}]})"</code>',
+            'Opcional: agregue <code>?replicaSet=rs0</code> a <code>mongo_connection_string</code> en includes/config.php. Vuelva a esta página: «Transacciones» debe quedar en verde.',
+        ]);
+    } elseif (!$topo['transactions']) {
+        diagAdd($g, 'error', 'Transacciones', 'Conectado a ' . ($topo['type'] === 'replicaset' ? 'un miembro del replica set <b>' . htmlspecialchars((string) $topo['setName']) . '</b> que no es el primario' : 'un mongos anterior a MongoDB 4.2') . ': no se pueden escribir ni usar transacciones.', [
+            'Use la cadena de conexión del replica set completo (<code>?replicaSet=' . htmlspecialchars((string) $topo['setName']) . '</code>) para que el driver busque al primario.',
+        ]);
+    } else {
+        // Prueba real: una lectura dentro de una transacción (sin escribir nada).
+        try {
+            nfTransaction(function ($s) use ($db) {
+                $db->nfmigrations->findOne([], ['session' => $s, 'projection' => ['_id' => 1]]);
+                return false;
+            });
+            diagAdd($g, 'ok', 'Transacciones', ($topo['type'] === 'sharded' ? 'Clúster con mongos' : 'Replica set <b>' . htmlspecialchars((string) $topo['setName']) . '</b>') . ': <code>nfTransaction()</code> disponible');
+        } catch (Throwable $e) {
+            diagAdd($g, 'error', 'Transacciones', 'El servidor anuncia soporte pero la prueba falló: ' . htmlspecialchars($e->getMessage()));
         }
     }
+    // Misma lista que crea el instalador (nframework/test.php).
+    $missingIdx = nfIndexes::missing($db, $config);
     if ($missingIdx) {
-        diagAdd($g, 'warn', 'Índices', 'Faltan índices: ' . htmlspecialchars(implode('; ', $missingIdx)) . '. Las páginas y el inicio de sesión serán más lentos conforme crezcan los datos.', [
+        diagAdd($g, 'warn', 'Índices', 'Faltan índices: ' . htmlspecialchars(implode('; ', $missingIdx)) . '. Las consultas afectadas serán más lentas conforme crezcan los datos (y sin los índices únicos se permiten duplicados).', [
             "Ejecute el instalador, que los crea: <code>php$phpVer " . $root . '/nframework/test.php --host=' . htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'localhost') . '</code>',
         ]);
     } else {
         diagAdd($g, 'ok', 'Índices', 'Presentes');
+    }
+
+    // Sin TTL, estadísticas y consultas guardadas de TablefIA crecen sin límite: se avisa a partir de 100 000.
+    $ttlOpts = [
+        'nfuristats' => ['nfuristats_ttl_days', 90, 'estadísticas de peticiones'],
+        'nftablesfia' => ['tablefia_ttl_days', 180, 'consultas guardadas de TablefIA (no borra las favoritas)'],
+    ];
+    foreach ($ttlOpts as $coll => [$opt, $sugerido, $que]) {
+        $docs = $db->{$coll}->estimatedDocumentCount();
+        if (!empty($config[$opt])) {
+            diagAdd($g, 'ok', "Limpieza de $coll", (int) $config[$opt] . ' días (' . number_format($docs) . ' documentos)');
+        } elseif ($docs <= 100000) {
+            diagAdd($g, 'ok', "Limpieza de $coll", number_format($docs) . " documentos; sin caducidad (<code>$opt</code>)");
+        } else {
+            diagAdd($g, 'warn', "Limpieza de $coll", number_format($docs) . " documentos de $que y ninguna caducidad: la colección crece sin límite.", [
+                "Agregue <code>'$opt' => $sugerido</code> en includes/config.php y ejecute <code>php$phpVer $root/nframework/test.php --host=" . htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'localhost') . '</code> (crea el índice TTL; si ya existe, actualiza los días).',
+            ]);
+        }
     }
 
     $admins = $db->usersgroups->findOne(['name' => 'admins']);
@@ -695,12 +728,8 @@ if (ini_get('expose_php') && filter_var(ini_get('expose_php'), FILTER_VALIDATE_B
 // Cola de trabajos
 // ---------------------------------------------------------------------------------------------------
 $g = 'Cola de trabajos';
-$workers = 0;
-foreach (glob('/proc/[0-9]*/cmdline') ?: [] as $f) {
-    if (str_contains((string) @file_get_contents($f), 'job_worker.php')) {
-        $workers++;
-    }
-}
+// Solo los de este sitio (HTTP_HOST del proceso); ver Admin → Workers.
+$workers = count(JobDashboard::workersForHost(JobDashboard::workers(), (string) ($_SERVER['HTTP_HOST'] ?? 'localhost')));
 try {
     $overdue = $m->{$sitedb}->jobs->countDocuments([
         'failed_at' => null,
@@ -709,19 +738,19 @@ try {
     $failed = $m->{$sitedb}->jobs->countDocuments(['failed_at' => ['$ne' => null]]);
     if ($overdue > 0 && $workers === 0) {
         diagAdd($g, 'error', 'Workers', "Hay $overdue trabajo(s) esperando más de 5 minutos y no hay ningún worker corriendo.", [
-            'Configure el worker como servicio (supervisor o systemd); las instrucciones están en <a href="/admin/workers">Workers</a>.',
-            "Para procesarlos una vez a mano: <code>sudo -u $webUser php$phpVer $includesDir/job_worker.php default</code>",
+            'En <a href="/admin/workers/">Workers</a> puede iniciar uno temporal y copiar la configuración de systemd, supervisor o cron ya armada para este sitio.',
+            'Para procesarlos una vez a mano: <code>cd ' . $includesDir . ' && sudo -u ' . $webUser . ' HTTP_HOST=' . htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'localhost') . " php$phpVer job_worker.php default 300 --once</code>",
         ]);
     } elseif ($workers === 0) {
         diagAdd($g, 'warn', 'Workers', 'No hay ningún worker corriendo. Si el sitio usa trabajos en segundo plano (correos masivos, importaciones), no se procesarán.', [
-            'Vea <a href="/admin/workers">Workers</a> para configurarlo con supervisor o systemd.',
+            'En <a href="/admin/workers/">Workers</a> está la configuración de systemd, supervisor o cron ya armada para este sitio (con su <code>HTTP_HOST</code>), y un botón para iniciar uno temporal.',
         ]);
     } else {
         diagAdd($g, 'ok', 'Workers', "$workers proceso(s) activo(s), $overdue trabajo(s) atrasado(s)");
     }
     if ($failed > 0) {
         diagAdd($g, 'warn', 'Trabajos fallidos', "$failed trabajo(s) agotaron sus reintentos.", [
-            'Revise el campo <code>error</code> en la colección <code>jobs</code> y elimínelos o reinícielos cuando esté corregido.',
+            'Vea el error de cada uno en <a href="/admin/workers/">Workers</a>, y reinténtelos o elimínelos cuando esté corregido.',
         ]);
     }
 } catch (Throwable $e) {

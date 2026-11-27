@@ -21,6 +21,52 @@ Ver `docs/upgrades.php`.
 
 # Próxima versión
 
+## 2026-11-26 — Admin → Workers
+
+- La página `/admin/workers/` salía en blanco. Ahora muestra los procesos `job_worker.php` del sitio, las colas
+  (pendientes, atrasados, fallidos), los trabajos fallidos con su error (reintentar / eliminar) y la
+  configuración de systemd, supervisor o cron para el sitio, con su `HTTP_HOST`, rutas, PHP y usuario reales.
+  También permite iniciar un worker temporal. Aparece en el menú de Admin.
+- Las instrucciones anteriores no pasaban `HTTP_HOST`: un worker configurado así usa el bloque `localhost` de
+  `config.php` (otra base o ninguna) y no procesa los trabajos del sitio. Revise los servicios existentes
+  (`systemctl cat 'nframework-worker*'`, `/etc/supervisor/conf.d/`) y agregue `HTTP_HOST`.
+- `job_worker.php` acepta `--once` (procesa lo pendiente y termina, para cron), guarda en `error` el mensaje de
+  la excepción de cada intento (antes los fallidos quedaban con `error: null`) y `attempts` cuenta también el
+  último intento.
+- El diagnóstico de Admin → Inicio cuenta solo los workers de este sitio.
+
+## 2026-11-26 — Transacciones: nfTransaction() y diagnóstico de replica set
+
+- Nuevo `nfTransaction(fn ($sesion) => ..., [$dataset, ...])`: commit si el callback devuelve `false` (u otro
+  valor que no sea texto); abort si devuelve texto (errores de `save()`) o lanza una excepción; reintenta ante
+  conflictos. `nfMongoTopology()` dice si el servidor admite transacciones. Ver `docs/databinding.php`.
+- `dataset` con `mongo_session` ahora también lee con la sesión (constructor y `refresh()`): dentro de una
+  transacción ve lo escrito en ella. Antes leía fuera de la transacción.
+- Admin → Inicio → MongoDB avisa si el servidor es standalone y da los pasos para convertirlo en replica set de
+  un nodo (conserva los datos); en replica set hace una prueba real de transacción.
+- Se quitaron las «transacciones» de `admin/pages/page.php`, `admin/site/auths.php` y `admin/theme/tconfig.php`:
+  abrían una sesión que nunca se pasaba al `dataset`, así que no protegían nada (guardan un solo documento,
+  que ya es atómico). Siguen funcionando en standalone.
+- A quién afecta: revise en el sitio `startTransaction(` y confirme que la sesión llega a cada operación
+  (`'session' => $sesion` o `$dataset->mongo_session = $sesion`); si no, la operación queda fuera de la
+  transacción. Puede reemplazar ese patrón por `nfTransaction()`.
+
+## 2026-11-26 — Diagnóstico de índices completo en Admin → Inicio
+
+- El diagnóstico solo revisaba 5 índices y podía decir «Índices: Presentes» aunque faltaran los de
+  `nfsecurityrules`, `efirmas` o `nftablesfia`. Ahora revisa la misma lista que crea `nframework/test.php`
+  (`nfIndexes::required()`, en `includes/class.nfIndexes.php`), incluidos los TTL opcionales
+  (`tablefia_ttl_days`, `nfuristats_ttl_days`), y compara el orden de los campos.
+- A quién afecta: sitios instalados con una versión anterior del instalador verán ahora el aviso «Faltan
+  índices»; se corrige ejecutando `php nframework/test.php --host=<dominio>`. No requiere cambios de código.
+- El diagnóstico muestra la limpieza de `nfuristats` y `nftablesfia` y avisa si una pasa de 100 000
+  documentos sin `nfuristats_ttl_days` / `tablefia_ttl_days`. No hay caducidad por defecto: nada se borra
+  sin configurarlo.
+- `nframework/test.php` ahora actualiza los días de un índice TTL ya existente (antes fallaba con
+  «IndexOptionsConflict» y conservaba los días anteriores).
+- TablefIA: nueva opción `'allowdiskuse' => true` para que un `$sort`/`$group` grande escriba a disco en lugar
+  de fallar. Por defecto sigue apagada; sin cambios para los sitios que no la usen.
+
 ## 2026-11-24 — Eliminar usuarios en Admin → Usuarios
 
 - La lista no se actualizaba al eliminar (el JS recargaba otra tabla); ahora se refresca. Eliminar pide

@@ -60,15 +60,11 @@ $microsoft_oauth_client_enable = new inputcheckbox([
 
 if ($nframework->isAjax()) {
 	if ($_POST['op']=='save') {
-        $session = $m->startSession();
-        $session->startTransaction();
         try {
             $result=[
                 'error'=>$dataset->save(),
             ];
-            $session->commitTransaction();
         } catch (Exception $e) {
-            $session->abortTransaction();
             $result=[
             	'error'=>$e->getMessage()
         	];

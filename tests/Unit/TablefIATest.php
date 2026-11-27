@@ -32,6 +32,12 @@ class TablefIATest extends TestCase
         ];
     }
 
+    public function testAllowDiskUseIsOffByDefaultAndReachesSessionConfig(): void
+    {
+        $this->assertFalse((new \TablefIA(['id' => 'a', 'collections' => ['ventas' => []]]))->sessionConfig()['allowdiskuse']);
+        $this->assertTrue((new \TablefIA(['id' => 'b', 'collections' => ['ventas' => []], 'allowdiskuse' => 1]))->sessionConfig()['allowdiskuse']);
+    }
+
     public function testNormalizeCollectionsAcceptsListAndOptions(): void
     {
         $normal = \TablefIA::normalizeCollections(['a', 'b' => ['description' => 'B']]);

@@ -84,6 +84,10 @@ $sidemenu .= '
         <span class="icon"><span class="mif-chart-bars"></span></span>
         <span class="caption">' . $nframework->language['statistics'] . '</span>
     </a></li>
+    <li class="slide"><a href="/admin/workers/" >
+        <span class="icon"><span class="mif-cogs"></span></span>
+        <span class="caption">Workers</span>
+    </a></li>
     <li class="slide"><a href="/admin/update/" >
         <span class="icon"><span class="mif-cloud-download"></span></span>
         <span class="caption">' . $nframework->language['updates'] . '</span>

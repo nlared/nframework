@@ -1210,6 +1210,137 @@ function requireGroup(string ...$groups): void
 }
 
 /**
+ * Tipo de despliegue de MongoDB a partir de la respuesta de `hello` (o `isMaster`). Las transacciones
+ * necesitan un replica set (MongoDB 4.0+, wire version 7) o un clúster con mongos (4.2+, wire version 8); un
+ * servidor standalone las rechaza («Transaction numbers are only allowed on a replica set member or mongos»).
+ *
+ * @param array<string, mixed>|object $hello Documento de `hello`.
+ * @return array{type: 'standalone'|'replicaset'|'sharded', setName: string|null, primary: bool, transactions: bool}
+ */
+function nfMongoTopologyFromHello($hello): array
+{
+    $hello = (array) $hello;
+    $wire = (int) ($hello['maxWireVersion'] ?? 0);
+    $sessions = isset($hello['logicalSessionTimeoutMinutes']);
+    if (($hello['msg'] ?? '') === 'isdbgrid') {
+        $type = 'sharded';
+        $transactions = $sessions && $wire >= 8;
+    } elseif (!empty($hello['setName'])) {
+        $type = 'replicaset';
+        $transactions = $sessions && $wire >= 7;
+    } else {
+        $type = 'standalone';
+        $transactions = false;
+    }
+    $primary = $type !== 'replicaset' || !empty($hello['isWritablePrimary']) || !empty($hello['ismaster']);
+    return [
+        'type' => $type,
+        'setName' => !empty($hello['setName']) ? (string) $hello['setName'] : null,
+        'primary' => $primary,
+        'transactions' => $transactions && $primary,
+    ];
+}
+
+/**
+ * Tipo de despliegue del servidor al que está conectado $client (por omisión, $m). Se consulta una vez por
+ * petición. Ver nfMongoTopologyFromHello().
+ *
+ * @global MongoDB\Client $m
+ * @param MongoDB\Client|null $client
+ * @return array{type: 'standalone'|'replicaset'|'sharded', setName: string|null, primary: bool, transactions: bool}
+ */
+function nfMongoTopology(?MongoDB\Client $client = null): array
+{
+    global $m;
+    static $cache = [];
+    $client ??= $m;
+    $key = spl_object_id($client);
+    if (!isset($cache[$key])) {
+        $admin = $client->selectDatabase('admin');
+        try {
+            $hello = $admin->command(['hello' => 1])->toArray()[0];
+        } catch (MongoDB\Driver\Exception\CommandException $e) {
+            $hello = $admin->command(['isMaster' => 1])->toArray()[0];   // MongoDB anterior a 4.4.2
+        }
+        $cache[$key] = nfMongoTopologyFromHello($hello);
+    }
+    return $cache[$key];
+}
+
+/**
+ * Cancela la transacción de nfTransaction() devolviendo los errores. Úsela desde el callback cuando no quiera
+ * devolver el texto directamente (p. ej. desde una función anidada).
+ *
+ *   throw new nfTransactionAbort('El folio ya existe');
+ */
+class nfTransactionAbort extends RuntimeException
+{
+}
+
+/**
+ * Ejecuta $fn dentro de una transacción de MongoDB y hace commit, o aborta si falla. Requiere replica set
+ * (ver nfMongoTopology() y el diagnóstico de Admin → Inicio).
+ *
+ * - $fn recibe la sesión (MongoDB\Driver\Session); toda operación de MongoDB que deba formar parte de la
+ *   transacción lleva `['session' => $sesion]`. Los dataset de $datasets la reciben en mongo_session durante la
+ *   transacción y la sueltan al terminar.
+ * - Mismo contrato que dataset::save(): si $fn devuelve un string (errores) o lanza nfTransactionAbort, se
+ *   aborta y nfTransaction() devuelve ese texto. Cualquier otro valor (false, null...) hace commit y se devuelve.
+ *   Otras excepciones abortan y se relanzan.
+ * - Ante errores transitorios (TransientTransactionError, p. ej. un conflicto de escritura) el driver repite $fn
+ *   hasta 120 s: no haga en $fn nada que no deba repetirse (correos, archivos, llamadas externas).
+ * - Tras abortar, $dataset->info puede tener los valores que no se guardaron; llame $dataset->refresh().
+ *
+ *   $errores = nfTransaction(function ($sesion) use ($pedido, $inventario, $db) {
+ *       if (($e = $pedido->save()) !== false) {
+ *           return $e;                                    // aborta: no se guarda nada
+ *       }
+ *       $r = $db->inventario->updateOne(['_id' => $id, 'existencia' => ['$gte' => 1]],
+ *           ['$inc' => ['existencia' => -1]], ['session' => $sesion]);
+ *       return $r->getModifiedCount() === 1 ? false : 'Sin existencia';
+ *   }, [$pedido]);
+ *
+ * @global MongoDB\Client $m
+ * @param callable(MongoDB\Driver\Session): mixed $fn
+ * @param list<dataset> $datasets Reciben la sesión en mongo_session mientras dura la transacción.
+ * @param array<string, mixed> $options Opciones de startTransaction (readConcern, writeConcern, maxCommitTimeMS...).
+ * @param MongoDB\Client|null $client Por omisión $m.
+ * @return mixed Lo que devolvió $fn, o el texto de error si se abortó.
+ * @throws RuntimeException Si el servidor no admite transacciones (standalone).
+ */
+function nfTransaction(callable $fn, array $datasets = [], array $options = [], ?MongoDB\Client $client = null)
+{
+    global $m;
+    $client ??= $m;
+    if (!nfMongoTopology($client)['transactions']) {
+        throw new RuntimeException('MongoDB no admite transacciones: el servidor no es un replica set (o no es el primario). Vea Admin → Inicio → MongoDB.');
+    }
+    $session = $client->startSession();
+    $previous = [];
+    foreach ($datasets as $i => $dataset) {
+        $previous[$i] = $dataset->mongo_session;
+        $dataset->mongo_session = $session;
+    }
+    $return = null;
+    try {
+        MongoDB\with_transaction($session, function ($session) use ($fn, &$return) {
+            $return = $fn($session);
+            if (is_string($return)) {
+                throw new nfTransactionAbort($return);
+            }
+        }, $options);
+    } catch (nfTransactionAbort $e) {
+        $return = $e->getMessage();
+    } finally {
+        foreach ($datasets as $i => $dataset) {
+            $dataset->mongo_session = $previous[$i];
+        }
+        $session->endSession();
+    }
+    return $return;
+}
+
+/**
  * Elimina recursivamente operadores peligrosos de una consulta Mongo proveniente del cliente
  * ($where, $function, $accumulator, etc. permiten ejecutar JavaScript en el servidor).
  *

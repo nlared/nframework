@@ -12,15 +12,11 @@ require $_SERVER['DOCUMENT_ROOT'].'/nframework/templates/basic/theme.php';
 
 if ($nframework->isAjax()) {
 	if ($_POST['op']=='save') {
-        $session = $m->startSession();
-        $session->startTransaction();
         try {
             $result=[
                 'error'=>$dataset->save(),
             ];
-            $session->commitTransaction();
         } catch (Exception $e) {
-            $session->abortTransaction();
             $result=[
             	'error'=>$e->getMessage()
         	];

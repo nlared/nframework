@@ -51,16 +51,12 @@ $robots=new inputcheckboxs(['dataset'=>&$dataset,'field'=>'robots','caption'=>$n
 if ($nframework->isAjax()) {
 	$nframework->usecommon=false;
 	if ($_POST['op']=='save') {
-        $session = $m->startSession();
-        $session->startTransaction();
         $dataset->lastmodification=new MongoDB\BSON\UTCDateTime();
         try {
             $result=[
                 'error'=>$dataset->save(),
             ];
-            $session->commitTransaction();
         } catch (Exception $e) {
-            $session->abortTransaction();
             $result=[
             	'error'=>$e->getMessage()
         	];
