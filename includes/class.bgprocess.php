@@ -96,93 +96,112 @@ class bgprocess
 
 
     /**
-     * Tablero con botones iniciar/detener y el log en vivo.
+     * Estado de los procesos de la sesión: si corre, su PID y el final de su log. Lo envían
+     * /nframework/kernel.php?op=status y el flujo SSE ?op=stream que usa renderDashboard().
      *
-     * @global class_nframework $nframework
+     * @param array<string, array{pid?: int|null, logfile?: string, cmd?: string}> $pids $_SESSION['pids'].
+     * @param int $tail Bytes finales del log que se incluyen.
+     * @param callable(int): bool|null $isRunning Para pruebas; null = BackgroundProcess.
+     * @return array<string, array{running: bool, pid: int|null, log: string}>
+     */
+    public static function snapshot(array $pids, int $tail = 4000, ?callable $isRunning = null): array
+    {
+        $isRunning ??= fn (int $pid) => BackgroundProcess::createFromPID($pid)->isRunning();
+        $out = [];
+        foreach ($pids as $id => $data) {
+            $pid = !empty($data['pid']) ? (int) $data['pid'] : null;
+            $log = '';
+            $file = (string) ($data['logfile'] ?? '');
+            if ($file !== '' && is_file($file) && is_readable($file)) {
+                $size = (int) @filesize($file);
+                $log = (string) @file_get_contents($file, false, null, max(0, $size - $tail));
+                if ($size > $tail) {
+                    // Sin la primera línea, que puede quedar cortada (o con un carácter UTF-8 a medias).
+                    $log = (string) preg_replace('/^[^\n]*\n/', '', $log, 1);
+                }
+                $log = mb_convert_encoding($log, 'UTF-8', 'UTF-8');
+            }
+            $out[(string) $id] = ['running' => $pid !== null && $isRunning($pid), 'pid' => $pid, 'log' => $log];
+        }
+        return $out;
+    }
+
+    /**
+     * Tablero con botones iniciar/detener y el log en vivo. El estado llega por Server-Sent Events
+     * (/nframework/kernel.php?op=stream, ver nfSSE); sin EventSource consulta cada 3 s. Iniciar y detener
+     * van por POST con token CSRF.
+     *
      * @return string HTML.
      */
     public function renderDashboard()
     {
-        global $nframework;
-        
         $dashboardId = 'bgdashboard_' . uniqid();
-        
-        // Inject JS for dashboard
-        $js = <<<JS
-        function updateBgDashboard() {
-            $.ajax({
-                url: "/nframework/kernel.php?op=status",
-                dataType: "json",
-                success: function(data) {
-                    if (data.pids) {
-                        for (const [id, info] of Object.entries(data.pids)) {
-                            const row = $('#bgrow_' + id);
-                            const icon = row.find('.status-icon');
-                            const btnStart = row.find('.btn-start');
-                            const btnStop = row.find('.btn-stop');
-                            
-                            if (info.running) {
-                                icon.removeClass('mif-stop fg-red').addClass('mif-play fg-green');
-                                row.addClass('bg-lightGreen');
-                                btnStart.attr('disabled', true);
-                                btnStop.attr('disabled', false);
-                            } else {
-                                icon.removeClass('mif-play fg-green').addClass('mif-stop fg-red');
-                                row.removeClass('bg-lightGreen');
-                                btnStart.attr('disabled', false);
-                                btnStop.attr('disabled', true);
-                            }
-                        }
-                    }
-                }
-            });
-        }
-        
-        $(document).on('click', '.btn-bg-action', function() {
-            var action = $(this).data('action');
-            var pid = $(this).data('pid');
-            
-            $.ajax({
-                url: "/nframework/kernel.php",
-                data: { op: action, pid: pid },
-                dataType: "json",
-                success: function(res) {
-                    if(res.error) {
-                        alert(res.error);
-                    } else {
-                        updateBgDashboard();
-                    }
-                }
-            });
-        });
+        $csrf = json_encode(csrfToken('/nframework/kernel.php'));
 
-        setInterval(updateBgDashboard, 3000); // Poll every 3 seconds
-        updateBgDashboard(); // Initial call
+        // Un solo juego de manejadores aunque la página tenga varios tableros.
+        $js = <<<JS
+        (function () {
+            if (window.nfBgDashboard) { return; }
+            var url = '/nframework/kernel.php', csrf = {$csrf}, es = null, timer = null;
+            window.nfBgDashboard = true;
+            function apply(data) {
+                $.each((data && data.pids) || {}, function (id, info) {
+                    $('.nf-bgrow').filter(function () { return $(this).attr('data-bgid') === id; }).each(function () {
+                        var row = $(this), log = $('.nf-bglog').filter(function () { return $(this).attr('data-bgid') === id; });
+                        row.find('.status-icon').toggleClass('mif-play fg-green', info.running).toggleClass('mif-stop fg-red', !info.running);
+                        row.find('.status-text').text(info.running ? 'Corriendo (PID ' + info.pid + ')' : 'Detenido');
+                        row.find('.btn-start').prop('disabled', info.running);
+                        row.find('.btn-stop').prop('disabled', !info.running);
+                        var pre = log.find('pre');
+                        var bottom = pre.length && pre[0].scrollHeight - pre.scrollTop() - pre.outerHeight() < 20;
+                        pre.text(info.log || '');
+                        log.toggleClass('d-none', !info.log);
+                        if (bottom && pre.length) { pre.scrollTop(pre[0].scrollHeight); }
+                    });
+                });
+            }
+            function poll() {
+                $.getJSON(url, {op: 'status'}, apply);
+                timer = setTimeout(poll, 3000);
+            }
+            function connect() {
+                if (es) { es.close(); }
+                clearTimeout(timer);
+                if (!window.EventSource) { poll(); return; }
+                // Al terminar (maxtime) el navegador reconecta solo.
+                es = new EventSource(url + '?op=stream');
+                es.addEventListener('update', function (e) { apply(JSON.parse(e.data)); });
+            }
+            $(document).on('click', '.btn-bg-action', function () {
+                var b = $(this).prop('disabled', true);
+                $.post(url, {op: b.data('action'), pid: b.attr('data-bgid'), CSRFToken: csrf}, null, 'json').done(function (res) {
+                    if (res && res.error) { Swal.fire({icon: 'error', title: 'Proceso', text: res.error}); }
+                }).always(function () { b.prop('disabled', false); connect(); });
+            });
+            $(connect);
+        })();
 JS;
 
-        
         $html = '<script>' . $js . '</script>';
-        $html .= '<table class="table striped hovered cell-hover" id="' . $dashboardId . '">';
-        $html .= '<thead><tr><th>ID</th><th>Command</th><th>Status</th><th>Actions</th></tr></thead>';
-        $html .= '<tbody>';
-        
+        $html .= '<table class="table striped compact" id="' . $dashboardId . '">';
+        $html .= '<thead><tr><th>Proceso</th><th>Comando</th><th>Estado</th><th></th></tr></thead><tbody>';
         if (!empty($_SESSION['pids'])) {
-            foreach ($_SESSION['pids'] as $pid => $data) {
-                 $html .= '<tr id="bgrow_' . $pid . '">';
-                 $html .= '<td>' . htmlspecialchars($pid) . '</td>';
-                 $html .= '<td>' . htmlspecialchars($data['cmd']) . '</td>';
-                 $html .= '<td><span class="status-icon mif-stop"></span></td>';
-                 $html .= '<td>
-                    <button class="button small success btn-bg-action btn-start" data-action="start" data-pid="' . $pid . '"><span class="mif-play"></span> Start</button>
-                    <button class="button small alert btn-bg-action btn-stop" data-action="stop" data-pid="' . $pid . '"><span class="mif-stop"></span> Stop</button>
-                 </td>';
-                 $html .= '</tr>';
+            foreach ($_SESSION['pids'] as $id => $data) {
+                $id = htmlspecialchars((string) $id);
+                $html .= '<tr class="nf-bgrow" data-bgid="' . $id . '">'
+                    . '<td>' . $id . '</td>'
+                    . '<td><code>' . htmlspecialchars((string) ($data['cmd'] ?? '')) . '</code></td>'
+                    . '<td><span class="status-icon mif-stop fg-red"></span> <span class="status-text">…</span></td>'
+                    . '<td class="text-nowrap">'
+                    . '<button type="button" class="button small success btn-bg-action btn-start" data-action="start" data-bgid="' . $id . '"><span class="mif-play"></span> Iniciar</button> '
+                    . '<button type="button" class="button small alert btn-bg-action btn-stop" data-action="stop" data-bgid="' . $id . '" disabled><span class="mif-stop"></span> Detener</button>'
+                    . '</td></tr>'
+                    . '<tr class="nf-bglog d-none" data-bgid="' . $id . '"><td colspan="4"><pre class="m-0 p-2" style="max-height:240px;overflow:auto;white-space:pre-wrap;font-size:.8rem"></pre></td></tr>';
             }
         } else {
-            $html .= '<tr><td colspan="4">No processes configured.</td></tr>';
-        }        
-        $html .= '</tbody></table>';        
-        return $html;
+            $html .= '<tr><td colspan="4">No hay procesos configurados.</td></tr>';
+        }
+        return $html . '</tbody></table>';
     }
 
     /**

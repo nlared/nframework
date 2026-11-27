@@ -76,7 +76,16 @@ PHP) ?>
 	<h3>Estado de las colas</h3>
 	<p><code>JobDashboard</code> muestra pendientes y fallidos por cola:</p>
 	<?= $m->{$config['sitedb']}->jobs->countDocuments() > 0 ? $panel->render() : '<p class="text-muted">No hay trabajos en la colección <code>jobs</code>.</p>' ?>
-	<?= docCode('echo (new JobDashboard())->render();') ?>
+	<?= docCode(<<<'PHP'
+echo (new JobDashboard())->render();               // tabla fija
+
+// En vivo por Server-Sent Events (ver sse.php): la página atiende ?stream=jobs antes de imprimir nada.
+if (($_GET['stream'] ?? '') === 'jobs') {
+    nfSSE::stream(fn () => ['queues' => JobDashboard::queues()], ['interval' => 2]);
+    exit;
+}
+echo (new JobDashboard())->render('?stream=jobs');
+PHP) ?>
 
 	<h3>Documento en la colección <code>jobs</code></h3>
 	<?= docCode(<<<'JS'
@@ -86,6 +95,7 @@ PHP) ?>
   payload: { para: "...", asunto: "...", html: "..." },
   attempts: 0,
   max_attempts: 5,
+  priority: 0,                   // mayor = se toma antes
   delay_until: ISODate("..."),   // no se ejecuta antes de esta hora
   created_at: ISODate("..."),
   failed_at: null,               // fecha si agotó los intentos
@@ -93,4 +103,3 @@ PHP) ?>
 }
 JS, 'javascript') ?>
 </div>
-  priority: 0,                   // mayor = se toma antes

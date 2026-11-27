@@ -29,6 +29,15 @@ function workersValidQueue($queue): ?string
 $allWorkers = JobDashboard::workers();
 $siteWorkers = JobDashboard::workersForHost($allWorkers, $wHost);
 
+// Flujo SSE para los contadores en vivo (JobDashboard::render('?stream=jobs')): colas y workers del sitio.
+if (($_GET['stream'] ?? '') === 'jobs') {
+	nfSSE::stream(fn () => [
+		'queues' => JobDashboard::queues(),
+		'workers' => array_column(JobDashboard::workersForHost(JobDashboard::workers(), $wHost), 'pid'),
+	], ['interval' => 2, 'maxtime' => 30]);
+	exit;
+}
+
 if ($nframework->isAjax()) {
 	$op = is_string($_POST['op'] ?? null) ? $_POST['op'] : '';
 	if (!csrfValidate()) {
@@ -143,6 +152,12 @@ $restart = "sudo systemctl restart 'nframework-worker-$wSlug@*'    # o: sudo sup
 
 $code = fn (string $text) => '<pre class="bg-light p-2" style="white-space:pre;overflow-x:auto"><code>' . htmlspecialchars($text) . '</code></pre>';
 
+// Avisa (sin recargar) si arrancó o se detuvo un worker mientras la página está abierta.
+$javas->addjs('var workersPids = ' . json_encode(array_column($siteWorkers, 'pid')) . ";
+$(document).on('nf:jobs-update', 'table', function (e, data) {
+	var now = (data.workers || []).slice().sort().join(','), before = workersPids.slice().sort().join(',');
+	$('#workers-changed').toggleClass('d-none', now === before);
+});", 'ready');
 $javas->addjs('window.workersCsrf = ' . json_encode(csrfToken(NF_AJAX_FORM_ACTION)) . ';', 'general');
 $javas->addjs(<<<'JS'
 window.workersOp = function (data, confirmText) {
@@ -205,7 +220,8 @@ JS, 'general');
 	<div class="box shadow-large p-4 mb-4">
 		<h4 class="mt-0">Colas</h4>
 		<?php if ($queues): ?>
-			<?= (new JobDashboard())->render() ?>
+			<?= (new JobDashboard())->render('?stream=jobs') ?>
+			<p id="workers-changed" class="remark info d-none">Cambiaron los workers del sitio. <a href="">Recargar</a></p>
 			<p class="fg-gray text-small">Atrasados: pendientes cuya hora pasó hace más de <?= JobDashboard::OVERDUE / 60 ?> minutos (nadie los tomó).</p>
 		<?php else: ?>
 			<p class="fg-gray">La colección <code>jobs</code> está vacía.</p>
@@ -226,6 +242,7 @@ JS, 'general');
 						<td><?= $j['failed_at'] instanceof MongoDB\BSON\UTCDateTime ? $j['failed_at']->toDateTime()->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i') : '' ?></td>
 						<td><code><?= $e($j['queue'] ?? '') ?></code></td>
 						<td><code><?= $e(is_string($j['class'] ?? null) ? $j['class'] : '') ?></code></td>
+						<td><?= (int) ($j['priority'] ?? 0) ?></td>
 						<td><?= (int) ($j['attempts'] ?? 0) ?>/<?= (int) ($j['max_attempts'] ?? 0) ?></td>
 						<td class="text-small"><?= $e(mb_strimwidth((string) ($j['error'] ?? 'sin mensaje'), 0, 300, '…')) ?></td>
 						<td class="text-nowrap">
@@ -242,7 +259,6 @@ JS, 'general');
 	<div class="box shadow-large p-4" id="instalar">
 		<h4 class="mt-0">Instalar como servicio</h4>
 		<p class="fg-gray">Ya armado para este sitio: <code>HTTP_HOST=<?= $e($wHost) ?></code> (sin él el worker usaría el bloque <code>localhost</code> de config.php), <code><?= $e($wPhp) ?></code>, usuario <code><?= $e($wUser) ?></code> y un worker por cola (<?= implode(', ', array_map(fn ($q) => '<code>' . $e($q) . '</code>', $queueNames)) ?>). Reserva de <?= $wLease ?> s: un trabajo tomado no lo vuelve a tomar otro worker antes de ese tiempo.</p>
-						<td><?= (int) ($j['priority'] ?? 0) ?></td>
 		<ul data-role="tabs" data-expand="true">
 			<li><a href="#w-systemd">systemd (recomendado)</a></li>
 			<li><a href="#w-supervisor">supervisor</a></li>

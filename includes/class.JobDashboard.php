@@ -43,19 +43,83 @@ class JobDashboard
     }
 
     /**
-     * Tabla HTML con los contadores de queues().
+     * Tabla HTML con los contadores de queues(). Con $stream (URL de un flujo nfSSE que envía
+     * ['queues' => JobDashboard::queues()] en sus eventos 'update') los contadores se actualizan solos;
+     * una cola nueva aparece como fila al final.
      *
+     *   if (($_GET['stream'] ?? '') === 'jobs') { nfSSE::stream(fn () => ['queues' => JobDashboard::queues()]); exit; }
+     *   echo (new JobDashboard())->render('?stream=jobs');
+     *
+     * @param string $stream URL del flujo; '' = tabla fija.
      * @return string
      */
-    public function render()
+    public function render($stream = '')
     {
-        $html = '<table class="table striped compact"><thead><tr><th>Cola</th><th>Pendientes</th><th>Atrasados</th><th>Fallidos</th></tr></thead><tbody>';
+        $id = 'nfjobs_' . substr(md5(uniqid('', true)), 0, 8);
+        $html = '<table class="table striped compact" id="' . $id . '"><thead><tr><th>Cola</th><th>Pendientes</th><th>Atrasados</th><th>Fallidos</th></tr></thead><tbody>';
         foreach (self::queues() as $queue => $s) {
-            $html .= '<tr><td><code>' . htmlspecialchars($queue) . '</code></td><td>' . $s['pending'] . '</td><td>'
-                . ($s['overdue'] ? '<span class="fg-red">' . $s['overdue'] . '</span>' : '0') . '</td><td>'
-                . ($s['failed'] ? '<span class="fg-orange">' . $s['failed'] . '</span>' : '0') . '</td></tr>';
+            $html .= self::row($queue, $s);
         }
-        return $html . '</tbody></table>';
+        $html .= '</tbody></table>';
+        if ($stream !== '') {
+            $html .= '<script>' . self::liveScript($id, (string) $stream) . '</script>';
+        }
+        return $html;
+    }
+
+    /**
+     * Fila de una cola (también la arma el navegador con los mismos estilos al llegar una cola nueva).
+     *
+     * @param string $queue
+     * @param array{pending: int, overdue: int, failed: int} $s
+     * @return string
+     */
+    public static function row(string $queue, array $s): string
+    {
+        return '<tr data-queue="' . htmlspecialchars($queue) . '"><td><code>' . htmlspecialchars($queue) . '</code></td>'
+            . '<td data-k="pending">' . (int) $s['pending'] . '</td>'
+            . '<td data-k="overdue">' . ($s['overdue'] ? '<span class="fg-red">' . (int) $s['overdue'] . '</span>' : '0') . '</td>'
+            . '<td data-k="failed">' . ($s['failed'] ? '<span class="fg-orange">' . (int) $s['failed'] . '</span>' : '0') . '</td></tr>';
+    }
+
+    /**
+     * JS que conecta la tabla $id al flujo SSE $url.
+     *
+     * @param string $id
+     * @param string $url
+     * @return string
+     */
+    private static function liveScript(string $id, string $url): string
+    {
+        $id = json_encode($id);
+        $url = json_encode($url);
+        return <<<JS
+        $(function () {
+            if (!window.EventSource) { return; }
+            var table = $('#' + {$id}), es = new EventSource({$url});
+            function cell(n, cls) { return n ? $('<span>').addClass(cls).text(n) : document.createTextNode('0'); }
+            es.addEventListener('update', function (e) {
+                var data = JSON.parse(e.data), seen = {};
+                $.each(data.queues || {}, function (q, s) {
+                    seen[q] = true;
+                    var tr = table.find('tbody tr').filter(function () { return $(this).attr('data-queue') === q; });
+                    if (!tr.length) {
+                        tr = $('<tr>').attr('data-queue', q).append($('<td>').append($('<code>').text(q)),
+                            $('<td data-k="pending">'), $('<td data-k="overdue">'), $('<td data-k="failed">'));
+                        table.find('tbody').append(tr);
+                    }
+                    tr.find('[data-k=pending]').text(s.pending);
+                    tr.find('[data-k=overdue]').empty().append(cell(s.overdue, 'fg-red'));
+                    tr.find('[data-k=failed]').empty().append(cell(s.failed, 'fg-orange'));
+                });
+                // Una cola que se vació por completo ya no sale en queues(): queda en ceros.
+                table.find('tbody tr').each(function () {
+                    if (!seen[$(this).attr('data-queue')]) { $(this).find('[data-k]').text('0'); }
+                });
+                table.trigger('nf:jobs-update', [data]);
+            });
+        });
+JS;
     }
 
     /**
