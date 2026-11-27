@@ -27,12 +27,12 @@ $consultas = new TablefIA([
 ]);
 ?>
 <div class="container">
-	<?= docHeader('Consultas con IA (TablefIA)', 'Como <code>TableF</code>, pero el usuario escribe la pregunta en español y Claude genera el pipeline de MongoDB. El servidor lo valida, lo ejecuta y guarda la consulta en <code>nftablesfia</code> para reutilizarla sin volver a llamar a la IA.') ?>
+	<?= docHeader('Consultas con IA (TablefIA)', 'Como <code>TableF</code>, pero el usuario escribe la pregunta en español y la IA (Claude, OpenAI, Gemini o un modelo local, según <a href="ai.php">Admin → IA</a>) genera el pipeline de MongoDB. El servidor lo valida, lo ejecuta y guarda la consulta en <code>nftablesfia</code> para reutilizarla sin volver a llamar a la IA.') ?>
 
-	<?php if (!empty($config['anthropic_api_key']) || getenv('ANTHROPIC_API_KEY')) { ?>
-		<div class="remark success">La llave de la API de Anthropic está configurada. Cada pregunta nueva consume tokens; reutilizar una consulta guardada no.</div>
-	<?php } else { ?>
-		<div class="remark warning">Falta la llave de la API: agregue <code>'anthropic_api_key'</code> al bloque de este dominio en <code>includes/config.php</code> (o defina la variable de entorno <code>ANTHROPIC_API_KEY</code>).</div>
+	<?php try { $tfProvider = nfAI::provider(); ?>
+		<div class="remark success">Proveedor predeterminado: <b><?= htmlspecialchars($tfProvider['name']) ?></b> (<code><?= htmlspecialchars($tfProvider['model']) ?></code>). Cada pregunta nueva consume tokens; reutilizar una consulta guardada no.</div>
+	<?php } catch (RuntimeException $e) { ?>
+		<div class="remark warning">No hay proveedor de IA: agregue uno en <a href="/admin/ai/">Admin → IA</a> (Anthropic, OpenAI, Gemini, Ollama...) o defina <code>'anthropic_api_key'</code> en <code>includes/config.php</code>.</div>
 	<?php } ?>
 
 	<h3>Ejemplo</h3>
@@ -81,7 +81,8 @@ PHP) ?>
 			<tr><td><code>fewshot</code></td><td>Consultas guardadas de este <code>uso</code> que la IA recibe como ejemplos de pregunta → pipeline (5, máximo 10, 0 = ninguna). Se eligen las favoritas y las más ejecutadas, y solo si sus colecciones no cambiaron y pasan la validación actual.</td></tr>
 			<tr><td><code>shared</code></td><td><code>true</code> (defecto): todos ven y reutilizan las consultas del uso; <code>false</code>: cada usuario ve solo las suyas.</td></tr>
 			<tr><td><code>ratelimit</code></td><td>Preguntas nuevas a la IA por usuario: <code>[30, 3600]</code> = 30 por hora. Las reutilizadas no cuentan.</td></tr>
-			<tr><td><code>model</code>, <code>effort</code></td><td><code>claude-opus-5-5</code> y <code>medium</code> por defecto.</td></tr>
+			<tr><td><code>provider</code></td><td>Id de un proveedor de <a href="ai.php">Admin → IA</a>; <code>''</code> (por defecto) = el predeterminado.</td></tr>
+			<tr><td><code>model</code>, <code>effort</code></td><td><code>''</code> por defecto = los del proveedor. Si los fija, aplican a cualquier proveedor: un nombre de modelo de Claude falla con OpenAI. Sin proveedores configurados se usa <code>anthropic_api_key</code> con <code>claude-opus-5-5</code> y <code>medium</code>.</td></tr>
 			<tr><td><code>requireauth</code></td><td>Exige sesión iniciada (por defecto <code>true</code>).</td></tr>
 			<tr><td><code>caption</code>, <code>placeholder</code></td><td>Textos del cuadro de la pregunta.</td></tr>
 		</tbody>
@@ -91,7 +92,7 @@ PHP) ?>
 	<ol>
 		<li>El navegador envía la pregunta a <code>/nframework/tablefia.php</code>; la configuración del componente vive en la sesión, así que el usuario no puede agregar colecciones ni relaciones.</li>
 		<li>Si ya existe una consulta guardada con la misma pregunta y el mismo <code>uso</code>, y no cambió la configuración de las colecciones que usa (su colección base, las de sus <code>$lookup</code>, las relaciones entre ellas y <code>instructions</code>; ver <code>TablefIA::queryHash()</code>), se ejecuta esa sin llamar a la IA: agregar o cambiar otra colección del componente no la invalida. La pregunta se compara normalizada (<code>TablefIA::normalizePrompt()</code>: minúsculas, sin acentos ni signos de puntuación, espacios colapsados), así que <em>«¿Ventas por año?»</em> y <em>«ventas por ano»</em> no generan dos consultas.</li>
-		<li>Si no, Claude recibe las colecciones con sus campos (tipo, valores de muestra y rangos, notas), las relaciones, las reglas y hasta <code>fewshot</code> consultas guardadas como ejemplo, y responde con la colección base, el pipeline (Extended JSON), las columnas y una explicación (salida estructurada con <code>json_schema</code>).</li>
+		<li>Si no, la IA recibe las colecciones con sus campos (tipo, valores de muestra y rangos, notas), las relaciones, las reglas y hasta <code>fewshot</code> consultas guardadas como ejemplo, y responde con la colección base, el pipeline (Extended JSON), las columnas y una explicación (salida estructurada con <code>json_schema</code>; con modelos que no la admiten, el esquema va en las instrucciones y la respuesta se valida igual).</li>
 		<li>El servidor valida el pipeline y lo arma: <code>match</code> + <code>$unset</code> de <code>hidden</code> + etapas de la IA + <code>$limit</code>. Si no pasa la validación, MongoDB lo rechaza (se envía el código y el mensaje) o el resultado no trae las columnas declaradas, se le pide a la IA una corrección con todos los intentos anteriores, hasta <code>attempts</code> veces.</li>
 		<li>Mientras espera, el usuario ve la etapa (buscando, leyendo campos, generando, corrigiendo, ejecutando) y los segundos transcurridos; <strong>Cancelar</strong> solo deja de esperar.</li>
 		<li>Se ejecuta (máximo <code>maxtime</code>), se muestra en una DataTable y se guarda en <code>nftablesfia</code>. Los números llegan como número (la tabla los ordena numéricamente) y las fechas como <code>Y-m-d H:i:s</code>. Se indica si la consulta se reutilizó (sin costo) o se generó, con los tokens usados.</li>
@@ -128,6 +129,7 @@ PHP) ?>
                                 // las consultas anteriores (sin "colecciones") usan la de toda la configuración
   "ejemplos": 3,                // consultas guardadas que recibió la IA como ejemplo
   "modelo": "claude-opus-5-5",
+  "proveedor": "anthropic",
   "tokens": {"input": 1830, "output": 412, "cache": 0},   // suma de todos los intentos
   "intentos": 1,
   "base": null,                 // _id de la consulta que se ajustó

@@ -219,6 +219,12 @@
                     "description": "Rutas propias con crouter.php y las rutas integradas."
                 },
                 {
+                    "file": "api.php",
+                    "title": "API REST",
+                    "icon": "mif-embed2",
+                    "description": "nfApi: rutas JSON versionadas con tokens Bearer, scopes, límite de peticiones y respuestas uniformes."
+                },
+                {
                     "file": "exports.php",
                     "title": "Excel, Word y PDF",
                     "icon": "mif-file-pdf",
@@ -241,6 +247,12 @@
                     "title": "Colas de trabajo",
                     "icon": "mif-timer",
                     "description": "Job y job_worker.php: tareas diferidas con reintentos."
+                },
+                {
+                    "file": "sse.php",
+                    "title": "Tiempo real (SSE)",
+                    "icon": "mif-broadcast",
+                    "description": "nfSSE: Server-Sent Events para tableros en vivo sin polling ni WebSockets."
                 },
                 {
                     "file": "upgrades.php",
@@ -282,6 +294,12 @@
                     "title": "Idiomas",
                     "icon": "mif-language",
                     "description": "Detección de idioma, $nframework->language y cómo agregar textos."
+                },
+                {
+                    "file": "ai.php",
+                    "title": "Proveedores de IA",
+                    "icon": "mif-lab",
+                    "description": "nfAI: Anthropic, OpenAI, Gemini o modelos locales configurados en Admin → IA; respuestas JSON con esquema."
                 }
             ]
         }
@@ -615,6 +633,48 @@
             "category": "backend",
             "doc": "inputs.php",
             "summary": "Consulta al DENUE de INEGI para sugerir domicilios."
+        },
+        {
+            "class": "nfApi",
+            "file": "includes/class.nfApi.php",
+            "category": "backend",
+            "doc": "api.php",
+            "summary": "Rutas REST/JSON versionadas (/api/v1/…) con token Bearer, scopes, rate limit y respuestas {data, meta} / {error}."
+        },
+        {
+            "class": "nfApiToken",
+            "file": "includes/class.nfApiToken.php",
+            "category": "backend",
+            "doc": "api.php",
+            "summary": "Tokens de API por usuario (solo se guarda el sha256): crear, verificar, scopes y revocar."
+        },
+        {
+            "class": "nfApiException",
+            "file": "includes/class.nfApiException.php",
+            "category": "backend",
+            "doc": "api.php",
+            "summary": "Error de la API con estado HTTP, código y detalles."
+        },
+        {
+            "class": "nfApiResult",
+            "file": "includes/class.nfApiResult.php",
+            "category": "backend",
+            "doc": "api.php",
+            "summary": "Respuesta de la API con estado, meta o cabeceras propios."
+        },
+        {
+            "class": "nfSSE",
+            "file": "includes/class.nfSSE.php",
+            "category": "backend",
+            "doc": "sse.php",
+            "summary": "Server-Sent Events: empuja datos al navegador por una conexión abierta (EventSource)."
+        },
+        {
+            "class": "nfAI",
+            "file": "includes/class.nfAI.php",
+            "category": "backend",
+            "doc": "ai.php",
+            "summary": "Proveedores de IA (Anthropic, OpenAI, Gemini, compatibles con OpenAI) y respuestas JSON con esquema."
         }
     ]
 }

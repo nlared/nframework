@@ -21,6 +21,51 @@ Ver `docs/upgrades.php`.
 
 # Próxima versión
 
+## 2026-11-27 — Proveedores de IA (Admin → IA) para TablefIA
+
+- Nuevo `nfAI` y página Admin → IA: el administrador da de alta proveedores desde una lista de configuraciones
+  (Anthropic, OpenAI, Google Gemini, Ollama, LM Studio, vLLM, OpenRouter, Groq, Mistral, DeepSeek u otro
+  compatible con OpenAI), los prueba sin guardar y elige el predeterminado. Se guardan en `configs/site →
+  ai_providers`; las llaves van cifradas con `ai_key` de `config.php` (nueva, opcional) o como `env:VARIABLE`.
+- `TablefIA` usa el proveedor predeterminado o el de su opción nueva `'provider' => 'id'`. Sin proveedores
+  configurados sigue usando `anthropic_api_key` con `claude-opus-5-5` y `medium`, como antes.
+- **Cambio:** los valores por omisión de `TablefIA::$model` y `$effort` pasan a `''` (= los del proveedor). Si un
+  sitio fija `'model' => 'claude-…'` en el componente, ese modelo se pide a **cualquier** proveedor; quítelo si el
+  predeterminado deja de ser Anthropic. Buscar: `grep -rn "new TablefIA" --include=*.php` y revisar `'model'`/`'effort'`.
+- `TablefIA::askClaude()` queda como alias de `askAI()`. Las consultas guardadas registran también `proveedor`.
+
+## 2026-11-27 — Tiempo real con Server-Sent Events (nfSSE)
+
+- Nuevo `nfSSE::stream()` para tableros en vivo sin polling. `bgprocess::renderDashboard()` lo usa: muestra el
+  estado y el final del log de cada proceso, en español; si el navegador no admite `EventSource` consulta cada 3 s.
+  `JobDashboard::render('?stream=jobs')` y Admin → Workers actualizan las colas en vivo y avisan si cambian los workers.
+- **Cambio:** `/nframework/kernel.php` solo inicia o detiene procesos por **POST con token CSRF**
+  (`CSRFToken = csrfToken('/nframework/kernel.php')`); antes bastaba un GET, que otro sitio podía provocar. También
+  rechaza iniciar un proceso que ya corre. `op=status` sigue igual y agrega `log` a cada proceso. A quién afecta: solo a
+  código propio que llame a `kernel.php?op=start|stop` sin pasar por el tablero (`grep -rn "kernel.php" --include=*.php --include=*.js`).
+- Cada flujo SSE abierto ocupa un proceso de PHP-FPM hasta 30 s: con muchos tableros abiertos revise `pm.max_children`.
+
+## 2026-11-27 — API REST (nfApi) y tokens de API
+
+- Nuevo `nfApi` para declarar en `crouter.php` rutas `/api/v1/...` con token Bearer, scopes, límite de peticiones y
+  respuestas `{data, meta}` / `{error}`. `/account/apitokens` (antes una ruta sin plantilla) ahora permite crear,
+  ver y revocar tokens, y aparece en Mi cuenta cuando el sitio declara rutas. Colección `nfapitokens` (solo guarda
+  el sha256); índices nuevos en `nframework/test.php`. Opciones nuevas: `api_tokens_group`, `api_ratelimit`.
+- **Cambio:** una ruta `/api/*` que no existe responde `404` en JSON en lugar de la página `_404`. Las rutas propias
+  bajo `/api/` declaradas con `addRoute` siguen funcionando igual.
+
+## 2026-11-27 — Prioridad en las colas de trabajo
+
+- Nuevo `Job::$priority` (entero, 0 por omisión): entre los trabajos ya vencidos de una cola, `job_worker.php`
+  toma primero el de mayor prioridad y, a igual prioridad, el que venció antes. Antes no había orden definido
+  (MongoDB devolvía cualquiera de los vencidos), así que ahora la cola se procesa en orden de llegada.
+- `dispatch()` guarda `priority` en el documento; la migración `20261127_jobs_priority` asigna `0` a los
+  trabajos ya encolados. Índice nuevo `jobs {queue, failed_at, priority: -1, delay_until}` (lo crea
+  `nframework/test.php`; Admin → Inicio avisa si falta). Admin → Workers muestra la prioridad de los fallidos.
+- A quién afecta: nadie necesita cambiar código. Reinicie los workers después de actualizar (cargan
+  `class.Job.php` al iniciar). Si un sitio inserta en `jobs` directamente en lugar de usar `dispatch()`
+  (busque `->jobs->insertOne(`), agregue `'priority' => 0`: sin el campo, el trabajo queda al final de la cola.
+
 ## 2026-11-26 — Admin → Workers
 
 - La página `/admin/workers/` salía en blanco. Ahora muestra los procesos `job_worker.php` del sitio, las colas

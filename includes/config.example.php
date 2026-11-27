@@ -106,12 +106,22 @@ switch ($_SERVER['HTTP_HOST'] ?? 'localhost') {
             // 'efirma_key' => '',
 
             // --- IA ------------------------------------------------------------------------------------
-            // Llave de la API de Anthropic para TablefIA (consultas en lenguaje natural). Si no se define se
-            // usa la variable de entorno ANTHROPIC_API_KEY. Va solo en este archivo, nunca en MongoDB.
+            // Los proveedores (Anthropic, OpenAI, Gemini, Ollama...) se dan de alta en Admin → IA. Sus llaves se
+            // guardan en MongoDB cifradas con esta llave (32 bytes en base64), que va solo en este archivo:
+            // php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'   Si se pierde o cambia, vuelva a escribirlas.
+            // 'ai_key' => '',
+            // Sin proveedores en Admin → IA, TablefIA usa esta llave de Anthropic (o la variable de entorno
+            // ANTHROPIC_API_KEY) con claude-opus-5-5. Va solo en este archivo, nunca en MongoDB.
             // 'anthropic_api_key' => '',
             // Días sin ejecutarse tras los que se borra una consulta guardada de TablefIA (nftablesfia) que nadie
             // marcó como favorita. Crea un índice TTL al correr nframework/test.php; sin definir no se borran.
             // 'tablefia_ttl_days' => 180,
+
+            // --- API REST (nfApi, crouter.php) ---------------------------------------------------------
+            // Grupo que puede crear tokens en /account/apitokens (vacío = cualquier usuario con sesión).
+            // 'api_tokens_group' => 'api',
+            // Peticiones por token: [cantidad, segundos] (por omisión [600, 60]); cada ruta puede fijar el suyo.
+            // 'api_ratelimit' => [600, 60],
 
             // --- Otras opcionales ---------------------------------------------------------------------
             // 'github_token' => '',      // Admin → Update (repositorio privado)

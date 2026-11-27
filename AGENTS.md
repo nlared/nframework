@@ -185,8 +185,8 @@ $t->Ajax([   // paginado/búsqueda/orden en MongoDB vía /nframework/datatable.p
 // JS: datatables['tabla1'].clearPipeline(); datatables['tabla1'].draw();
 ```
 
-`TablefIA` (`docs/tablefia.php`): el usuario pregunta en lenguaje natural y Claude genera el pipeline (requiere
-`anthropic_api_key`). Declare `collections` (con `match` obligatorio y `hidden`) y `relations` (únicos `$lookup`
+`TablefIA` (`docs/tablefia.php`): el usuario pregunta en lenguaje natural y la IA genera el pipeline (proveedor de
+Admin → IA o `'provider' => 'id'`; sin proveedores, `anthropic_api_key`). Declare `collections` (con `match` obligatorio y `hidden`) y `relations` (únicos `$lookup`
 permitidos); el servidor valida el pipeline y guarda cada consulta en `nftablesfia` por `uso` para reutilizarla.
 La IA recibe los campos inferidos de una muestra con valores categóricos y rangos (`stats`, activo; apáguelo si
 esos valores son sensibles), el significado de `notes`, ejemplos de texto libre solo con `values => true`, y
@@ -231,6 +231,25 @@ $router->addRoute('/api/notas/[s:id]', function (string $route, array $p) {
 }, 'GET');   // o ['GET', 'POST']
 ```
 
+**API REST** (`docs/api.php`): para JSON use `nfApi` en el `crouter.php`, no `addRoute` a mano. Rutas versionadas
+`/api/v1/...`, solo token `Authorization: Bearer` (`nfApiToken`, el usuario lo crea en `/account/apitokens`; no usa la
+cookie, así que no hay CSRF y la sesión se descarta), `scope` por ruta, `ratelimit`, respuestas `{data, meta}` /
+`{error: {code, message, details}}`, y ObjectId/fechas convertidos (`nfApi::normalize()`):
+
+```php
+$api = new nfApi('v1');
+$api->get('/notas/[s:id]', function (array $p) {
+    global $m, $config, $user;                                   // $user = dueño del token
+    if (!isValidObjectId($p['id'])) { throw new nfApiException(400, 'invalid_id', 'Id inválido.'); }
+    return $m->{$config['sitedb']}->notas->findOne(['_id' => toMongoId($p['id']), 'owner' => toMongoId($user->_id)])
+        ?? throw new nfApiException(404, 'not_found', 'No existe.');
+}, ['scope' => 'notas:read']);   // también 'auth' => false (pública) y 'ratelimit' => [n, s]
+// nfApi::input() (JSON → arreglo; fuerce tipos), nfApi::pagination() + nfApi::paginated(), new nfApiResult($d, 201), null = 204
+```
+
+Dentro de un handler de `nfApi` no use `requireAuth()`/`requireGroup()` (redirigen): `nfApi::requireGroup()` o
+`nfApiException`.
+
 Dentro de rutas está además `$twig` (plantillas de `nframework/templates`). **Se define en
 `nframework/router.php`**: no existe en páginas `.php` servidas directamente ni en `job_worker.php`.
 
@@ -271,8 +290,16 @@ Dentro de rutas está además `$twig` (plantillas de `nframework/templates`). **
 - **Exportaciones**: `$nframework->excelOut($spreadsheet, 'nombre')`, `excelOutPdf()`, `wordOut()`,
   `wordOutPdf()`, `wordTemplateOutPdf($templateProcessor, 'nombre')`.
 - **Colas**: clase `class.<Nombre>.php` en el `include_path` que extiende `Job` (`$queue`, `$maxAttempts`,
-  `$delay`, `handle()`); `MiJob::dispatch($payload)`. Una excepción en `handle()` reintenta. Colección `jobs`.
-- **Procesos largos**: `bgprocess(['id', 'cmd', 'logfile'])` → `start()`, `isRunning()`, `status()`, `stop()`, `renderDashboard()`.
+  `$delay`, `$priority` —mayor se toma antes—, `handle()`); `MiJob::dispatch($payload)`. Una excepción en
+  `handle()` reintenta. Colección `jobs`; Admin → Workers muestra colas, workers y fallidos.
+- **Procesos largos**: `bgprocess(['id', 'cmd', 'logfile'])` → `start()`, `isRunning()`, `status()`, `stop()`, `renderDashboard()`
+  (estado y log en vivo por SSE; iniciar/detener por POST con CSRF en `/nframework/kernel.php`).
+- **Tiempo real**: `nfSSE::stream(fn (nfSSE $sse) => $datos, ['interval' => 1, 'maxtime' => 30]); exit;` atiende un
+  `EventSource` (evento `update` solo si cambian los datos; `false` termina con `end`). Cierra la sesión antes de
+  transmitir y ocupa un proceso de PHP-FPM mientras dura. `JobDashboard::render('?stream=jobs')`. Ver `docs/sse.php`.
+- **IA**: `nfAI::json(nfAI::provider(), $sistema, $mensaje, $jsonSchema)` → `['data', 'usage', 'model']` con el proveedor
+  de Admin → IA (Anthropic por SDK; OpenAI, Gemini y compatibles —Ollama, LM Studio, vLLM, OpenRouter...— por HTTP).
+  Las llaves se guardan cifradas con `ai_key` de `config.php` o como `env:VAR`. Valide `data`. Ver `docs/ai.php`.
 - **Menús y páginas del CMS**: `nfMetroMenu('_nav')`, `nfPage('_header')`, `renderEmbeddedFunctions($html)`.
 - **Tema**: `include.php` carga `/nframework/css/nframework.css` (`csss['090']`, antes del CSS del sitio) que redefine
   las variables de Metro 5 con tokens `--nf-*` (`--nf-accent`, `--nf-surface`, `--nf-line`, `--nf-radius*`, `--nf-shadow*`;

@@ -56,10 +56,12 @@ La documentación de /docs/ es ejecutable: cada página muestra el resultado jun
 - [Seguridad](/docs/security.php): CSRF, redirecciones seguras, consultas Mongo y archivos subidos.
 - [Funciones](/docs/functions.php): Funciones auxiliares de functions.php con su resultado.
 - [Rutas](/docs/routes.php): Rutas propias con crouter.php y las rutas integradas.
+- [API REST](/docs/api.php): nfApi: rutas JSON versionadas con tokens Bearer, scopes, límite de peticiones y respuestas uniformes.
 - [Excel, Word y PDF](/docs/exports.php): Descargar hojas de cálculo, documentos y PDF.
 - [Imágenes](/docs/images.php): Miniaturas, AVIF o WebP según el navegador, fotos de perfil y páginas de PDF como imagen.
 - [Procesos en segundo plano](/docs/backgroundps.php): bgprocess: lanzar y vigilar un comando largo.
 - [Colas de trabajo](/docs/jobs.php): Job y job_worker.php: tareas diferidas con reintentos.
+- [Tiempo real (SSE)](/docs/sse.php): nfSSE: Server-Sent Events para tableros en vivo sin polling ni WebSockets.
 - [Actualizaciones y migraciones](/docs/upgrades.php): Versión del framework, migraciones de base de datos (upgrades/) por sitio y revisión del código de los sitios.
 - [Páginas y menús del CMS](/docs/cms.php): nfPage(), nfMetroMenu() y renderEmbeddedFunctions(): contenido editable desde el panel.
 
@@ -69,3 +71,4 @@ La documentación de /docs/ es ejecutable: cada página muestra el resultado jun
 - [Antivirus](/docs/clamav.php): ClamAV: analizar archivos con clamd por TCP; configuración y prueba en Admin → Antivirus.
 - [Caché](/docs/cache.php): nfCacheRemember() en el servidor y serveFile()/testcache() en el navegador.
 - [Idiomas](/docs/i18n.php): Detección de idioma, $nframework->language y cómo agregar textos.
+- [Proveedores de IA](/docs/ai.php): nfAI: Anthropic, OpenAI, Gemini o modelos locales configurados en Admin → IA; respuestas JSON con esquema.

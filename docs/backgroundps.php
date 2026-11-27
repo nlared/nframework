@@ -26,6 +26,7 @@ $bg = new bgprocess([
 ]);
 echo $bg->renderDashboard();     // botones iniciar/detener y log que se actualiza solo
 PHP) ?>
+	<p>El tablero recibe el estado y el final del log de cada proceso por <a href="sse.php">Server-Sent Events</a> (<code>/nframework/kernel.php?op=stream</code>), sin consultar cada pocos segundos; si el navegador no admite <code>EventSource</code>, consulta cada 3 s. Iniciar y detener van por POST con token CSRF y solo actúan sobre los procesos que el servidor registró en la sesión.</p>
 
 	<h3>Desde PHP</h3>
 	<?= docCode(<<<'PHP'
