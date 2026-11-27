@@ -40,6 +40,8 @@ class nfIndexes
             ['collection' => 'nftablesfia', 'key' => ['uso' => 1, 'ultimaejecucion' => -1]],
             ['collection' => 'nftablesfia', 'key' => ['uso' => 1, 'prompt' => 1, 'confighash' => 1]],
             ['collection' => 'nftablesfia', 'key' => ['uso' => 1, 'promptnorm' => 1, 'confighash' => 1]],
+            // job_worker.php: siguiente trabajo vencido de la cola por prioridad (Job::claimQuery()).
+            ['collection' => 'jobs', 'key' => ['queue' => 1, 'failed_at' => 1, 'priority' => -1, 'delay_until' => 1]],
         ];
         // TablefIA: borrar consultas sin ejecutarse en N días que nadie marcó como favorita ('fijada' => false).
         if (!empty($config['tablefia_ttl_days'])) {

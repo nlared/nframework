@@ -15,6 +15,7 @@ class EnviarCorreoJob extends Job
     public $queue = 'email';      // cola (por defecto 'default')
     public $maxAttempts = 5;      // intentos antes de marcarlo como fallido
     public $delay = 0;            // segundos antes de la primera ejecución
+    public $priority = 0;         // mayor = se toma antes dentro de la cola
 
     public function __construct(public $payload = [])
     {
@@ -54,6 +55,24 @@ BASH, 'bash') ?>
 	<p><a href="/admin/workers/">Admin → Workers</a> muestra los workers que corren, las colas y los trabajos fallidos (con su error, para reintentarlos o eliminarlos), inicia un worker temporal y da la configuración de systemd, supervisor o cron ya armada para el sitio. Reinicie los workers después de actualizar el código: cargan las clases al iniciar.</p>
 	<p>El trabajador toma el siguiente trabajo pendiente cuya hora ya pasó, ejecuta <code>handle()</code> y lo borra si termina bien. Si lanza una excepción llama a <code>retry(5)</code>; al agotar <code>maxAttempts</code> lo marca con <code>failed_at</code> y <code>error</code>. Solo instancia clases que heredan de <code>Job</code>.</p>
 
+	<h3>Prioridad</h3>
+	<p>Entre los trabajos ya vencidos de una cola, el worker toma primero el de mayor <code>$priority</code> y, a igual prioridad, el que venció antes (orden de llegada). El valor por omisión es <code>0</code>; uno negativo deja el trabajo detrás de los normales. La prioridad no adelanta a un trabajo cuyo <code>$delay</code> no ha pasado, y se conserva al reintentarlo.</p>
+	<?= docCode(<<<'PHP'
+class ReporteJob extends Job
+{
+    public $queue = 'reports';
+
+    public function __construct(public $payload = [])
+    {
+        // Por trabajo: el reporte que un usuario está esperando va antes que los nocturnos.
+        $this->priority = !empty($payload['urgente']) ? 10 : -5;
+    }
+
+    public function handle() { /* ... */ }
+}
+PHP) ?>
+	<p class="remark">Si llegan sin pausa trabajos de alta prioridad, los de baja esperan indefinidamente en esa cola. Para tareas que nunca deben bloquearse entre sí, use colas distintas, cada una con su worker.</p>
+
 	<h3>Estado de las colas</h3>
 	<p><code>JobDashboard</code> muestra pendientes y fallidos por cola:</p>
 	<?= $m->{$config['sitedb']}->jobs->countDocuments() > 0 ? $panel->render() : '<p class="text-muted">No hay trabajos en la colección <code>jobs</code>.</p>' ?>
@@ -74,3 +93,4 @@ BASH, 'bash') ?>
 }
 JS, 'javascript') ?>
 </div>
+  priority: 0,                   // mayor = se toma antes

@@ -219,7 +219,7 @@ JS, 'general');
 				<button type="button" class="button alert" onclick="workersOp({op: 'delete', id: 'all'}, '¿Eliminar todos los fallidos?')"><span class="mif-bin"></span> Eliminar todos</button>
 			</div>
 			<table class="table compact striped">
-				<thead><tr><th>Falló</th><th>Cola</th><th>Clase</th><th>Intentos</th><th>Error</th><th></th></tr></thead>
+				<thead><tr><th>Falló</th><th>Cola</th><th>Clase</th><th>Prioridad</th><th>Intentos</th><th>Error</th><th></th></tr></thead>
 				<tbody>
 				<?php foreach ($failedList as $j): ?>
 					<tr>
@@ -242,6 +242,7 @@ JS, 'general');
 	<div class="box shadow-large p-4" id="instalar">
 		<h4 class="mt-0">Instalar como servicio</h4>
 		<p class="fg-gray">Ya armado para este sitio: <code>HTTP_HOST=<?= $e($wHost) ?></code> (sin él el worker usaría el bloque <code>localhost</code> de config.php), <code><?= $e($wPhp) ?></code>, usuario <code><?= $e($wUser) ?></code> y un worker por cola (<?= implode(', ', array_map(fn ($q) => '<code>' . $e($q) . '</code>', $queueNames)) ?>). Reserva de <?= $wLease ?> s: un trabajo tomado no lo vuelve a tomar otro worker antes de ese tiempo.</p>
+						<td><?= (int) ($j['priority'] ?? 0) ?></td>
 		<ul data-role="tabs" data-expand="true">
 			<li><a href="#w-systemd">systemd (recomendado)</a></li>
 			<li><a href="#w-supervisor">supervisor</a></li>

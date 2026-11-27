@@ -23,15 +23,8 @@ $timeout = max(1, (int) ($nfWorkerArgs[1] ?? 5));
 $once = in_array('--once', $argv, true);
 
 while (true) {
-    $job = $m->{$config['sitedb']}->jobs->findOneAndUpdate(
-        [
-            'queue' => $queue,
-            'delay_until' => ['$lte' => new MongoDB\BSON\UTCDateTime()],
-            'failed_at' => null
-        ],
-        ['$set' => ['delay_until' => new MongoDB\BSON\UTCDateTime((time() + $timeout) * 1000)]],
-        ['returnDocument' => MongoDB\Operation\FindOneAndUpdate::RETURN_DOCUMENT_AFTER]
-    );
+    // El vencido de mayor prioridad; a igual prioridad, el que venció antes (Job::claimQuery()).
+    $job = $m->{$config['sitedb']}->jobs->findOneAndUpdate(...Job::claimQuery($queue, $timeout));
 
     if ($job) {
         $instance = null;
