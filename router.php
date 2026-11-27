@@ -65,6 +65,11 @@ if (file_exists($_SERVER['DOCUMENT_ROOT'].'/crouter.php')){
 try{
 	$router->callRoute($uri);
 }catch(exception $e){
+	// La API responde también el 404 en su formato JSON (ver includes/class.nfApi.php).
+	if (str_starts_with((string) $uri, '/api/')) {
+		nfApi::notFound();
+		return;
+	}
 	http_response_code(404);
 	$page=nfPage('_404');
 	echo $page['html'] ?? 'Not Found';

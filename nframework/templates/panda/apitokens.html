@@ -1,0 +1,96 @@
+<style>
+    body {
+        background: url("/img/bg-1.jpg") bottom right no-repeat;
+        background-size: cover;
+    }
+
+    .dark-side {
+        body {
+            background: url("/img/bg-2.jpg") bottom right no-repeat;
+            background-size: cover;
+        }
+    }
+
+    .formbox {
+        inset: 0;
+        margin: auto;
+    }
+
+    .nf-token { word-break: break-all; user-select: all; }
+</style>
+<div class="box shadow-large-extra bg-glassmorphism fg-white bd-white formbox" style="max-width:820px;width:calc(100% - 2rem)">
+    <div class="h3 text-weight-7 border-bottom bd-white pb-2">{{lng['account_apitokens']}}</div>
+    {% if msgOk %}<div class="remark success fg-black">{{msgOk}}</div>{% endif %}
+    {% if msgError %}<div class="remark alert fg-black">{{msgError}}</div>{% endif %}
+    {% if newToken %}
+        <div class="remark warning fg-black">
+            <b>{{lng['apitokens_created']}}</b>
+            <div class="d-flex flex-align-center gap-2 mt-2">
+                <code id="nfNewToken" class="nf-token flex-fill">{{newToken}}</code>
+                <button type="button" class="button small" onclick="navigator.clipboard.writeText(document.getElementById('nfNewToken').textContent).then(function(){ toast('OK'); })"><span class="mif-copy"></span>&nbsp;{{lng['apitokens_copy']}}</button>
+            </div>
+        </div>
+    {% endif %}
+    <p>{{lng['apitokens_info']}}</p>
+
+    {% if not enabled %}
+        <div class="remark fg-black">{{lng['apitokens_disabled']}}</div>
+    {% elseif not allowed %}
+        <div class="remark fg-black">{{lng['apitokens_not_allowed']}}</div>
+    {% else %}
+        <form action="/account/apitokens" method="POST" class="border bd-white p-4 mb-4" autocomplete="off">
+            <input type="hidden" name="CSRFToken" value="{{csrf}}">
+            <div class="h5 mt-0">{{lng['apitokens_new']}}</div>
+            <div class="mb-2">
+                <label>{{lng['apitokens_name']}}</label>
+                <input type="text" name="name" maxlength="80" required data-nf-noautofill>
+            </div>
+            {% if scopes %}
+            <div class="mb-2">
+                <label class="d-block">{{lng['apitokens_scopes']}}</label>
+                {% for s in scopes %}
+                    <label class="d-block"><input type="checkbox" name="scopes[]" value="{{s.name}}"> <code class="fg-white">{{s.name}}</code>{% if s.description %} — {{s.description}}{% endif %}</label>
+                {% endfor %}
+                <label class="d-block mt-1"><input type="checkbox" name="scopes[]" value="*"> {{lng['apitokens_all_scopes']}}</label>
+            </div>
+            {% endif %}
+            <div class="mb-3">
+                <label>{{lng['apitokens_expires']}}</label>
+                <select name="days" style="max-width:200px">
+                    {% for d in expirations %}
+                        <option value="{{d}}"{% if d == 90 %} selected{% endif %}>{% if d == 0 %}{{lng['apitokens_never']}}{% else %}{{d}} {{lng['apitokens_days']}}{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="button primary" name="op" value="create"><span class="mif-key"></span>&nbsp;{{lng['apitokens_create']}}</button>
+        </form>
+    {% endif %}
+
+    <div class="h5">{{lng['apitokens_list']}}</div>
+    {% if rows %}
+    <table class="table compact" style="color:inherit">
+        <thead><tr><th>{{lng['apitokens_name']}}</th><th>{{lng['apitokens_scopes']}}</th><th>{{lng['apitokens_expires']}}</th><th>{{lng['apitokens_last_used']}}</th><th></th></tr></thead>
+        <tbody>
+        {% for r in rows %}
+            <tr>
+                <td>{{r.name}}<br><code class="fg-white">nfat_…{{r.hint}}</code></td>
+                <td><code class="fg-white">{{r.scopes}}</code></td>
+                <td>{% if r.expired %}<span class="tag alert">{{lng['apitokens_expired']}}</span>{% elseif r.expires %}{{r.expires}}{% else %}{{lng['apitokens_never']}}{% endif %}</td>
+                <td>{% if r.last %}{{r.last}}<br><small>{{r.ip}}</small>{% else %}{{lng['apitokens_unused']}}{% endif %}</td>
+                <td>
+                    <form action="/account/apitokens" method="POST" class="m-0" onsubmit="return confirm('{{lng['apitokens_revoke_confirm']|e('js')}}');">
+                        <input type="hidden" name="CSRFToken" value="{{csrf}}">
+                        <input type="hidden" name="id" value="{{r.id}}">
+                        <button class="button small alert" name="op" value="revoke">{{lng['apitokens_revoke']}}</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>{{lng['apitokens_empty']}}</p>
+    {% endif %}
+    <div class="border-top bd-white pt-4 mt-4"><a class="fg-white" href="/account/"><span class="mif-arrow-left"></span>&nbsp;{{lng['account_title']}}</a></div>
+</div>
+{{nframework['themeSwitcher']|raw}}

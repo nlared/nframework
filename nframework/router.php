@@ -646,6 +646,8 @@ $nfAccountHome = function (string $route, array $p) {
 		'twofa' => !empty($user->twofa_secret),
 		'sessions' => count((array) $user->sessions),
 		'admin' => $user->in('admins'),
+		// Solo si el crouter.php del sitio declara rutas con nfApi.
+		'api' => nfApi::$routes > 0 && nfApiToken::canCreate($user),
 	]));
 };
 $router->addRoute('/account', $nfAccountHome, 'GET');
@@ -831,19 +833,66 @@ $router->addRoute('/account/sessions', function (string $route, array $p) {
 		'msgOk' => $msgOk,
 	]));
 }, ['GET', 'POST']);
+/**
+ * Tokens de la API REST (nfApiToken): crear (se muestra una sola vez), ver último uso y revocar. Los scopes
+ * que se ofrecen son los que declara el crouter.php del sitio con nfApi.
+ */
 $router->addRoute('/account/apitokens', function (string $route, array $p) {
-	global $twig, $config, $nframework, $user;
+	global $twig, $user, $nframework;
 	$user->requireAuth();
-	$nframework->usecommon = true;
-	$template = $twig->load('apitokens.html');
-	echo $template->render([
-		'nframework' => [
-			'themeSwitcher' => $nframework->themeSwitcher()
-		],
-		'lng' => $nframework->language(),
-		'user' => $user
-	]);
-}, 'GET');
+	$lng = $nframework->language;
+	$allowed = nfApiToken::canCreate($user);
+	$known = nfApi::scopes();
+	$msgError = '';
+	$msgOk = '';
+	$newToken = '';
+	if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+		$op = is_string($_POST['op'] ?? null) ? $_POST['op'] : '';
+		if (!csrfValidate()) {
+			$msgError = $lng['form_expired'] ?? 'Formulario caducado, intente de nuevo.';
+		} elseif ($op === 'revoke') {
+			$n = nfApiToken::revoke($user->_id, is_string($_POST['id'] ?? null) ? $_POST['id'] : '');
+			$msgOk = $n > 0 ? $lng['apitokens_revoked'] : '';
+		} elseif ($op === 'create' && $allowed && nfApi::$routes > 0) {
+			$name = is_string($_POST['name'] ?? null) ? trim($_POST['name']) : '';
+			$days = (int) (is_string($_POST['days'] ?? null) ? $_POST['days'] : 90);
+			$scopes = nfApiToken::normalizeScopes(is_array($_POST['scopes'] ?? null) ? $_POST['scopes'] : [], $known);
+			if ($name === '') {
+				$msgError = $lng['apitokens_name_required'];
+			} elseif (!in_array($days, nfApiToken::EXPIRATIONS, true)) {
+				$msgError = $lng['apitokens_expires_invalid'];
+			} elseif ($scopes === [] && $known !== []) {
+				$msgError = $lng['apitokens_scopes_required'];
+			} elseif (count(nfApiToken::forUser($user->_id)) >= 50) {
+				$msgError = $lng['apitokens_too_many'];
+			} else {
+				$newToken = nfApiToken::create($user->_id, $name, $scopes, $days)['token'];
+			}
+		}
+	}
+	$fmt = fn($d) => $d instanceof MongoDB\BSON\UTCDateTime ? $d->toDateTime()->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i') : '';
+	$rows = array_map(fn($t) => [
+		'id' => (string) $t['_id'],
+		'name' => (string) ($t['name'] ?? ''),
+		'hint' => (string) ($t['hint'] ?? ''),
+		'scopes' => implode(', ', (array) ($t['scopes'] ?? [])),
+		'created' => $fmt($t['created_at'] ?? null),
+		'expires' => $fmt($t['expires_at'] ?? null),
+		'expired' => !nfApiToken::usable($t),
+		'last' => $fmt($t['last_used_at'] ?? null),
+		'ip' => (string) ($t['last_ip'] ?? ''),
+	], nfApiToken::forUser($user->_id));
+	echo $twig->load('apitokens.html')->render(nfAccountView('/account/apitokens', [
+		'rows' => $rows,
+		'enabled' => nfApi::$routes > 0,
+		'allowed' => $allowed,
+		'scopes' => array_map(fn($s) => ['name' => $s, 'description' => nfApi::$scopes[$s] ?? ''], $known),
+		'expirations' => nfApiToken::EXPIRATIONS,
+		'newToken' => $newToken,
+		'msgError' => $msgError,
+		'msgOk' => $msgOk,
+	]));
+}, ['GET', 'POST']);
 
 
 

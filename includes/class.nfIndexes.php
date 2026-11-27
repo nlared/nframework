@@ -40,6 +40,9 @@ class nfIndexes
             ['collection' => 'nftablesfia', 'key' => ['uso' => 1, 'ultimaejecucion' => -1]],
             ['collection' => 'nftablesfia', 'key' => ['uso' => 1, 'prompt' => 1, 'confighash' => 1]],
             ['collection' => 'nftablesfia', 'key' => ['uso' => 1, 'promptnorm' => 1, 'confighash' => 1]],
+            // API REST: búsqueda del token por su hash y listado por usuario (nfApiToken).
+            ['collection' => 'nfapitokens', 'key' => ['hash' => 1], 'options' => ['unique' => true]],
+            ['collection' => 'nfapitokens', 'key' => ['owner' => 1, 'created_at' => -1]],
             // job_worker.php: siguiente trabajo vencido de la cola por prioridad (Job::claimQuery()).
             ['collection' => 'jobs', 'key' => ['queue' => 1, 'failed_at' => 1, 'priority' => -1, 'delay_until' => 1]],
         ];

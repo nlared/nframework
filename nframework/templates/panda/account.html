@@ -36,6 +36,7 @@
         <a href="/account/security"><span class="mif-security mif-2x"></span>{{lng['security_title']}}
             <small>{{lng['twofa_title']}}: {% if twofa %}{{lng['security_active']}}{% else %}{{lng['security_inactive']}}{% endif %}</small></a>
         <a href="/account/sessions"><span class="mif-devices mif-2x"></span>{{lng['account_sessions']}}<small>{{sessions}} {{lng['account_sessions_open']}}</small></a>
+        {% if api %}<a href="/account/apitokens"><span class="mif-key mif-2x"></span>{{lng['account_apitokens']}}<small>{{lng['account_apitokens_info']}}</small></a>{% endif %}
         {% if admin %}<a href="/admin/"><span class="mif-cog mif-2x"></span>{{lng['account_admin']}}<small>/admin/</small></a>{% endif %}
         <a href="/account/logout"><span class="mif-exit mif-2x"></span>{{lng['logout_link']}}<small>&nbsp;</small></a>
     </div>
