@@ -19,7 +19,7 @@ entradas.
 
 Ver `docs/upgrades.php`.
 
-# Próxima versión
+# 2026.4
 
 ## 2026-11-27 — Proveedores de IA (Admin → IA) para TablefIA
 
