@@ -15,7 +15,7 @@ foreach ($docsMenu as $section => $pages) {
 }
 ?>
 <div class="container">
-	<?= docHeader('Documentación de nframework', 'Cada página es un ejemplo que funciona: muestra el resultado y el código que lo produce. Empiece por <a href="intro.php">Primeros pasos</a>.') ?>
+	<?= docHeader('Documentación de nframework', 'Cada página es un ejemplo que funciona: muestra el resultado y el código que lo produce. Empiece por <a href="intro.php">Primeros pasos</a>. Para más información sobre la arquitectura y el código consulte <a href="https://deepwiki.com/nlared/nframework" target="_blank" rel="noopener">DeepWiki</a>.') ?>
 	<div class="grid">
 		<div class="row"><?= $cards ?></div>
 	</div>

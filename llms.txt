@@ -8,6 +8,7 @@ La documentación de /docs/ es ejecutable: cada página muestra el resultado jun
 
 - [AGENTS.md](/AGENTS.md): convenciones, anatomía de una página, contrato AJAX, databinding, seguridad y estructura del framework
 - [components.json](/docs/components.json): catálogo legible por máquina de las páginas de /docs/ y de cada componente (clase, archivo, categoría, página de ejemplo)
+- [DeepWiki](https://deepwiki.com/nlared/nframework): wiki generada a partir del repositorio, con arquitectura, flujos y preguntas en lenguaje natural sobre el código
 
 ## Introducción
 

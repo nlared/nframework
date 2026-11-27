@@ -13,7 +13,9 @@ Este sitio usa nframework: antes de trabajar lea /var/www/dev.nlared.local/AGENT
 ```
 
 Para consultas automáticas hay dos índices legibles por máquina: `docs/components.json` (todas las páginas de
-`docs/` y cada componente con su clase, archivo, categoría y página de ejemplo) y `llms.txt` en la raíz.
+`docs/` y cada componente con su clase, archivo, categoría y página de ejemplo) y `llms.txt` en la raíz. Para más
+información sobre la arquitectura y el código está [DeepWiki](https://deepwiki.com/nlared/nframework) (generada a
+partir del repositorio; ante una diferencia, mandan el código y `docs/`).
 
 nframework es un framework PHP (sin namespaces, basado en variables globales) para aplicaciones web con
 MongoDB, componentes de formulario Metro UI 5, formularios AJAX, DataTables, usuarios con 2FA, panel de
