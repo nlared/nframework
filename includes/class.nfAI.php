@@ -57,8 +57,10 @@ class nfAI
                 'effort' => ['low', 'medium', 'high'],
                 'help' => 'Llave en platform.openai.com → API keys. Usa /chat/completions con response_format json_schema; el esfuerzo solo aplica a modelos de razonamiento.'],
             'gemini' => ['type' => 'gemini', 'label' => 'Google Gemini', 'base_url' => 'https://generativelanguage.googleapis.com/v1beta',
-                'models' => [], 'key' => 'required', 'json_mode' => 'schema', 'json_modes' => self::JSON_MODES, 'effort' => [],
-                'help' => 'Llave en aistudio.google.com → API keys. Usa generateContent con responseJsonSchema.'],
+                // «Objeto» por omisión: responseMimeType JSON está documentado; responseJsonSchema (modo «esquema») no
+                // está claro en la documentación de generateContent y su Schema propio no admite additionalProperties.
+                'models' => [], 'key' => 'required', 'json_mode' => 'object', 'json_modes' => self::JSON_MODES, 'effort' => [],
+                'help' => 'Llave en aistudio.google.com → API keys. Usa generateContent con respuesta JSON y el esquema en las instrucciones; pruebe el modo «esquema estricto» (responseJsonSchema) antes de usarlo.'],
             'ollama' => $compat + ['label' => 'Ollama (local)', 'base_url' => 'http://127.0.0.1:11434/v1', 'key' => 'none',
                 'help' => 'Modelos locales: ollama pull <modelo>. No necesita llave. Elija un modelo con buen soporte de JSON.'],
             'lmstudio' => $compat + ['label' => 'LM Studio (local)', 'base_url' => 'http://127.0.0.1:1234/v1', 'key' => 'none',

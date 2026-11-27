@@ -138,10 +138,13 @@ class NfAITest extends TestCase
 
     public function testGeminiRequest(): void
     {
-        $r = \nfAI::buildRequest($this->provider('gemini', ['model' => 'gemini/x']), 'g-1', 'S', 'U', self::SCHEMA);
+        $object = \nfAI::buildRequest($this->provider('gemini'), 'g-1', 'S', 'U', self::SCHEMA);
+        $this->assertSame(['maxOutputTokens' => 16000, 'responseMimeType' => 'application/json'], $object['body']['generationConfig'], 'por omisión, objeto JSON');
+        $this->assertStringContainsString('JSON Schema', $object['body']['systemInstruction']['parts'][0]['text']);
+        $r = \nfAI::buildRequest($this->provider('gemini', ['model' => 'gemini/x', 'json_mode' => 'schema']), 'g-1', 'S', 'U', self::SCHEMA);
         $this->assertSame('https://generativelanguage.googleapis.com/v1beta/models/gemini%2Fx:generateContent', $r['url']);
         $this->assertContains('x-goog-api-key: g-1', $r['headers']);
-        $this->assertSame(['parts' => [['text' => 'S']]], $r['body']['systemInstruction']);
+        $this->assertSame(['parts' => [['text' => 'S']]], $r['body']['systemInstruction'], 'con esquema estricto las instrucciones no cambian');
         $this->assertSame([['role' => 'user', 'parts' => [['text' => 'U']]]], $r['body']['contents']);
         $this->assertSame(['maxOutputTokens' => 16000, 'responseMimeType' => 'application/json', 'responseJsonSchema' => self::SCHEMA], $r['body']['generationConfig']);
     }

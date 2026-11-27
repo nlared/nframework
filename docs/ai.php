@@ -30,8 +30,8 @@ try {
 	</table>
 	<p>Anthropic se llama con el SDK oficial (salida estructurada, <code>effort</code>, caché del prompt de sistema y respaldo del servidor cuando el modelo declina). OpenAI y los compatibles usan <code>/chat/completions</code>; Gemini, <code>generateContent</code>. Cada proveedor tiene su modo de respuesta JSON:</p>
 	<ul>
-		<li><b>Esquema estricto</b> (<code>schema</code>): el servidor garantiza el formato (<code>response_format: json_schema</code>, <code>responseJsonSchema</code>).</li>
-		<li><b>Objeto JSON libre</b> (<code>object</code>): el servidor garantiza JSON y el esquema va en las instrucciones (DeepSeek, servidores sin esquemas).</li>
+		<li><b>Esquema estricto</b> (<code>schema</code>): el servidor garantiza el formato (<code>response_format: json_schema</code>; en Gemini <code>responseJsonSchema</code>, sin confirmar: pruébelo en Admin → IA).</li>
+		<li><b>Objeto JSON libre</b> (<code>object</code>): el servidor garantiza JSON y el esquema va en las instrucciones (por omisión en Gemini y DeepSeek, y en servidores sin esquemas).</li>
 		<li><b>Solo instrucciones</b> (<code>prompt</code>): para modelos locales sin modo JSON; la respuesta se extrae del texto (también de un bloque <code>```json</code>).</li>
 	</ul>
 	<p>En los tres casos el código que recibe la respuesta debe validarla: TablefIA lo hace con la colección y el pipeline.</p>
