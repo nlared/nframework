@@ -187,7 +187,7 @@ try {
 				tablefiaProgress($progressFile, $attempt === 1
 					? 'Generando la consulta con IA…'
 					: "Corrigiendo la consulta (intento {$attempt} de {$attempts})…");
-				$answer = TablefIA::askClaude($cfg, $system, $prompt, $previous ?: null, $base);
+				$answer = TablefIA::askAI($cfg, $system, $prompt, $previous ?: null, $base);
 				foreach ($usage as $k => $v) {
 					$usage[$k] = $v + (int) ($answer['usage'][$k] ?? 0);
 				}
@@ -237,6 +237,7 @@ try {
 				'confighash' => TablefIA::queryHash($cfg, $involved),
 				'ejemplos' => count($examples),
 				'modelo' => $answer['modelo'] ?? $cfg['model'],
+				'proveedor' => $answer['proveedor'] ?? '',
 				'tokens' => $usage,
 				'intentos' => $attempt,
 				'base' => $base ? $base['_id'] : null,

@@ -1,16 +1,10 @@
 <?php
 
-use Anthropic\Client as AnthropicClient;
-use Anthropic\Core\Exceptions\APIConnectionException;
-use Anthropic\Core\Exceptions\APIStatusException;
-use Anthropic\Core\Exceptions\AuthenticationException;
-use Anthropic\Core\Exceptions\RateLimitException;
-
 /**
  * TablefIA: consultas a MongoDB en lenguaje natural.
  *
- * Como TableF, pero en lugar del constructor de filtros el usuario escribe una pregunta; Claude la convierte
- * en un pipeline de aggregate que el servidor valida, ejecuta y muestra en una tabla. Cada consulta (prompt,
+ * Como TableF, pero en lugar del constructor de filtros el usuario escribe una pregunta; la IA (el proveedor
+ * de Admin → IA, ver nfAI: Claude, OpenAI, Gemini o un modelo local) la convierte en un pipeline de aggregate que el servidor valida, ejecuta y muestra en una tabla. Cada consulta (prompt,
  * pipeline, columnas, explicación y una muestra del resultado) se guarda en la colección nftablesfia con el
  * campo `uso`, que identifica dónde se usa el componente, para listarla y reutilizarla sin volver a llamar a
  * la IA.
@@ -101,10 +95,12 @@ class TablefIA
      * ocupa disco del servidor; actívelo en colecciones grandes junto con un maxtime adecuado.
      */
     public $allowdiskuse = false;
-    /** @var string */
-    public $model = 'claude-opus-5-5';
-    /** @var string */
-    public $effort = 'medium';
+    /** @var string Proveedor de Admin → IA (id); '' = el predeterminado. Ver nfAI. */
+    public $provider = '';
+    /** @var string Modelo; '' = el del proveedor (sin proveedores configurados, claude-opus-5-5). */
+    public $model = '';
+    /** @var string Esfuerzo de razonamiento (low...max); '' = el del proveedor. */
+    public $effort = '';
     /** @var bool */
     public $requireauth = true;
     /** Llamadas a la IA permitidas por usuario: [cantidad, segundos]. */
@@ -177,8 +173,9 @@ class TablefIA
             'fewshot' => max(0, min(10, (int) $this->fewshot)),
             'maxtime' => max(1000, (int) $this->maxtime),
             'allowdiskuse' => (bool) $this->allowdiskuse,
-            'model' => $this->model,
-            'effort' => $this->effort,
+            'provider' => (string) $this->provider,
+            'model' => (string) $this->model,
+            'effort' => (string) $this->effort,
             'requireauth' => (bool) $this->requireauth,
             'ratelimit' => $this->ratelimit,
             'shared' => (bool) $this->shared,
@@ -699,92 +696,92 @@ class TablefIA
     }
 
     /**
-     * Pide a Claude el pipeline. Devuelve ['coleccion', 'pipeline' (string JSON), 'columnas', 'explicacion', 'usage'].
+     * Esquema de la respuesta de la IA: colección (una de las permitidas), pipeline como texto JSON, columnas
+     * y explicación.
+     *
+     * @param array<string, mixed> $cfg
+     * @return array<string, mixed>
+     */
+    public static function answerSchema(array $cfg): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'coleccion' => ['type' => 'string', 'enum' => array_map('strval', array_keys((array) $cfg['collections']))],
+                'pipeline' => ['type' => 'string'],
+                'columnas' => ['type' => 'array', 'items' => ['type' => 'string']],
+                'explicacion' => ['type' => 'string'],
+            ],
+            'required' => ['coleccion', 'pipeline', 'columnas', 'explicacion'],
+            'additionalProperties' => false,
+        ];
+    }
+
+    /**
+     * Fuerza los tipos de la respuesta: los proveedores sin esquema estricto (modelos locales, modo
+     * «objeto») pueden devolver el pipeline como arreglo en lugar de texto, o faltar campos. La colección y
+     * el pipeline se validan después en buildPipeline().
+     *
+     * @param array<string, mixed> $data
+     * @return array{coleccion: string, pipeline: string, columnas: list<string>, explicacion: string}
+     */
+    public static function normalizeAnswer(array $data): array
+    {
+        $pipeline = $data['pipeline'] ?? '[]';
+        if (is_array($pipeline)) {
+            $pipeline = json_encode($pipeline, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        return [
+            'coleccion' => is_string($data['coleccion'] ?? null) ? $data['coleccion'] : '',
+            'pipeline' => is_string($pipeline) ? $pipeline : '[]',
+            'columnas' => array_values(array_filter((array) ($data['columnas'] ?? []), 'is_string')),
+            'explicacion' => is_scalar($data['explicacion'] ?? null) ? (string) $data['explicacion'] : '',
+        ];
+    }
+
+    /**
+     * Pide el pipeline al proveedor de IA ($cfg['provider'], '' = el predeterminado). Devuelve
+     * ['coleccion', 'pipeline' (string JSON), 'columnas', 'explicacion', 'usage', 'modelo', 'proveedor'].
      * $previous: intentos rechazados [['coleccion', 'pipeline', 'error'], ...] (o uno solo), para que los corrija.
      * $base: consulta guardada ['prompt', 'coleccion', 'pipeline', 'columnas'] que la pregunta pide ajustar.
      *
-     * @global class_config $config
      * @param array<string, mixed> $cfg
      * @param string $systemPrompt
      * @param string $question
      * @param array<mixed>|null $previous
      * @param array<string, mixed>|null $base
-     * @return array{coleccion: string, pipeline: string, columnas: list<string>, explicacion: string, usage: array{input: int, output: int, cache: int}, modelo: string}
-     * @throws RuntimeException Sin anthropic_api_key o si el API falla.
+     * @return array{coleccion: string, pipeline: string, columnas: list<string>, explicacion: string, usage: array{input: int, output: int, cache: int}, modelo: string, proveedor: string}
+     * @throws RuntimeException Sin proveedor configurado o si la IA falla.
+     */
+    public static function askAI(array $cfg, string $systemPrompt, string $question, ?array $previous = null, ?array $base = null): array
+    {
+        $provider = nfAI::provider((string) ($cfg['provider'] ?? ''));
+        $answer = nfAI::json($provider, $systemPrompt, self::userContent($question, $previous, $base), self::answerSchema($cfg), [
+            'model' => (string) ($cfg['model'] ?? ''),
+            'effort' => (string) ($cfg['effort'] ?? ''),
+            'max_tokens' => 16000,
+            'name' => 'consulta',
+        ]);
+        return self::normalizeAnswer($answer['data']) + [
+            'usage' => $answer['usage'],
+            'modelo' => $answer['model'] !== '' ? $answer['model'] : (string) $provider['model'],
+            'proveedor' => (string) $provider['id'],
+        ];
+    }
+
+    /**
+     * @deprecated Use askAI(); se conserva para código que la llamaba directamente.
+     * @param array<string, mixed> $cfg
+     * @param string $systemPrompt
+     * @param string $question
+     * @param array<mixed>|null $previous
+     * @param array<string, mixed>|null $base
+     * @return array<string, mixed>
+     * @throws RuntimeException
      */
     public static function askClaude(array $cfg, string $systemPrompt, string $question, ?array $previous = null, ?array $base = null): array
     {
-        global $config;
-        $apiKey = $config['anthropic_api_key'] ?? getenv('ANTHROPIC_API_KEY');
-        if (empty($apiKey)) {
-            throw new RuntimeException('Falta configurar anthropic_api_key en config.php.');
-        }
-        $client = new AnthropicClient(apiKey: $apiKey, requestOptions: ['timeout' => 120]);
-
-        $content = self::userContent($question, $previous, $base);
-
-        try {
-            $message = $client->beta->messages->create(
-                model: $cfg['model'],
-                maxTokens: 16000,
-                system: [['type' => 'text', 'text' => $systemPrompt, 'cacheControl' => ['type' => 'ephemeral']]],
-                messages: [['role' => 'user', 'content' => $content]],
-                outputConfig: [
-                    'effort' => $cfg['effort'],
-                    'format' => [
-                        'type' => 'json_schema',
-                        'schema' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'coleccion' => ['type' => 'string', 'enum' => array_keys($cfg['collections'])],
-                                'pipeline' => ['type' => 'string'],
-                                'columnas' => ['type' => 'array', 'items' => ['type' => 'string']],
-                                'explicacion' => ['type' => 'string'],
-                            ],
-                            'required' => ['coleccion', 'pipeline', 'columnas', 'explicacion'],
-                            'additionalProperties' => false,
-                        ],
-                    ],
-                ],
-                // Si el modelo declina por políticas, el servidor reintenta con su modelo de respaldo.
-                fallbacks: 'default',
-                betas: ['server-side-fallback-2026-07-01'],
-            );
-        } catch (AuthenticationException $e) {
-            error_log('TablefIA: ' . $e->getMessage());
-            throw new RuntimeException('La llave de la API de Anthropic no es válida.');
-        } catch (RateLimitException $e) {
-            throw new RuntimeException('El servicio de IA está saturado; intente en unos minutos.');
-        } catch (APIStatusException $e) {
-            error_log('TablefIA: ' . $e->getMessage());
-            throw new RuntimeException('El servicio de IA respondió con un error.');
-        } catch (APIConnectionException $e) {
-            error_log('TablefIA: ' . $e->getMessage());
-            throw new RuntimeException('No se pudo conectar con el servicio de IA.');
-        }
-
-        if ($message->stopReason === 'refusal') {
-            throw new RuntimeException('La IA no respondió esta pregunta. Reformúlela.');
-        }
-        if ($message->stopReason !== 'end_turn') {
-            throw new RuntimeException('La IA no terminó la respuesta (' . $message->stopReason . ').');
-        }
-        foreach ($message->content as $block) {
-            if ($block->type === 'text') {
-                $data = json_decode($block->text, true);
-                if (!is_array($data)) {
-                    break;
-                }
-                $data['usage'] = [
-                    'input' => $message->usage->inputTokens,
-                    'output' => $message->usage->outputTokens,
-                    'cache' => (int) $message->usage->cacheReadInputTokens,
-                ];
-                $data['modelo'] = $message->model;
-                return $data;
-            }
-        }
-        throw new RuntimeException('La IA devolvió una respuesta vacía.');
+        return self::askAI($cfg, $systemPrompt, $question, $previous, $base);
     }
 
     /**
