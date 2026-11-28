@@ -85,6 +85,10 @@ function generateQRCode(text,ele) {
 	.nf-llaves .ll-reader > div:has(#cam-list){display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.85rem}
 	.nf-llaves .ll-reader > div:has(#cam-list) b{font-weight:400;color:var(--nf-muted)}
 	.nf-llaves .ll-reader video{width:100%!important;max-width:320px;height:auto!important;aspect-ratio:1;object-fit:cover;border-radius:var(--nf-radius)}
+	/* SweetAlert se agrega al body (fuera de .nf-llaves); Metro da width:100% a todo input y se desborda. */
+	.ll-swal .swal2-input{box-sizing:border-box;width:calc(100% - 3em);max-width:none;margin:.75em 1.5em .25em}
+	.ll-swal .swal2-input-label{margin-top:1em}
+	.ll-swal .swal2-html-container{margin-top:.5em}
 	@media (max-width:600px){ .nf-llaves .ll-actions,.nf-llaves .ll-actions .button{width:100%} }
 </style>
 
@@ -402,7 +406,8 @@ function generateQRCode(text,ele) {
 		if(!l){ render(); return; }
 		Swal.fire({
 			title:'Iniciar sesión', html:esc(i.nombre)+'<br><small>'+esc(i.rfc)+'</small>',
-			input:'password', inputLabel:'Contraseña de la llave privada', inputAttributes:{autocomplete:'off'},
+			customClass:{popup:'ll-swal'},
+			input:'password', inputLabel:'Contraseña de la llave privada', inputAttributes:{autocomplete:'off', 'data-nf-noautofill':''},
 			showCancelButton:true, confirmButtonText:'Iniciar', cancelButtonText:'Cancelar', showLoaderOnConfirm:true,
 			preConfirm:function(pass){
 				var prv;
