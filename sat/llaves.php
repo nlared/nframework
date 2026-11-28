@@ -96,12 +96,12 @@ function generateQRCode(text,ele) {
 </div>
 
 
-<div class="dialog" data-role="dialog" id="DialogTransfer" data-on-open="qrTxStart()" data-on-close="qrTxStop()">
+<div class="dialog" data-role="dialog" id="DialogTransfer" data-on-close="qrTxStop()">
     <div class="dialog-title">Enviar llave a otro dispositivo</div>
     <div class="dialog-content">
 		<p>En el otro dispositivo abra esta página, pulse <span class="mif-camera"></span> y apunte la cámara a esta pantalla
 		hasta completar todas las partes. Solo viaja la llave cifrada y el certificado; la contraseña no.</p>
-		<center><canvas id="qrcode_tx" style="width:100%;max-width:400px;image-rendering:pixelated;"></canvas></center>
+		<center><canvas id="qrcode_tx" width="300" height="300" style="width:300px;max-width:100%;height:auto;image-rendering:pixelated;"></canvas></center>
 		<center>
 			<button class="button" onclick="qrTxStep(-1)"><span class="mif-arrow-left"></span></button>
 			<button class="button" id="qr_tx_pause" onclick="qrTxPause()"><span class="mif-pause"></span></button>
@@ -120,7 +120,7 @@ function generateQRCode(text,ele) {
 </div>
 
 
-<div class="dialog" data-role="dialog" id="DialogScan" data-on-open="qrRxOpen()" data-on-close="qrRxClose()">
+<div class="dialog" data-role="dialog" id="DialogScan" data-on-close="qrRxClose()">
     <div class="dialog-title">Recibir llave de otro dispositivo</div>
     <div class="dialog-content">
 		<h4 id="capturados">Apunte la cámara a los códigos del otro dispositivo</h4>
@@ -139,8 +139,8 @@ function generateQRCode(text,ele) {
 
 
 
-<button class="button primary" id="button_qr" onclick="Metro.dialog.open('#DialogTransfer')" disabled><span class="mif-qrcode"></span></button>
-<button class="button primary" id="button_scan" onclick="Metro.dialog.open('#DialogScan')"><span class="mif-camera"></span></button>
+<button class="button primary" id="button_qr" onclick="qrTxOpen()" disabled><span class="mif-qrcode"></span></button>
+<button class="button primary" id="button_scan" onclick="qrRxOpen()"><span class="mif-camera"></span></button>
 <button class="button primary"  onclick="Metro.dialog.open('#DialogAdd')">Agregar llave... </button>
 <button class="button primary" disabled="true" id="button_login" disabled  onclick="Metro.dialog.open('#DialogLogin')">Iniciar... </button>
 
@@ -178,9 +178,23 @@ Contraseña:12345678a
 		qrTx.i=0;
 	}
 	function qrTxShow(){
-		if(!qrTx.frames.length) return;
-		generateQRCode(qrTx.frames[qrTx.i],'qrcode_tx');
-		$('#qr_tx_info').text('Parte '+(qrTx.i+1)+' de '+qrTx.frames.length);
+		if(!qrTx.frames.length){
+			$('#qr_tx_info').text('Seleccione primero una llave de la lista.');
+			return;
+		}
+		try{
+			if(typeof qrcode!=='function') throw 'no se cargó el generador de QR (qrcode-generator)';
+			generateQRCode(qrTx.frames[qrTx.i],'qrcode_tx');
+			$('#qr_tx_info').text('Parte '+(qrTx.i+1)+' de '+qrTx.frames.length);
+		}catch(e){
+			qrTxStop();
+			console.error(e);
+			$('#qr_tx_info').text('No se pudo generar el QR: '+e);
+		}
+	}
+	function qrTxOpen(){
+		Metro.dialog.open('#DialogTransfer');
+		qrTxStart();
 	}
 	function qrTxStep(d){
 		var n=qrTx.frames.length;
@@ -215,6 +229,7 @@ Contraseña:12345678a
 		if(p) p.val(v);
 	}
 	function qrRxOpen(){
+		Metro.dialog.open('#DialogScan');
 		qrRxReset();
 		if(window.scanner) window.scanner.start();
 	}
@@ -317,7 +332,12 @@ Contraseña:12345678a
 		certPEM=llaves[datos[0]].cert;
 		$('#button_login').prop('disabled', false);
 		$('#button_qr').prop('disabled', false);
-		qrTxPrepare(datos[0]);
+		try{
+			qrTxPrepare(datos[0]);
+		}catch(e){
+			console.error(e);
+			qrTx.frames=[];
+		}
 		
 	}
 	function key_open(el){
