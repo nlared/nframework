@@ -76,15 +76,16 @@ function generateQRCode(text,ele) {
 	.nf-llaves .ll-status{min-height:1.4em;font-size:.9rem}
 	.nf-llaves .ll-status.ok{color:var(--nf-success)}
 	.nf-llaves .ll-status.bad{color:var(--nf-danger)}
-	.nf-llaves .ll-qr{text-align:center}
-	.nf-llaves .ll-qr canvas{width:300px;max-width:100%;height:auto;image-rendering:pixelated;border-radius:var(--nf-radius)}
-	.nf-llaves .ll-qr-ctrl{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;align-items:center;margin:.75rem 0 .25rem}
+	/* Metro mueve los diálogos al body (fuera de .nf-llaves): sus reglas no dependen de ese contenedor. */
+	.ll-qr{text-align:center}
+	.ll-qr canvas{display:block;margin:0 auto;width:min(300px,100%,45vh);max-width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;border-radius:var(--nf-radius)}
+	.ll-qr-ctrl{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;align-items:center;margin:.75rem 0 .25rem}
 	/* Del lector QR solo se muestran el video y el selector de cámara. */
-	.nf-llaves .ll-reader > *{display:none}
-	.nf-llaves .ll-reader > #video-container{display:block;margin:.75rem 0}
-	.nf-llaves .ll-reader > div:has(#cam-list){display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.85rem}
-	.nf-llaves .ll-reader > div:has(#cam-list) b{font-weight:400;color:var(--nf-muted)}
-	.nf-llaves .ll-reader video{width:100%!important;max-width:320px;height:auto!important;aspect-ratio:1;object-fit:cover;border-radius:var(--nf-radius)}
+	.ll-reader > *{display:none}
+	.ll-reader > #video-container{display:block;margin:.75rem 0}
+	.ll-reader > div:has(#cam-list){display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.85rem}
+	.ll-reader > div:has(#cam-list) b{font-weight:400;color:var(--nf-muted)}
+	.ll-reader video{width:100%!important;max-width:320px;height:auto!important;aspect-ratio:1;object-fit:cover;border-radius:var(--nf-radius)}
 	/* SweetAlert se agrega al body (fuera de .nf-llaves); Metro da width:100% a todo input y se desborda. */
 	.ll-swal .swal2-input{box-sizing:border-box;width:calc(100% - 3em);max-width:none;margin:.75em 1.5em .25em}
 	.ll-swal .swal2-input-label{margin-top:1em}
