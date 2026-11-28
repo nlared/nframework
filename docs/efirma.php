@@ -76,7 +76,7 @@ PHP) ?>
 		<thead><tr><th>Opción</th><th>Descripción</th></tr></thead>
 		<tbody>
 			<tr><td><code>tipo</code></td><td><code>fiel</code>, <code>csd</code> o <code>any</code>. Se distingue por el OU del certificado (solo los CSD lo tienen).</td></tr>
-			<tr><td><code>storage</code></td><td><code>client</code>: localStorage (clave <code>llaves</code>, compatible con <code>/sat/sing.php</code>). <code>server</code>: colección <code>efirmas</code>, cifrada con <code>efirma_key</code>; requiere sesión.</td></tr>
+			<tr><td><code>storage</code></td><td><code>client</code>: localStorage (clave <code>llaves</code>, compatible con <code>/sat/llaves.php</code>). <code>server</code>: colección <code>efirmas</code>, cifrada con <code>efirma_key</code>; requiere sesión.</td></tr>
 			<tr><td><code>value</code></td><td>Selección inicial (<code>client:&lt;nocert&gt;</code> o <code>server:&lt;_id&gt;</code>).</td></tr>
 			<tr><td><code>rfc</code></td><td>Restringe a un RFC.</td></tr>
 			<tr><td><code>consent</code></td><td>Texto que el usuario firma al guardar en el servidor.</td></tr>

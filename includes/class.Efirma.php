@@ -8,7 +8,7 @@ use PhpCfdi\Credentials\Credential;
  * Selector de certificados del SAT: e.firma (FIEL), CSD o cualquiera de los dos.
  *
  * - storage 'client': el .cer y el .key (cifrado con su contraseña) se guardan en el localStorage del
- *   navegador (clave "llaves", el mismo formato que sat/sing.php). La llave nunca sale del navegador y la
+ *   navegador (clave "llaves", el mismo formato que sat/llaves.php). La llave nunca sale del navegador y la
  *   firma se hace con jsrsasign: nfEfirma['<id>'].sign(cadena).
  * - storage 'server': el .cer, el .key y la contraseña se guardan cifrados (AES-256-GCM con
  *   $config['efirma_key']) en la colección efirmas. Antes de guardar se exige una firma autógrafa con
